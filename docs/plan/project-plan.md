@@ -6,6 +6,7 @@
 | 2026-05-30 | 1.0 | Initial project plan based on requirements and research | Principal Engineer (Copilot) |
 | 2026-05-30 | 1.1 | MVP-first schedule and recommended-level plan | Principal Engineer (Copilot) |
 | 2026-05-30 | 1.2 | Compressed MVP schedule to < 2 weeks | Principal Engineer (Copilot) |
+| 2026-05-31 | 1.3 | Add AI coding agents usage and increase mentor sync cadence | Principal Engineer (Copilot) |
 
 ## 1. Introduction
 ### 1.1 Purpose
@@ -231,11 +232,12 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 1. Git-based source control with feature branches and PR reviews.
 2. Tag releases by phase (inception/elaboration/construction/transition).
 3. Track changes in a lightweight changelog.
+4. Leverage AI coding agents (Copilot, Claude Code, Codex, Cursor) to accelerate implementation with human review.
 
 ## 12. Communication Plan
 1. Weekly milestone check-ins against phase goals.
-2. Demo readiness checkpoints during Construction (MVP) and Transition.
-3. **Mentor sync immediately after MVP** to confirm recommended-level priorities.
+2. **Mentor sync 1-2 times per week**, including immediate post-MVP review to confirm recommended-level priorities.
+3. Demo readiness checkpoints during Construction (MVP) and Transition.
 4. Document decisions in `docs/` to support presentation.
 
 ## 13. Acceptance and Delivery
