@@ -66,7 +66,7 @@ The architecture follows the RUP 4+1 view model:
 ### 3.2 Constraints
 1. MVP scope only; avoid enterprise-grade complexity.
 2. Single deployable platform; local demo friendly.
-3. Relational database required (PostgreSQL recommended; SQLite acceptable for demo).
+3. PostgreSQL required for persistence.
 4. Authentication/authorization assumed or stubbed for MVP.
 5. Delivery aligned to VDT schedule.
 
@@ -92,7 +92,7 @@ The architecture follows the RUP 4+1 view model:
 graph TD
   A[Admin Dashboard] -->|REST| B[Management API]
   C[Demo App] -->|REST| D[Evaluation API]
-  B --> E[(Database)]
+  B --> E[(PostgreSQL)]
   D --> E
   B --> F[Audit Logger]
   D --> G[Rule Evaluation Engine]
@@ -156,13 +156,13 @@ graph LR
   U --> C[Demo App]
   A --> B[Backend API]
   C --> B
-  B --> D[(Relational DB)]
+  B --> D[(PostgreSQL)]
 ```
 
 ### 7.2 Deployment Notes
 1. Single backend service hosts both management and evaluation endpoints.
 2. Admin dashboard and demo app can be served as static web apps.
-3. Database is a single-node relational instance for MVP.
+3. Database is a single-node PostgreSQL instance for MVP.
 
 ## 8. Implementation View
 ### 8.1 Layered Structure (Conceptual)
@@ -177,6 +177,16 @@ graph LR
 2. Deterministic hashing for stable percentage rollout.
 3. Append-only audit log with before/after snapshots.
 4. Ordered rule evaluation to avoid ambiguity.
+
+### 8.3 Technology Stack (MVP)
+1. **Database**: PostgreSQL
+2. **Backend**: NestJS on Node.js
+3. **ORM**: Prisma
+4. **Migrations**: Prisma migrate
+5. **API**: REST
+6. **API documentation**: Swagger
+7. **Cache**: In-Memory Cache (NestJS)
+8. **Testing**: Jest
 
 ## 9. Data View
 ### 9.1 Core Tables
@@ -197,7 +207,7 @@ graph LR
 1. Evaluation API target latency: <= 1s (demo scale).
 2. Dashboard list rendering: <= 2s on typical broadband.
 3. Support pagination for list endpoints to prevent large payloads.
-4. Optional caching (post-MVP) for evaluation throughput.
+4. In-memory cache (NestJS) for evaluation throughput; promote to Redis if needed.
 
 ## 11. Quality Attributes and Tactics
 | Attribute | Tactics |
@@ -218,8 +228,14 @@ graph LR
 | CORS/security issues | Demo failures | Early API integration test, fallback proxy |
 | Scope creep | Delay MVP | Strict MVP gate before enhancements |
 
-## 13. Appendix
-### 13.1 Reason Codes (Draft)
+## 13. Future Considerations
+1. **Caching**: Promote to Redis if in-memory cache is insufficient.
+2. **Frontend build**: Build the admin dashboard and demo UI for production.
+3. **Platform hardening**: Add auth, logging, realtime updates, and deployment automation.
+4. **Docker**: Ensure Docker integration is part of the delivery plan.
+
+## 14. Appendix
+### 14.1 Reason Codes (Draft)
 Reason codes reflect the matched rule or default. Draft set:
 - `GLOBAL_ON` / `GLOBAL_OFF`
 - `USER_ALLOWLIST`
@@ -228,13 +244,13 @@ Reason codes reflect the matched rule or default. Draft set:
 - `DEFAULT_OFF`
 - `NOT_FOUND`
 
-### 13.2 Rule Types (MVP)
+### 14.2 Rule Types (MVP)
 1. Global enable/disable
 2. User allowlist
 3. Role targeting
 4. Percentage rollout (deterministic hashing)
 
-### 13.3 External Interfaces (MVP)
+### 14.3 External Interfaces (MVP)
 1. `/v1/projects`
 2. `/v1/projects/{projectKey}/flags`
 3. `/v1/projects/{projectKey}/flags/{flagKey}/rules`
