@@ -7,12 +7,13 @@ description: Multi-agent playbook for delivering features end-to-end.
 Deliver a feature across management API, evaluation, UI, and demo, aligned with MVP requirements.
 
 ## Sequence
-1. **control-plane** defines or updates CRUD APIs, validation, and audit logging.
-2. **rule-engine** ensures evaluation logic and reason codes are deterministic.
-3. **data-plane** wires evaluation API to the rule engine and response shape.
-4. **dashboard** updates UI screens and status/state semantics.
-5. **demo-app** updates demo scenarios to validate behavior.
-6. **audit-log** verifies audit coverage and query filters.
+1. **architect** confirms scope, system contracts, and integration boundaries.
+2. **researcher** validates assumptions and flags requirement gaps.
+3. **database-engineer** defines schema, constraints, and migrations.
+4. **backend-engineer** implements APIs, rule evaluation, and audit logging.
+5. **frontend-engineer** implements admin and demo UI with correct semantics.
+6. **security-reviewer** reviews safety, privacy, and risk mitigations.
+7. **test-engineer** defines and implements coverage for critical flows.
 
 ## Hand-off artifacts
 - API spec updates (request/response shapes)

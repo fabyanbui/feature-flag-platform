@@ -7,11 +7,13 @@ description: Multi-agent review checklist before demo or release.
 Ensure changes align with requirements and platform guardrails before demo.
 
 ## Sequence
-1. **control-plane** checks API conventions, validation, and error codes.
-2. **rule-engine** verifies deterministic evaluation and rule ordering.
-3. **audit-log** verifies audit trails for all mutations.
-4. **dashboard** validates UI status vs runtime state semantics.
-5. **demo-app** validates demo scenarios and evaluation outputs.
+1. **architect** confirms requirements alignment and cross-cutting consistency.
+2. **backend-engineer** checks API conventions, validation, rule ordering, and error codes.
+3. **database-engineer** verifies data integrity and audit log schema constraints.
+4. **frontend-engineer** validates UI status vs runtime state semantics.
+5. **security-reviewer** reviews safety, privacy, and risk mitigations.
+6. **test-engineer** validates deterministic fixtures and critical flows.
+7. **researcher** confirms changes stay aligned with documented research.
 
 ## Checks
 - `/v1` base path and JSON bodies
