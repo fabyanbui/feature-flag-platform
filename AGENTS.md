@@ -44,3 +44,5 @@ Pull requests should include a brief summary, affected paths, validation perform
 ## Agent-Specific Instructions
 
 Treat `.github/instructions/` as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
+
+When adding or changing variables in `.env`, also update `.env.example` in the same change with sanitized, commit-safe placeholder values. Never copy real secrets or personal tokens into `.env.example`.
