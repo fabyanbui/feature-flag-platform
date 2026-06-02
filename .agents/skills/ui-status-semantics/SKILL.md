@@ -10,4 +10,4 @@ description: Use when designing or reviewing admin/demo UI status displays, espe
 
 ## Sources
 - `docs/requirement/frontend/fe-init.md`
-- `.github/copilot-instructions.md`
+- `.codex/instructions/context.instructions.md`

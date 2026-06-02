@@ -8,9 +8,9 @@ This repository is currently documentation-first. Core planning, requirements, r
 - `docs/requirement/` contains backend, frontend, demo, and use-case requirements.
 - `docs/research/` and `docs/competitor-analysis/` contain supporting analysis.
 - `docs/design/software-architecture-document.md` is the architecture baseline.
-- `.github/agents/`, `.github/prompts/`, `.github/skills/`, and `.github/instructions/` define GitHub Copilot workflows and project guardrails.
-- `.agents/skills/` contains repo-scoped Codex skills mirrored from `.github/skills/` so Codex can discover the same project expertise.
-- `.codex/agents/` contains repo-scoped Codex subagents converted from `.github/agents/` for specialized architecture, backend, frontend, database, test, security, and research work.
+- `.codex/agents/` contains repo-scoped Codex subagents for specialized architecture, backend, frontend, database, test, security, and research work.
+- `.codex/instructions/` contains project context, decisions, and guardrails for Codex.
+- `.agents/skills/` contains repo-scoped Codex skills so Codex can discover the same project expertise.
 
 When implementation is added, keep the planned layers clear: backend API, domain/evaluation engine, persistence, admin UI, and demo app. Do not mix generated build output into `docs/`.
 
@@ -31,7 +31,7 @@ For future TypeScript code, follow standard NestJS conventions: `*.module.ts`, `
 
 ## Testing Guidelines
 
-Current changes are documentation-only and should be reviewed for accuracy against `docs/design/software-architecture-document.md` and `.github/instructions/context.instructions.md`.
+Current changes are documentation-only and should be reviewed for accuracy against `docs/design/software-architecture-document.md` and `.codex/instructions/context.instructions.md`.
 
 When code is added, use Jest for unit and integration tests. Prioritize tests for rule ordering, deterministic percentage rollout, kill-switch behavior, `NOT_FOUND` evaluation responses, and audit-log writes in the same transaction as mutations.
 
@@ -43,4 +43,4 @@ Pull requests should include a brief summary, affected paths, validation perform
 
 ## Agent-Specific Instructions
 
-Treat `.github/instructions/` as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
+Treat `.codex/instructions/` as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
