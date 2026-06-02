@@ -17,3 +17,19 @@ max_depth = 1
 url = "https://api.githubcopilot.com/mcp/"
 # Set this environment variable to a least-privilege GitHub PAT before starting Codex.
 bearer_token_env_var = "GITHUB_PAT_TOKEN"
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+
+[mcp_servers.playwright.tools.browser_tabs]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_navigate]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_click]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_evaluate]
+approval_mode = "approve"
