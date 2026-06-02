@@ -9,7 +9,6 @@ This repository is currently documentation-first. Core planning, requirements, r
 - `docs/research/` and `docs/competitor-analysis/` contain supporting analysis.
 - `docs/design/software-architecture-document.md` is the architecture baseline.
 - `.codex/agents/` contains repo-scoped Codex subagents for specialized architecture, backend, frontend, database, test, security, and research work.
-- `.codex/instructions/` contains project context, decisions, and guardrails for Codex.
 - `.agents/skills/` contains repo-scoped Codex skills so Codex can discover the same project expertise.
 
 When implementation is added, keep the planned layers clear: backend API, domain/evaluation engine, persistence, admin UI, and demo app. Do not mix generated build output into `docs/`.
@@ -31,7 +30,7 @@ For future TypeScript code, follow standard NestJS conventions: `*.module.ts`, `
 
 ## Testing Guidelines
 
-Current changes are documentation-only and should be reviewed for accuracy against `docs/design/software-architecture-document.md` and `.codex/instructions/context.instructions.md`.
+Current changes are documentation-only and should be reviewed for accuracy against `docs/design/software-architecture-document.md` and this file.
 
 When code is added, use Jest for unit and integration tests. Prioritize tests for rule ordering, deterministic percentage rollout, kill-switch behavior, `NOT_FOUND` evaluation responses, and audit-log writes in the same transaction as mutations.
 
@@ -43,4 +42,15 @@ Pull requests should include a brief summary, affected paths, validation perform
 
 ## Agent-Specific Instructions
 
-Treat `.codex/instructions/` as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
+Treat this file as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
+
+Project guardrails:
+- Single backend service hosts management and evaluation endpoints.
+- MVP stack is NestJS, Prisma, PostgreSQL, REST/Swagger, Jest, and in-memory cache.
+- Default rule order is global disable -> user allowlist -> role targeting -> percentage rollout -> default off.
+- Percentage rollout must be deterministic using stable hashing.
+- Evaluation responses must include `enabled`, `reason`, `projectKey`, and `flagKey`.
+- Missing project or flag returns `enabled=false` with `reason=NOT_FOUND`.
+- Mutations for projects, flags, and rules must write append-only audit entries with before/after snapshots in the same transaction.
+- Use stable, non-PII identifiers for targeting and rollout keys.
+- Feature flag status labels (Enabled/Disabled/Archived) are distinct from runtime state (On/Off).

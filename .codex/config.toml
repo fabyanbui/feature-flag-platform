@@ -1,13 +1,12 @@
 # Project-scoped Codex defaults for feature-flag-platform.
 # Personal provider/auth settings should stay in ~/.codex/config.toml.
-# Project guardrails live in .codex/instructions/ and AGENTS.md.
+# Project guardrails live in AGENTS.md.
 
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 instructions = """
-Use AGENTS.md as the repository guide.
-Use .codex/instructions/context.instructions.md and .codex/instructions/memory.instructions.md as the active project guardrails.
+Use AGENTS.md as the repository guide and active project guardrail source.
 Preserve deterministic evaluation, append-only audit logging, safe defaults, and clear control-plane/data-plane separation.
 """
 
