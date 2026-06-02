@@ -12,3 +12,8 @@ web_search = "cached"
 [agents]
 max_threads = 6
 max_depth = 1
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+# Set this environment variable to a least-privilege GitHub PAT before starting Codex.
+bearer_token_env_var = "GITHUB_PAT_TOKEN"
