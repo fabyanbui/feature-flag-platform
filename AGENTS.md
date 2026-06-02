@@ -8,7 +8,9 @@ This repository is currently documentation-first. Core planning, requirements, r
 - `docs/requirement/` contains backend, frontend, demo, and use-case requirements.
 - `docs/research/` and `docs/competitor-analysis/` contain supporting analysis.
 - `docs/design/software-architecture-document.md` is the architecture baseline.
-- `.github/agents/`, `.github/prompts/`, `.github/skills/`, and `.github/instructions/` define AI-agent workflows and project guardrails.
+- `.github/agents/`, `.github/prompts/`, `.github/skills/`, and `.github/instructions/` define GitHub Copilot workflows and project guardrails.
+- `.agents/skills/` contains repo-scoped Codex skills mirrored from `.github/skills/` so Codex can discover the same project expertise.
+- `.codex/agents/` contains repo-scoped Codex subagents converted from `.github/agents/` for specialized architecture, backend, frontend, database, test, security, and research work.
 
 When implementation is added, keep the planned layers clear: backend API, domain/evaluation engine, persistence, admin UI, and demo app. Do not mix generated build output into `docs/`.
 
