@@ -4,8 +4,14 @@ This roadmap prioritizes an MVP that proves the full feature-flag loop:
 configure a flag in the control plane, persist it safely, evaluate it
 deterministically in the data plane, and demonstrate the result in a demo app.
 
+The roadmap is derived from `docs/requirement/requirement-init.md` and the
+active goal in `docs/plan/project-goal.md`. Required-level deliverables come
+before recommended enhancements.
+
 ## Phase 0 — MVP scope and contracts
 
+- Confirm requirement traceability from `docs/requirement/requirement-init.md`
+  into goal, vision, plan, architecture, API, and UI docs.
 - Confirm `/v1` API base path and JSON request/response conventions.
 - Define evaluation request and response contracts.
 - Define consistent error response shape and error codes.

@@ -7,10 +7,15 @@
 | 2026-05-30 | 1.1 | MVP-first schedule and recommended-level plan | Principal Engineer (Copilot) |
 | 2026-05-30 | 1.2 | Compressed MVP schedule to < 2 weeks | Principal Engineer (Copilot) |
 | 2026-05-31 | 1.3 | Add AI coding agents usage and increase mentor sync cadence | Principal Engineer (Copilot) |
+| 2026-06-03 | 1.4 | Align plan to initial requirement as active project goal | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
-Define the Rational Unified Process (RUP) project plan for the Feature Flag Platform mini project, including scope, schedule, roles, risks, and quality controls to meet VDT 2026 delivery expectations.
+Define the Rational Unified Process (RUP) project plan for the Feature Flag
+Platform mini project, including scope, schedule, roles, risks, and quality
+controls to meet VDT 2026 delivery expectations. The plan is anchored in
+`docs/requirement/requirement-init.md`; `docs/plan/project-goal.md` is the
+working summary of that initial requirement.
 
 ### 1.2 Scope
 Deliver a lightweight feature flag platform consisting of:
@@ -22,18 +27,19 @@ Deliver a lightweight feature flag platform consisting of:
 
 ### 1.3 References
 1. `docs/plan/vision.md`
-2. `docs/requirement/requirement-init.md`
-3. `docs/requirement/backend/be-init.md`
-4. `docs/requirement/frontend/fe-init.md`
-5. `docs/requirement/demo/demo-app.md`
-6. `docs/requirement/demo/minimal-mvp.md`
-7. `docs/requirement/feature-flag-research.md`
-8. `docs/research/feature-flags.md`
-9. `docs/research/rollout-strategies.md`
-10. `docs/research/kill-switch-fast-rollback.md`
-11. `docs/research/feature-flag-key-considerations.md`
-12. `docs/research/audit-log-configuration-changes.md`
-13. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
+2. `docs/plan/project-goal.md`
+3. `docs/requirement/requirement-init.md`
+4. `docs/requirement/backend/be-init.md`
+5. `docs/requirement/frontend/fe-init.md`
+6. `docs/requirement/demo/demo-app.md`
+7. `docs/requirement/demo/minimal-mvp.md`
+8. `docs/requirement/feature-flag-research.md`
+9. `docs/research/feature-flags.md`
+10. `docs/research/rollout-strategies.md`
+11. `docs/research/kill-switch-fast-rollback.md`
+12. `docs/research/feature-flag-key-considerations.md`
+13. `docs/research/audit-log-configuration-changes.md`
+14. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.4 Constraints
 1. Submission deadline: **2026-07-01**.  
@@ -50,6 +56,11 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 3. Deterministic evaluation with clear reason codes.
 4. Audit log for all configuration changes.
 5. Demo app scenarios (global on/off and targeting/rollout).
+6. Research report explaining feature flags, deployment vs. release, flag
+   types, workflow, rollout strategies, kill switches, audit logs, API
+   integration, caching, consistency, default values, and endpoint security.
+7. README setup/run instructions and seed data for backend, dashboard, demo,
+   and database.
 
 ### 2.3 Non-Goals (MVP)
 1. Multi-variant experiments or advanced analytics.
@@ -152,6 +163,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 | Demo App | Global toggle + targeting/rollout scenarios | Demo app UI |
 | Seed Data | Demo project, flags, rules, users | Seed scripts |
 | Documentation | README, API spec, architecture, research report | Complete docs |
+| Presentation Fit | Requirement traceability and demo scenarios | Evaluator-ready narrative |
 
 ### 6.2 Recommended Level Backlog (Post-MVP)
 | Area | Work Items | Output |
@@ -247,6 +259,8 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 3. Audit log view displays actor, action, and before/after.
 4. Documentation includes setup, schema, and API specification.
 5. Demo script is reproducible on a clean setup.
+6. Research report covers all main research topics from
+   `docs/requirement/requirement-init.md`.
 
 ### 13.2 Recommended Level Acceptance (Post-MVP)
 1. Enhancements chosen with mentor are delivered and documented.

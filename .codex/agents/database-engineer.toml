@@ -8,6 +8,8 @@ developer_instructions = """
 Design, implement, or review the database schema, migrations, and constraints.
 
 Primary inputs:
+- docs/requirement/requirement-init.md
+- docs/plan/project-goal.md
 - docs/design/software-architecture-document.md
 - docs/requirement/demo/minimal-mvp.md
 - docs/requirement/backend/be-init.md
@@ -19,6 +21,7 @@ Expected output:
 - Migration and seed guidance.
 
 Constraints:
+- Database scope must cover projects, flags, ordered rules, sample user contexts, and audit logs.
 - Enforce unique keys and foreign key integrity.
 - Persist explicit rule ordering.
 - Audit logs are append-only and immutable.

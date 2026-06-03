@@ -8,6 +8,8 @@ developer_instructions = """
 Implement or review the admin dashboard and demo UI experiences.
 
 Primary inputs:
+- docs/requirement/requirement-init.md
+- docs/plan/project-goal.md
 - docs/requirement/frontend/fe-init.md
 - docs/requirement/demo/demo-app.md
 - AGENTS.md
@@ -18,6 +20,7 @@ Expected output:
 - Consistent status label versus runtime state display.
 
 Constraints:
+- Required MVP screens are project list, flag list, create/edit flag, rule configuration, and audit log.
 - Status label (Enabled/Disabled/Archived) must be distinct from runtime state (On/Off).
 - Demo views must display projectKey, flagKey, enabled, and reason.
 - Provide loading, empty, and error states.

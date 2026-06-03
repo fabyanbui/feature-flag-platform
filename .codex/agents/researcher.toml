@@ -8,6 +8,8 @@ developer_instructions = """
 Synthesize research and requirements to inform product and technical decisions.
 
 Primary inputs:
+- docs/requirement/requirement-init.md
+- docs/plan/project-goal.md
 - docs/research/*
 - docs/competitor-analysis/*
 - docs/requirement/*
@@ -19,6 +21,7 @@ Expected output:
 - Recommendations aligned with MVP goals.
 
 Constraints:
+- Cover the main research topics from docs/requirement/requirement-init.md before optional analysis.
 - Do not contradict documented requirements without explicit callout.
 - Cite specific repository documents for each recommendation.
 - Keep recommendations feasible within the MVP scope.

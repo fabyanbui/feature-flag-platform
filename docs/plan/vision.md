@@ -4,10 +4,15 @@
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-05-30 | 1.0 | Initial vision draft | Principal Engineer (Copilot) |
+| 2026-06-03 | 1.1 | Align vision to initial requirement as active project goal | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
-Define the product vision for the Feature Flag Platform mini project, aligning scope, stakeholders, and success criteria using the Rational Unified Process (RUP) Vision template.
+Define the product vision for the Feature Flag Platform mini project, aligning
+scope, stakeholders, and success criteria using the Rational Unified Process
+(RUP) Vision template. The active product goal is sourced from
+`docs/requirement/requirement-init.md` and summarized in
+`docs/plan/project-goal.md`.
 
 ### 1.2 Scope
 The system is a lightweight feature flag management platform for web applications. It includes:
@@ -27,16 +32,18 @@ The system is a lightweight feature flag management platform for web application
 
 ### 1.4 References
 1. `docs/requirement/requirement-init.md`
-2. `docs/requirement/backend/be-init.md`
-3. `docs/requirement/frontend/fe-init.md`
-4. `docs/requirement/demo/demo-app.md`
-5. `docs/requirement/feature-flag-research.md`
-6. `docs/research/feature-flags.md`
-7. `docs/research/rollout-strategies.md`
-8. `docs/research/kill-switch-fast-rollback.md`
-9. `docs/research/feature-flag-key-considerations.md`
-10. `docs/research/audit-log-configuration-changes.md`
-11. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
+2. `docs/plan/project-goal.md`
+3. `docs/requirement/backend/be-init.md`
+4. `docs/requirement/frontend/fe-init.md`
+5. `docs/requirement/demo/demo-app.md`
+6. `docs/requirement/demo/minimal-mvp.md`
+7. `docs/requirement/feature-flag-research.md`
+8. `docs/research/feature-flags.md`
+9. `docs/research/rollout-strategies.md`
+10. `docs/research/kill-switch-fast-rollback.md`
+11. `docs/research/feature-flag-key-considerations.md`
+12. `docs/research/audit-log-configuration-changes.md`
+13. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.5 Overview
 This vision centers on a practical, demo-ready platform that emphasizes clear rule evaluation, safe rollouts, auditability, and explainability. It balances real-world engineering practices with an educational, minimal-scope implementation suitable for the VDT 2026 timeline.
@@ -113,6 +120,7 @@ The platform acts as a centralized feature management system for web apps, consi
 | Dashboard UI | Project list, flag list, edit screens, rules, audit log | Must |
 | Demo app | Shows global toggle and targeted/percentage scenarios | Must |
 | Seed data | Prebuilt demo project, flags, and user contexts | Must |
+| README/run docs | Setup and run instructions for backend, dashboard, demo, database, and seed data | Must |
 
 ## 6. Quality Attributes (Non-Functional Requirements)
 1. **Performance:** dashboard list screens <= 2s render; evaluation results <= 1s in demo.
@@ -144,4 +152,3 @@ The platform acts as a centralized feature management system for web apps, consi
 2. **Rollout clarity:** deterministic bucketing and clear targeting rules.
 3. **Educational UX:** simple, readable screens that show the workflow end-to-end.
 4. **Lifecycle awareness:** encourage cleanup of stale flags and safe defaults.
-

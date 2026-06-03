@@ -8,6 +8,8 @@ developer_instructions = """
 Review security, privacy, and safety implications across the control plane and data plane.
 
 Primary inputs:
+- docs/requirement/requirement-init.md
+- docs/plan/project-goal.md
 - docs/research/feature-flag-key-considerations.md
 - docs/research/kill-switch-fast-rollback.md
 - docs/research/rollout-strategies.md
@@ -20,6 +22,7 @@ Expected output:
 
 Constraints:
 - Default to safe behavior and fail closed where appropriate.
+- Missing or failed evaluations must not expose a feature by default.
 - Avoid PII in targeting and rollout keys.
 - Ensure evaluation does not expose sensitive flags on clients.
 - Do not edit files unless the parent agent explicitly asks for a patch.

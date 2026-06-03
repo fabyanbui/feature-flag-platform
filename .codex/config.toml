@@ -1,13 +1,18 @@
 # Project-scoped Codex defaults for feature-flag-platform.
 # Personal provider/auth settings should stay in ~/.codex/config.toml.
 # Project guardrails live in AGENTS.md.
+# The project goal is sourced from docs/requirement/requirement-init.md and
+# summarized in docs/plan/project-goal.md.
 
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 instructions = """
 Use AGENTS.md as the repository guide and active project guardrail source.
-Preserve deterministic evaluation, append-only audit logging, safe defaults, and clear control-plane/data-plane separation.
+Use docs/requirement/requirement-init.md as the product source for required and recommended deliverables.
+Use docs/plan/project-goal.md as the concise active project goal summary.
+Prioritize required MVP deliverables before recommended enhancements: research report, backend API, admin dashboard, demo app, database, validation/error handling, README run instructions, seed data, and short design docs.
+Preserve deterministic evaluation, append-only audit logging, safe defaults, stable non-PII rollout keys, and clear control-plane/data-plane separation.
 """
 
 approval_policy = "on-request"
