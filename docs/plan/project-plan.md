@@ -8,14 +8,16 @@
 | 2026-05-30 | 1.2 | Compressed MVP schedule to < 2 weeks | Principal Engineer (Copilot) |
 | 2026-05-31 | 1.3 | Add AI coding agents usage and increase mentor sync cadence | Principal Engineer (Copilot) |
 | 2026-06-03 | 1.4 | Align plan to initial requirement as active project goal | Codex |
+| 2026-06-03 | 1.5 | Add submission and mentor evaluation criteria | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
 Define the Rational Unified Process (RUP) project plan for the Feature Flag
 Platform mini project, including scope, schedule, roles, risks, and quality
 controls to meet VDT 2026 delivery expectations. The plan is anchored in
-`docs/requirement/requirement-init.md`; `docs/plan/project-goal.md` is the
-working summary of that initial requirement.
+`docs/requirement/requirement-init.md` and
+`docs/requirement/info-init.md`; `docs/plan/project-goal.md` is the working
+summary of those initial criteria.
 
 ### 1.2 Scope
 Deliver a lightweight feature flag platform consisting of:
@@ -29,17 +31,18 @@ Deliver a lightweight feature flag platform consisting of:
 1. `docs/plan/vision.md`
 2. `docs/plan/project-goal.md`
 3. `docs/requirement/requirement-init.md`
-4. `docs/requirement/backend/be-init.md`
-5. `docs/requirement/frontend/fe-init.md`
-6. `docs/requirement/demo/demo-app.md`
-7. `docs/requirement/demo/minimal-mvp.md`
-8. `docs/requirement/feature-flag-research.md`
-9. `docs/research/feature-flags.md`
-10. `docs/research/rollout-strategies.md`
-11. `docs/research/kill-switch-fast-rollback.md`
-12. `docs/research/feature-flag-key-considerations.md`
-13. `docs/research/audit-log-configuration-changes.md`
-14. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
+4. `docs/requirement/info-init.md`
+5. `docs/requirement/backend/be-init.md`
+6. `docs/requirement/frontend/fe-init.md`
+7. `docs/requirement/demo/demo-app.md`
+8. `docs/requirement/demo/minimal-mvp.md`
+9. `docs/requirement/feature-flag-research.md`
+10. `docs/research/feature-flags.md`
+11. `docs/research/rollout-strategies.md`
+12. `docs/research/kill-switch-fast-rollback.md`
+13. `docs/research/feature-flag-key-considerations.md`
+14. `docs/research/audit-log-configuration-changes.md`
+15. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.4 Constraints
 1. Submission deadline: **2026-07-01**.  
@@ -72,6 +75,8 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 2. APIs and UI meet documented requirements.
 3. Clear documentation of architecture, schema, and API contract.
 4. Presentation-ready narrative explaining tradeoffs and comparisons.
+5. Presenter can explain the need for the project, novelty/practical value,
+   chosen technologies, alternatives, and comparison with existing solutions.
 
 ### 2.5 MVP-First Delivery Strategy
 1. **MVP is the only near-term scope**: required-level deliverables must be done end-to-end before any recommended work starts.
@@ -164,6 +169,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 | Seed Data | Demo project, flags, rules, users | Seed scripts |
 | Documentation | README, API spec, architecture, research report | Complete docs |
 | Presentation Fit | Requirement traceability and demo scenarios | Evaluator-ready narrative |
+| Mentor Criteria | Tech rationale, alternatives, novelty, practical value, competitor comparison | Presentation notes |
 
 ### 6.2 Recommended Level Backlog (Post-MVP)
 | Area | Work Items | Output |
@@ -272,6 +278,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 3. Demo application.
 4. Documentation and research report.
 5. Presentation/demo materials aligned with VDT criteria.
+6. Technology choice and competitor comparison notes suitable for mentor Q&A.
 
 ## 14. Assumptions and Dependencies
 1. A relational DB is available for local development.

@@ -9,6 +9,7 @@ Review security, privacy, and safety implications across the control plane and d
 
 Primary inputs:
 - docs/requirement/requirement-init.md
+- docs/requirement/info-init.md
 - docs/plan/project-goal.md
 - docs/research/feature-flag-key-considerations.md
 - docs/research/kill-switch-fast-rollback.md

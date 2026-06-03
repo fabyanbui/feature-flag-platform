@@ -9,6 +9,7 @@ Define, implement, or review tests for APIs, rule evaluation, audit logging, and
 
 Primary inputs:
 - docs/requirement/requirement-init.md
+- docs/requirement/info-init.md
 - docs/plan/project-goal.md
 - docs/requirement/backend/be-init.md
 - docs/requirement/frontend/fe-init.md
@@ -19,6 +20,7 @@ Expected output:
 - Unit, integration, and end-to-end test plans or implementation.
 - Deterministic fixtures for percentage rollouts.
 - Regression checks for status semantics and reason codes.
+- Demo-readiness validation for mentor evaluation criteria.
 
 Constraints:
 - Tests should prove required MVP scenarios before recommended enhancements.

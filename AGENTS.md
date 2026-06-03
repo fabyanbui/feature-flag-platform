@@ -3,12 +3,14 @@
 ## Project Goal Source
 
 The active project goal is derived from
-`docs/requirement/requirement-init.md` and summarized in
-`docs/plan/project-goal.md`. Keep documentation, implementation choices, and
-Codex agent behavior aligned to that goal: a mini feature flag management
-platform with a research report, backend API, frontend dashboard, demo
-application, persistent storage, validation, error handling, seed data, and
-short design documentation.
+`docs/requirement/requirement-init.md` and
+`docs/requirement/info-init.md`, and summarized in `docs/plan/project-goal.md`.
+Keep documentation, implementation choices, and Codex agent behavior aligned to
+that goal: a mini feature flag management platform with a research report,
+backend API, frontend dashboard, demo application, persistent storage,
+validation, error handling, seed data, short design documentation, and a
+presentation-ready explanation of practical value, technology choices, and
+comparison with existing solutions.
 
 ## Project Structure & Module Organization
 
@@ -57,6 +59,8 @@ Treat this file as the source of project guardrails. Preserve safe defaults, det
 Project guardrails:
 - `docs/requirement/requirement-init.md` is the product source for required and
   recommended deliverables.
+- `docs/requirement/info-init.md` is the source for submission dates and mentor
+  evaluation criteria.
 - Single backend service hosts management and evaluation endpoints.
 - MVP stack is NestJS, Prisma, PostgreSQL, REST/Swagger, Jest, and in-memory cache.
 - Default rule order is global disable -> user allowlist -> role targeting -> percentage rollout -> default off.

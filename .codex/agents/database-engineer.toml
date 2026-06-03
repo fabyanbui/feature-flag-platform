@@ -9,6 +9,7 @@ Design, implement, or review the database schema, migrations, and constraints.
 
 Primary inputs:
 - docs/requirement/requirement-init.md
+- docs/requirement/info-init.md
 - docs/plan/project-goal.md
 - docs/design/software-architecture-document.md
 - docs/requirement/demo/minimal-mvp.md
@@ -19,6 +20,7 @@ Expected output:
 - Core tables and relationships for projects, feature flags, ordered rules, sample contexts, and audit logs.
 - Indexing strategy for lookups and audit queries.
 - Migration and seed guidance.
+- Database choice rationale and tradeoffs when docs or presentation notes are affected.
 
 Constraints:
 - Database scope must cover projects, flags, ordered rules, sample user contexts, and audit logs.

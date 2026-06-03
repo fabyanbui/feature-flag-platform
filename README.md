@@ -18,7 +18,18 @@ from feature release. The system provides:
    feature based on flag results.
 
 The active goal is documented in `docs/plan/project-goal.md` and is derived
-from `docs/requirement/requirement-init.md`.
+from `docs/requirement/requirement-init.md` plus the submission/presentation
+criteria in `docs/requirement/info-init.md`.
+
+## Delivery Criteria
+
+- Submission deadline: July 1, 2026.
+- Presentation: July 2, 2026.
+- The project must be demonstrable and easy to explain.
+- The team must be able to explain why the project is needed, what practical
+  value or novelty it has, which technologies were used, why those technologies
+  were chosen over alternatives, and how the platform compares with existing
+  feature flag solutions.
 
 ## MVP Guardrails
 
@@ -34,6 +45,7 @@ from `docs/requirement/requirement-init.md`.
 ## Core Documentation
 
 - Initial requirement: `docs/requirement/requirement-init.md`
+- Additional project criteria: `docs/requirement/info-init.md`
 - Project goal: `docs/plan/project-goal.md`
 - Vision: `docs/plan/vision.md`
 - Project plan: `docs/plan/project-plan.md`

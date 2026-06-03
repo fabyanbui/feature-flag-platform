@@ -4,10 +4,11 @@
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-05-30 | 1.0 | Initial SAD based on requirements and research | Principal Engineer (Copilot) |
+| 2026-06-03 | 1.1 | Add active goal and mentor evaluation criteria references | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
-This document defines the software architecture for the Feature Flag Platform mini project using the Rational Unified Process (RUP) Software Architecture Document (SAD) template. It provides the architectural baseline for the MVP scope, including the control plane, data plane, demo application, and data model.
+This document defines the software architecture for the Feature Flag Platform mini project using the Rational Unified Process (RUP) Software Architecture Document (SAD) template. It provides the architectural baseline for the MVP scope, including the control plane, data plane, demo application, and data model. It also supports the mentor evaluation criteria in `docs/requirement/info-init.md` by making the technology choices and tradeoffs explainable.
 
 ### 1.2 Scope
 The system is a lightweight feature flag management platform that includes:
@@ -30,19 +31,21 @@ The system is a lightweight feature flag management platform that includes:
 1. `docs/plan/vision.md`
 2. `docs/plan/project-plan.md`
 3. `docs/requirement/requirement-init.md`
-4. `docs/requirement/backend/be-init.md`
-5. `docs/requirement/frontend/fe-init.md`
-6. `docs/requirement/demo/demo-app.md`
-7. `docs/requirement/demo/minimal-mvp.md`
-8. `docs/requirement/use-case-specification.md`
-9. `docs/requirement/feature-flag-research.md`
-10. `docs/research/feature-flags.md`
-11. `docs/research/rollout-strategies.md`
-12. `docs/research/kill-switch-fast-rollback.md`
-13. `docs/research/audit-log-configuration-changes.md`
-14. `docs/research/feature-flag-key-considerations.md`
-15. `docs/research/simple-api-design.md`
-16. Competitor analysis: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
+4. `docs/requirement/info-init.md`
+5. `docs/plan/project-goal.md`
+6. `docs/requirement/backend/be-init.md`
+7. `docs/requirement/frontend/fe-init.md`
+8. `docs/requirement/demo/demo-app.md`
+9. `docs/requirement/demo/minimal-mvp.md`
+10. `docs/requirement/use-case-specification.md`
+11. `docs/requirement/feature-flag-research.md`
+12. `docs/research/feature-flags.md`
+13. `docs/research/rollout-strategies.md`
+14. `docs/research/kill-switch-fast-rollback.md`
+15. `docs/research/audit-log-configuration-changes.md`
+16. `docs/research/feature-flag-key-considerations.md`
+17. `docs/research/simple-api-design.md`
+18. Competitor analysis: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.5 Overview
 The architecture emphasizes safe rollouts, deterministic evaluation, auditability, and explainability. The system balances real-world feature management principles with a minimal scope suitable for a demo-focused project.
@@ -69,6 +72,8 @@ The architecture follows the RUP 4+1 view model:
 3. PostgreSQL required for persistence.
 4. Authentication/authorization assumed or stubbed for MVP.
 5. Delivery aligned to VDT schedule.
+6. Architecture and technology choices must be explainable for mentor Q&A,
+   including alternatives considered and comparison with existing solutions.
 
 ## 4. Use-Case View
 ### 4.1 Primary Use Cases

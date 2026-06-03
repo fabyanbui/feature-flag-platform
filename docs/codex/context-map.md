@@ -3,6 +3,7 @@
 ## Core sources
 
 - Initial requirement and source goal: `docs/requirement/requirement-init.md`
+- Submission and mentor criteria: `docs/requirement/info-init.md`
 - Active project goal: `docs/plan/project-goal.md`
 - Project guardrails: `AGENTS.md`
 - Architecture: `docs/design/software-architecture-document.md`
@@ -20,9 +21,11 @@
 
 Always follow `AGENTS.md`. Required MVP work from
 `docs/requirement/requirement-init.md` must complete before recommended
-enhancements. Preserve deterministic evaluation, append-only audit logging,
-safe defaults, non-PII rollout keys, and clear control-plane/data-plane
-separation.
+enhancements. Criteria from `docs/requirement/info-init.md` require a
+demonstrable project, clear technology rationale, practical value/novelty, and
+comparison with existing solutions. Preserve deterministic evaluation,
+append-only audit logging, safe defaults, non-PII rollout keys, and clear
+control-plane/data-plane separation.
 
 ## Important skills
 

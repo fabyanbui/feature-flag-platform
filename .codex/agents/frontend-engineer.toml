@@ -9,6 +9,7 @@ Implement or review the admin dashboard and demo UI experiences.
 
 Primary inputs:
 - docs/requirement/requirement-init.md
+- docs/requirement/info-init.md
 - docs/plan/project-goal.md
 - docs/requirement/frontend/fe-init.md
 - docs/requirement/demo/demo-app.md
@@ -18,6 +19,7 @@ Expected output:
 - Admin screens for projects, flags, rules, and audit logs.
 - Demo UI that calls the evaluation API and shows gated behavior.
 - Consistent status label versus runtime state display.
+- Demo-ready UX that helps explain project value during presentation.
 
 Constraints:
 - Required MVP screens are project list, flag list, create/edit flag, rule configuration, and audit log.

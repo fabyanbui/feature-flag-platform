@@ -2,10 +2,16 @@
 
 ## Source
 
-This goal is derived from `docs/requirement/requirement-init.md`. Treat that
-initial requirement document as the product source for scope, deliverables, and
-evaluation criteria. Treat `AGENTS.md` as the repository guardrail source for
-implementation safety and agent behavior.
+This goal is derived from:
+
+1. `docs/requirement/requirement-init.md` — product topic, scope, expected
+   deliverables, recommended enhancements, and evaluation criteria.
+2. `docs/requirement/info-init.md` — submission dates and mentor evaluation
+   criteria.
+
+Treat those initial requirement documents as the product source for scope,
+deliverables, dates, and evaluation criteria. Treat `AGENTS.md` as the
+repository guardrail source for implementation safety and agent behavior.
 
 ## Goal Statement
 
@@ -18,6 +24,15 @@ application.
 The project should be simple enough for a mini project, but technically credible
 enough to demonstrate safe rollout practices, deterministic rule evaluation,
 fast rollback through kill switches, and auditable configuration changes.
+
+## Delivery Dates
+
+1. **Submission deadline:** July 1, 2026.
+2. **Presentation:** July 2, 2026.
+
+All plans, implementation sequencing, and recommended enhancements must protect
+these dates. The required MVP must be demo-ready before optional recommended
+work is selected.
 
 ## Required MVP Deliverables
 
@@ -107,3 +122,25 @@ smallest set that improves demo or evaluation value after the MVP is working.
 5. Configuration mutations are auditable and do not lose before/after context.
 6. README instructions and seed data allow the project to be run for a local
    demonstration.
+7. The team can explain why this mini project is needed, what practical value
+   it provides, and what is novel or differentiating compared with existing
+   feature flag solutions.
+8. The team can explain the chosen technologies and why they were selected over
+   reasonable alternatives.
+9. The live presentation demonstrates both the working project and the
+   engineering mindset expected of a Viettel Digital Talent 2026 participant:
+   clear understanding, pragmatic tradeoffs, practical value, and delivery
+   discipline.
+
+## Presentation and Mentor Evaluation Fit
+
+The project should be prepared so a presenter can answer:
+
+1. What problem does this mini project solve, and why build it?
+2. What are feature flags, and how do they separate deployment from release?
+3. What is novel or practically valuable about this implementation?
+4. How does it compare with existing solutions such as LaunchDarkly, Unleash,
+   Flagsmith, ConfigCat, and Split?
+5. Which technologies were used, and why were they chosen instead of
+   alternatives?
+6. How does the demo prove safe rollout, targeting, rollback, and auditability?
