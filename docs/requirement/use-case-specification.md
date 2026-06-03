@@ -4,16 +4,17 @@
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-05-30 | 1.0 | Initial RUP use case specification | Principal Engineer (Copilot) |
+| 2026-06-03 | 1.1 | Add mentor evaluation and presentation criteria | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
-Define the use case specifications for the Feature Flag Platform using the Rational Unified Process (RUP) template, covering the MVP scope: project management, feature flag lifecycle, rule configuration, evaluation, audit logging, and demo integration.
+Define the use case specifications for the Feature Flag Platform using the Rational Unified Process (RUP) template, covering the MVP scope: project management, feature flag lifecycle, rule configuration, evaluation, audit logging, and demo integration. These use cases must support a live presentation that explains the project need, practical value, technology choices, and comparison with existing solutions.
 
 ### 1.2 Scope
 The system provides a control plane (dashboard + management APIs), a data plane (evaluation API), and a demo app to demonstrate runtime gating. The use cases focus on required MVP deliverables and observable behaviors in the requirements and research documents.
 
 ### 1.3 References
-`docs/requirement/requirement-init.md`, `docs/requirement/backend/be-init.md`, `docs/requirement/frontend/fe-init.md`, `docs/requirement/demo/demo-app.md`, `docs/requirement/demo/minimal-mvp.md`, `docs/requirement/feature-flag-research.md`, `docs/research/feature-flags.md`, `docs/research/rollout-strategies.md`, `docs/research/kill-switch-fast-rollback.md`, `docs/research/audit-log-configuration-changes.md`, `docs/research/feature-flag-key-considerations.md`, competitor analyses (ConfigCat, LaunchDarkly, Split, Flagsmith, Unleash).
+`docs/requirement/requirement-init.md`, `docs/requirement/info-init.md`, `docs/plan/project-goal.md`, `docs/requirement/backend/be-init.md`, `docs/requirement/frontend/fe-init.md`, `docs/requirement/demo/demo-app.md`, `docs/requirement/demo/minimal-mvp.md`, `docs/requirement/feature-flag-research.md`, `docs/research/feature-flags.md`, `docs/research/rollout-strategies.md`, `docs/research/kill-switch-fast-rollback.md`, `docs/research/audit-log-configuration-changes.md`, `docs/research/feature-flag-key-considerations.md`, competitor analyses (ConfigCat, LaunchDarkly, Split, Flagsmith, Unleash).
 
 ## 2. Actors
 | Actor | Description |
@@ -22,6 +23,7 @@ The system provides a control plane (dashboard + management APIs), a data plane 
 | Release Manager | Controls rollout state and uses kill switch during incidents. |
 | Auditor/Compliance | Reviews change history and audit trails. |
 | Client Application | Calls the evaluation API to determine flag state at runtime (includes demo app). |
+| Mentor/Evaluator | Reviews the project for understanding, novelty, practical value, technology rationale, and demo readiness. |
 
 ## 3. Use Case Overview
 | ID | Name | Primary Actor | Goal |

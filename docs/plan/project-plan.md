@@ -7,10 +7,17 @@
 | 2026-05-30 | 1.1 | MVP-first schedule and recommended-level plan | Principal Engineer (Copilot) |
 | 2026-05-30 | 1.2 | Compressed MVP schedule to < 2 weeks | Principal Engineer (Copilot) |
 | 2026-05-31 | 1.3 | Add AI coding agents usage and increase mentor sync cadence | Principal Engineer (Copilot) |
+| 2026-06-03 | 1.4 | Align plan to initial requirement as active project goal | Codex |
+| 2026-06-03 | 1.5 | Add submission and mentor evaluation criteria | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
-Define the Rational Unified Process (RUP) project plan for the Feature Flag Platform mini project, including scope, schedule, roles, risks, and quality controls to meet VDT 2026 delivery expectations.
+Define the Rational Unified Process (RUP) project plan for the Feature Flag
+Platform mini project, including scope, schedule, roles, risks, and quality
+controls to meet VDT 2026 delivery expectations. The plan is anchored in
+`docs/requirement/requirement-init.md` and
+`docs/requirement/info-init.md`; `docs/plan/project-goal.md` is the working
+summary of those initial criteria.
 
 ### 1.2 Scope
 Deliver a lightweight feature flag platform consisting of:
@@ -22,18 +29,20 @@ Deliver a lightweight feature flag platform consisting of:
 
 ### 1.3 References
 1. `docs/plan/vision.md`
-2. `docs/requirement/requirement-init.md`
-3. `docs/requirement/backend/be-init.md`
-4. `docs/requirement/frontend/fe-init.md`
-5. `docs/requirement/demo/demo-app.md`
-6. `docs/requirement/demo/minimal-mvp.md`
-7. `docs/requirement/feature-flag-research.md`
-8. `docs/research/feature-flags.md`
-9. `docs/research/rollout-strategies.md`
-10. `docs/research/kill-switch-fast-rollback.md`
-11. `docs/research/feature-flag-key-considerations.md`
-12. `docs/research/audit-log-configuration-changes.md`
-13. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
+2. `docs/plan/project-goal.md`
+3. `docs/requirement/requirement-init.md`
+4. `docs/requirement/info-init.md`
+5. `docs/requirement/backend/be-init.md`
+6. `docs/requirement/frontend/fe-init.md`
+7. `docs/requirement/demo/demo-app.md`
+8. `docs/requirement/demo/minimal-mvp.md`
+9. `docs/requirement/feature-flag-research.md`
+10. `docs/research/feature-flags.md`
+11. `docs/research/rollout-strategies.md`
+12. `docs/research/kill-switch-fast-rollback.md`
+13. `docs/research/feature-flag-key-considerations.md`
+14. `docs/research/audit-log-configuration-changes.md`
+15. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.4 Constraints
 1. Submission deadline: **2026-07-01**.  
@@ -50,6 +59,11 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 3. Deterministic evaluation with clear reason codes.
 4. Audit log for all configuration changes.
 5. Demo app scenarios (global on/off and targeting/rollout).
+6. Research report explaining feature flags, deployment vs. release, flag
+   types, workflow, rollout strategies, kill switches, audit logs, API
+   integration, caching, consistency, default values, and endpoint security.
+7. README setup/run instructions and seed data for backend, dashboard, demo,
+   and database.
 
 ### 2.3 Non-Goals (MVP)
 1. Multi-variant experiments or advanced analytics.
@@ -61,6 +75,8 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 2. APIs and UI meet documented requirements.
 3. Clear documentation of architecture, schema, and API contract.
 4. Presentation-ready narrative explaining tradeoffs and comparisons.
+5. Presenter can explain the need for the project, novelty/practical value,
+   chosen technologies, alternatives, and comparison with existing solutions.
 
 ### 2.5 MVP-First Delivery Strategy
 1. **MVP is the only near-term scope**: required-level deliverables must be done end-to-end before any recommended work starts.
@@ -152,6 +168,8 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 | Demo App | Global toggle + targeting/rollout scenarios | Demo app UI |
 | Seed Data | Demo project, flags, rules, users | Seed scripts |
 | Documentation | README, API spec, architecture, research report | Complete docs |
+| Presentation Fit | Requirement traceability and demo scenarios | Evaluator-ready narrative |
+| Mentor Criteria | Tech rationale, alternatives, novelty, practical value, competitor comparison | Presentation notes |
 
 ### 6.2 Recommended Level Backlog (Post-MVP)
 | Area | Work Items | Output |
@@ -247,6 +265,8 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 3. Audit log view displays actor, action, and before/after.
 4. Documentation includes setup, schema, and API specification.
 5. Demo script is reproducible on a clean setup.
+6. Research report covers all main research topics from
+   `docs/requirement/requirement-init.md`.
 
 ### 13.2 Recommended Level Acceptance (Post-MVP)
 1. Enhancements chosen with mentor are delivered and documented.
@@ -258,6 +278,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 3. Demo application.
 4. Documentation and research report.
 5. Presentation/demo materials aligned with VDT criteria.
+6. Technology choice and competitor comparison notes suitable for mentor Q&A.
 
 ## 14. Assumptions and Dependencies
 1. A relational DB is available for local development.

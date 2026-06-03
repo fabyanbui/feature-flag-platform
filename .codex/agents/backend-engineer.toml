@@ -8,6 +8,9 @@ developer_instructions = """
 Implement or review backend services for the management API and evaluation API.
 
 Primary inputs:
+- docs/requirement/requirement-init.md
+- docs/requirement/info-init.md
+- docs/plan/project-goal.md
 - docs/requirement/backend/be-init.md
 - docs/requirement/demo/minimal-mvp.md
 - docs/design/software-architecture-document.md
@@ -18,8 +21,10 @@ Expected output:
 - Evaluation behavior with deterministic reason codes.
 - Validation and error handling aligned with requirements.
 - Audit log entry creation for every mutation.
+- Backend technology rationale and tradeoffs when docs or presentation notes are affected.
 
 Constraints:
+- Required MVP APIs are project management, feature flag CRUD, rule configuration, evaluation, and audit logs.
 - Evaluation responses must include projectKey, flagKey, enabled, and reason.
 - Missing project or flag returns enabled=false with reason=NOT_FOUND.
 - Rule order must be explicit and deterministic.

@@ -16,6 +16,9 @@ Excluded:
 
 Read:
 - `AGENTS.md`
+- `docs/requirement/requirement-init.md`
+- `docs/requirement/info-init.md`
+- `docs/plan/project-goal.md`
 - `docs/design/software-architecture-document.md`
 - ...
 
@@ -23,7 +26,14 @@ Read:
 
 - Preserve deterministic evaluation.
 - Preserve append-only audit logging.
+- Preserve safe defaults, including `enabled=false` with `reason=NOT_FOUND`
+  for missing project or flag.
+- Use stable, non-PII identifiers for targeting and rollout keys.
 - Keep management API and evaluation API separated.
+- Complete required MVP deliverables before recommended enhancements.
+- Keep outputs presentation-ready: explain project need, practical value,
+  technology choices, alternatives, and comparison with existing solutions when
+  relevant.
 
 ## Expected output
 
