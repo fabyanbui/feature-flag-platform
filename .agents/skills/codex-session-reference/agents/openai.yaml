@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Session Reference"
+  short_description: "Summarize one Codex session into a reusable reference doc."
+  default_prompt: "Summarize this Codex session into a concise reference document under docs/codex/reference."
