@@ -318,6 +318,9 @@ Rule `priority` is used for UI ordering and for ordering rules of the same
 type. MVP evaluation type precedence cannot be overridden by priority.
 When multiple enabled rules of the same type exist, evaluate lower `priority`
 values first and return the first matching rule ID as `matchedRuleId`.
+Rule `priority` must be unique within a flag. Duplicate priorities in a rule
+replacement payload return `VALIDATION_ERROR`; conflicts with existing stored
+rules in single-rule create/update flows return `CONFLICT`.
 
 User allowlist rule:
 
@@ -517,6 +520,15 @@ ab
 checkout.v2
 ```
 
+### 8.1 Key Uniqueness
+
+`projectKey` is globally unique and immutable. Creating a project with an
+existing `projectKey` returns `409 CONFLICT`.
+
+`flagKey` is unique within a project and immutable. Creating a feature flag
+with a duplicate `flagKey` in the same project returns `409 CONFLICT`. The same
+`flagKey` may exist in different projects.
+
 ## 9. Error Contract
 
 Management/control-plane APIs use consistent error responses.
@@ -661,11 +673,44 @@ Audit log filters:
 
 `from` and `to` must be ISO 8601 timestamps.
 
-## 11. Audit Log Contract
+## 11. Sample User Context Contract
+
+Sample users are stored demo contexts used by the admin dashboard and demo app.
+They are not authentication users, production identities, or authorization
+subjects.
+
+Sample users must use stable non-PII identifiers.
+
+Minimal sample user shape:
+
+```json
+{
+  "displayName": "Beta User",
+  "targetingKey": "demo-user-beta",
+  "userId": "demo-user-beta",
+  "roles": ["beta-tester"],
+  "attributes": {
+    "plan": "pro"
+  }
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `displayName` | Yes | Human-readable demo label. |
+| `targetingKey` | Yes | Stable non-PII rollout key. |
+| `userId` | Optional | Demo identifier used by allowlist rules. |
+| `roles` | Optional | Demo roles used by role-targeting rules. |
+| `attributes` | Optional | Extra non-PII context attributes. |
+
+`targetingKey` must be unique within a project. Creating a sample user with a
+duplicate `targetingKey` in the same project returns `409 CONFLICT`.
+
+## 12. Audit Log Contract
 
 Audit logs are append-only records for configuration mutations.
 
-### 11.1 Audit Entry Shape
+### 12.1 Audit Entry Shape
 
 ```json
 {
@@ -694,7 +739,7 @@ Audit logs are append-only records for configuration mutations.
 }
 ```
 
-### 11.2 Fields
+### 12.2 Fields
 
 | Field | Required | Description |
 | --- | --- | --- |
@@ -711,7 +756,7 @@ Audit logs are append-only records for configuration mutations.
 | `createdAt` | Yes | Server timestamp. |
 | `requestId` | Yes | Correlation ID. |
 
-### 11.3 Target Types
+### 12.3 Target Types
 
 ```text
 PROJECT
@@ -720,7 +765,7 @@ FLAG_RULE
 SAMPLE_USER
 ```
 
-### 11.4 Actions
+### 12.4 Actions
 
 ```text
 PROJECT_CREATED
@@ -757,7 +802,7 @@ action=FLAG_RULES_REPLACED
 The `before` and `after` snapshots should contain minimal ordered rule
 summaries.
 
-### 11.5 Metadata
+### 12.5 Metadata
 
 `metadata` is optional. Recommended fields:
 
@@ -782,7 +827,7 @@ Metadata must not store secrets, full request bodies, or unnecessary PII.
 For MVP, storing only `source` is acceptable. `ip` and `userAgent` are optional
 and may be omitted to reduce privacy and implementation overhead.
 
-### 11.6 Snapshot Rules
+### 12.6 Snapshot Rules
 
 Snapshots must be minimal and meaningful:
 
@@ -820,7 +865,7 @@ For delete operations:
 }
 ```
 
-### 11.7 Append-Only and Transaction Rules
+### 12.7 Append-Only and Transaction Rules
 
 Audit entries are append-only:
 
@@ -832,7 +877,7 @@ Project, feature flag, and rule mutations must write the mutation and the audit
 entry in the same database transaction. This prevents configuration changes
 from succeeding without a corresponding audit trail.
 
-## 12. Bulk Evaluation
+## 13. Bulk Evaluation
 
 Bulk evaluation is a future extension only and is not part of MVP scope.
 
@@ -859,7 +904,7 @@ Future bulk evaluation must:
 - return safe `enabled=false`, `variant="off"` for failed or missing flags
 - avoid random fallback behavior
 
-## 13. Seed and Demo Data Expectations
+## 14. Seed and Demo Data Expectations
 
 Seed data must support implementation readiness and presentation demos.
 
@@ -896,7 +941,28 @@ The demo must be able to show at least:
 3. missing project/flag returning `enabled=false`, `variant="off"`, and
    `reason=NOT_FOUND`
 
-## 14. Phase 0 Acceptance Checklist
+## 15. Out of MVP Scope
+
+The following are intentionally outside MVP scope unless all required
+deliverables are already complete:
+
+- bulk evaluation endpoint
+- client SDK
+- Redis cache
+- streaming or real-time flag updates
+- multivariate flags
+- experiment analytics or statistics dashboard
+- full authentication and RBAC
+- advanced targeting operators beyond allowlist, roles, and percentage rollout
+- rule versioning beyond append-only audit logs
+- group kill switch
+- Docker Compose one-command setup
+
+These items may be revisited only after the required backend API, admin
+dashboard, demo app, database, validation/error handling, seed data, README,
+research report, and short design docs are demo-ready.
+
+## 16. Phase 0 Acceptance Checklist
 
 - [x] Requirement traceability is documented.
 - [x] Requirement traceability maps MVP requirements to contract sections and
@@ -916,9 +982,11 @@ The demo must be able to show at least:
   documented.
 - [x] MVP rule types are documented.
 - [x] MVP rule parameter shapes are documented.
+- [x] Rule priority uniqueness and conflict behavior are documented.
 - [x] Evaluation order is documented.
 - [x] Stable hashing contract for percentage rollout is documented.
 - [x] `projectKey` and `flagKey` validation rules are documented.
+- [x] `projectKey` and `flagKey` uniqueness rules are documented.
 - [x] Error response shape and error codes are documented.
 - [x] `details` and `requestId` requirements are documented.
 - [x] Pagination, filtering, and sorting conventions are documented.
@@ -930,4 +998,6 @@ The demo must be able to show at least:
 - [x] Same-transaction audit requirement is documented.
 - [x] Append-only audit requirement is documented.
 - [x] Bulk evaluation is explicitly marked as future extension only.
+- [x] Sample-user semantics and uniqueness are documented.
 - [x] Seed/demo data expectations are documented for implementation readiness.
+- [x] Out-of-MVP-scope items are documented.
