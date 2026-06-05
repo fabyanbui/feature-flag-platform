@@ -1,112 +1,217 @@
 # Phase 2 PostgreSQL Config Check — Full Codex Response Reference
 
-Purpose: standalone reference expanded from Codex responses about PostgreSQL
-setup during Phase 2 data model and migrations work.
+Purpose: standalone reference expanded from the latest Codex response about
+Step 2 of Phase 2: verifying PostgreSQL configuration before creating the
+Prisma schema, migration, append-only audit log constraints, and seed data.
 
 ## Original request context
 
 The user is implementing Phase 2 of `docs/plan/implementation-roadmap.md` for
-the Feature Flag Platform after completing Phase 1 setup. Phase 2 focuses on
-the Prisma schema, PostgreSQL configuration, initial migration, database
-constraints, append-only audit logs, and seed data.
+the Feature Flag Platform after completing Phase 1 setup. Phase 2 covers the
+Prisma schema, PostgreSQL configuration, required database tables, constraints,
+append-only audit logs, the initial migration, and seed data.
 
-During Step 2, the user worked through local PostgreSQL setup. Earlier context
-included `psql` not being installed and then PostgreSQL `14.23` being available
-on Ubuntu. Later, the user ran:
-
-```bash
-sudo -u postgres psql
-```
-
-The terminal showed this warning:
+The immediately preceding user message was:
 
 ```text
-could not change directory to "/home/fabyanbui/drive/feature-flag-platform": Permission denied
+Step 1 done
 ```
 
-Inside `psql`, the user attempted to create the local database role and
-database. PostgreSQL reported that both already existed:
+This meant Step 1, installing Prisma-related backend dependencies and adding
+backend Prisma scripts, was complete. Codex then guided the user through
+**Step 2 — PostgreSQL config check**.
 
-```text
-ERROR:  role "ffp" already exists
-ERROR:  database "ffp_dev" already exists
-GRANT
-```
+Relevant repo guardrails from `AGENTS.md` and the project requirements:
 
-The user then tested a connection with the Prisma-style URL that includes
-`?schema=public`, and `psql` returned:
-
-```text
-psql: error: invalid URI query parameter: "schema"
-```
+- The MVP stack uses NestJS, Prisma, PostgreSQL, REST/Swagger, Jest, and
+  in-memory cache.
+- Phase 2 must establish persistent storage for projects, feature flags, flag
+  rules, sample user contexts, and audit log entries.
+- Future mutations for projects, flags, and rules must write append-only audit
+  log entries.
+- Safe defaults, deterministic evaluation, stable non-PII targeting keys, and
+  control-plane/data-plane separation must be preserved.
 
 ## Full response reference
 
-### The `sudo -u postgres psql` directory warning is harmless
+### Step 2 goal
 
-This warning is not a database failure:
+Confirm the backend can connect to PostgreSQL using the local development
+`DATABASE_URL` configured for Prisma.
 
-```text
-could not change directory ... Permission denied
+The project environment should use this shape:
+
+```env
+DATABASE_URL=postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev?schema=public
 ```
 
-It happens because Linux switched from the normal user to the `postgres` system
-user. The `postgres` user does not have permission to access the project
-working directory. PostgreSQL still opened correctly if the prompt changed to:
+The concrete local example used in the setup instructions was:
 
-```text
-postgres=#
+```env
+DATABASE_URL=postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev?schema=public
 ```
 
-No project action is needed for this warning.
+This value belongs in the local `.env` file and must not be committed.
 
-### Existing role and database are acceptable
+### 2.1 Check PostgreSQL is installed
 
-If these commands report that the role or database already exists:
-
-```sql
-CREATE USER ffp WITH PASSWORD '<local-dev-password>';
-CREATE DATABASE ffp_dev OWNER ffp;
-```
-
-then the local database setup is already partly done. Do not delete the role or
-database just because they already exist. For Phase 2, it is enough that the
-backend can connect and Prisma can later run migrations.
-
-If there is any chance the password is wrong, reset it rather than recreating
-the user:
+Run:
 
 ```bash
-sudo -u postgres psql
+psql --version
 ```
 
-Then inside `psql`:
-
-```sql
-ALTER USER ffp WITH PASSWORD '<local-dev-password>';
-GRANT ALL PRIVILEGES ON DATABASE ffp_dev TO ffp;
-\q
-```
-
-### `?schema=public` is valid for Prisma, not for manual `psql`
-
-The connection test failed with:
+Expected example:
 
 ```text
-invalid URI query parameter: "schema"
+psql (PostgreSQL) 16.x
 ```
 
-This is expected when using the `psql` command-line client. The Prisma
-connection string may include `?schema=public`, but manual `psql` connection
-checks should omit that Prisma-specific query parameter.
+The exact major version may differ. PostgreSQL 14+ is acceptable for this MVP
+because Phase 2 only needs standard PostgreSQL capabilities such as tables,
+foreign keys, unique constraints, JSON fields, indexes, and triggers.
 
-Use this shape for manual `psql` testing:
+If `psql` is not found, PostgreSQL client tools are not installed or are not on
+`PATH`. Stop and resolve that before continuing.
+
+### 2.2 Check PostgreSQL is running
+
+Run:
+
+```bash
+pg_isready
+```
+
+Expected output should indicate PostgreSQL is accepting connections, for
+example:
+
+```text
+/var/run/postgresql:5432 - accepting connections
+```
+
+or:
+
+```text
+localhost:5432 - accepting connections
+```
+
+If PostgreSQL is not running on a Linux/Ubuntu environment, try:
+
+```bash
+sudo service postgresql start
+```
+
+Then check again:
+
+```bash
+pg_isready
+```
+
+Do not continue to Prisma schema or migrations until PostgreSQL is accepting
+connections.
+
+### 2.3 Confirm the root `.env`
+
+Open the repo root `.env` file:
+
+```text
+.env
+```
+
+It should contain the backend database and local CORS/app configuration:
+
+```env
+DATABASE_URL=postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev?schema=public
+API_PORT=3000
+ADMIN_ORIGIN=http://localhost:5173
+DEMO_ORIGIN=http://localhost:5174
+```
+
+The local concrete example is:
+
+```env
+DATABASE_URL=postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev?schema=public
+API_PORT=3000
+ADMIN_ORIGIN=http://localhost:5173
+DEMO_ORIGIN=http://localhost:5174
+```
+
+Do not commit `.env`. The repository `.gitignore` excludes root `.env` and app
+`.env` files.
+
+### 2.4 Create the database role and database if needed
+
+First, try connecting manually:
 
 ```bash
 psql "postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev"
 ```
 
-If it connects, verify the active database, user, and schema:
+For the local example:
+
+```bash
+psql "postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev"
+```
+
+If it works, exit `psql` with:
+
+```sql
+\q
+```
+
+If the connection fails because the role or database does not exist, open the
+PostgreSQL admin shell:
+
+```bash
+sudo -u postgres psql
+```
+
+Then run:
+
+```sql
+CREATE USER ffp WITH PASSWORD '<local-dev-password>';
+CREATE DATABASE ffp_dev OWNER ffp;
+GRANT ALL PRIVILEGES ON DATABASE ffp_dev TO ffp;
+\q
+```
+
+For the local example:
+
+```sql
+CREATE USER ffp WITH PASSWORD 'ffp_dev_password';
+CREATE DATABASE ffp_dev OWNER ffp;
+GRANT ALL PRIVILEGES ON DATABASE ffp_dev TO ffp;
+\q
+```
+
+Then test the connection again:
+
+```bash
+psql "postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev"
+```
+
+### Important note about `?schema=public`
+
+Use the Prisma-compatible URL with `?schema=public` in `.env`.
+
+For manual `psql` connection tests, omit `?schema=public` if your `psql` client
+rejects it. Prisma understands this query parameter, but some `psql` clients do
+not accept it in a connection URI.
+
+So:
+
+```env
+# Keep this for Prisma/application configuration
+DATABASE_URL=postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev?schema=public
+```
+
+but test manually with:
+
+```bash
+psql "postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev"
+```
+
+After connecting, verify the database, user, and schema:
 
 ```sql
 SELECT current_database(), current_user, current_schema();
@@ -121,132 +226,133 @@ current_user     = ffp
 current_schema   = public
 ```
 
-The exact table formatting may vary by terminal width.
+### 2.5 Stop point before Step 3
 
-### Keep the Prisma environment URL unchanged
+Step 2 is complete when:
 
-The application `.env` should keep the Prisma-compatible database URL shape,
-including the schema query parameter:
+- PostgreSQL client tools are installed.
+- PostgreSQL is running and accepting connections.
+- Root `.env` contains a Prisma-compatible `DATABASE_URL`.
+- The `ffp` role exists.
+- The `ffp_dev` database exists.
+- A manual `psql` connection as user `ffp` succeeds.
 
-```env
-DATABASE_URL=postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev?schema=public
+The user should then reply:
+
+```text
+Step 2 done
 ```
 
-Only the manual `psql` test removes `?schema=public`.
-
-### PostgreSQL 14.23 compatibility
-
-PostgreSQL `14.23` is acceptable for this MVP. PostgreSQL `16.x` is not
-required.
-
-Prisma supports PostgreSQL 14, and the Phase 2 data model only needs standard
-PostgreSQL capabilities that are available in PostgreSQL 14:
-
-- tables
-- foreign keys
-- unique constraints
-- JSON/JSONB fields
-- enums
-- indexes
-- triggers for append-only audit logs
-- Prisma migrations
-
-Continue with PostgreSQL `14.23` if that is the installed version.
+If anything fails, the user should paste the exact terminal output before
+moving on.
 
 ## Key decisions and rationale
 
-- The `sudo -u postgres psql` directory warning can be ignored because it is a
-  filesystem permission warning for the switched system user, not a database
-  setup failure.
-- Existing local `ffp` role and `ffp_dev` database are acceptable. Reset the
-  password if needed; do not delete local database state unnecessarily.
-- Manual `psql` connection checks must omit Prisma's `?schema=public` query
-  parameter.
-- Prisma should still use the `?schema=public` URL in environment
-  configuration.
-- PostgreSQL `14.23` is acceptable for the Phase 2 MVP database model.
-- This setup supports later Phase 2 work: Prisma schema creation, initial
-  migration, append-only audit log triggers, and seed data.
+- PostgreSQL must be verified before Prisma schema work because migrations need
+  a reachable database.
+- The local database role is named `ffp` and the local database is named
+  `ffp_dev` to match the project `.env.example` convention.
+- Root `.env` is the local source for `DATABASE_URL`; it must remain untracked.
+- The Prisma URL includes `?schema=public` so Prisma scopes generated database
+  objects to the intended PostgreSQL schema.
+- Manual `psql` tests may need the same URL without `?schema=public` because
+  `psql` is not Prisma.
+- Creating the role/database is only necessary if the connection test fails due
+  to missing local PostgreSQL objects.
+- This step intentionally does not create application tables yet. Tables are
+  created by Prisma migration in later Phase 2 steps.
 
 ## Commands, files, and artifacts
 
-Useful commands:
+Primary commands:
 
 ```bash
 psql --version
 pg_isready
+sudo service postgresql start
 sudo -u postgres psql
 psql "postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev"
 ```
 
-Useful SQL:
+SQL commands for setup if needed:
 
 ```sql
-ALTER USER ffp WITH PASSWORD '<local-dev-password>';
+CREATE USER ffp WITH PASSWORD '<local-dev-password>';
+CREATE DATABASE ffp_dev OWNER ffp;
 GRANT ALL PRIVILEGES ON DATABASE ffp_dev TO ffp;
+\q
+```
+
+SQL command for verification:
+
+```sql
 SELECT current_database(), current_user, current_schema();
 \q
 ```
 
-Relevant file:
+Relevant files:
 
 ```text
 .env
+.env.example
+apps/backend/package.json
 ```
 
-Expected Prisma environment URL shape:
+Expected `.env` shape:
 
 ```env
 DATABASE_URL=postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev?schema=public
+API_PORT=3000
+ADMIN_ORIGIN=http://localhost:5173
+DEMO_ORIGIN=http://localhost:5174
 ```
 
 ## Validation checklist
 
-- [ ] `psql --version` prints an installed PostgreSQL version.
+- [ ] `psql --version` prints an installed PostgreSQL client version.
 - [ ] `pg_isready` reports that PostgreSQL is accepting connections.
-- [ ] The `ffp` database role exists.
-- [ ] The `ffp_dev` database exists and is owned by or usable by `ffp`.
-- [ ] If needed, the `ffp` password has been reset with `ALTER USER`.
-- [ ] The following manual `psql` connection succeeds without
-      `?schema=public`:
+- [ ] Root `.env` contains `DATABASE_URL`, `API_PORT`, `ADMIN_ORIGIN`, and
+      `DEMO_ORIGIN`.
+- [ ] The `ffp` role exists, or has been created.
+- [ ] The `ffp_dev` database exists, or has been created.
+- [ ] `GRANT ALL PRIVILEGES ON DATABASE ffp_dev TO ffp;` has been applied if
+      setup was required.
+- [ ] Manual connection succeeds with:
 
   ```bash
   psql "postgresql://ffp:<local-dev-password>@localhost:5432/ffp_dev"
   ```
 
-- [ ] Inside `psql`, this query returns database `ffp_dev`, user `ffp`, and
-      schema `public`:
+- [ ] Inside `psql`, this query confirms the expected database, user, and
+      schema:
 
   ```sql
   SELECT current_database(), current_user, current_schema();
   ```
 
-- [ ] The application `.env` keeps the Prisma-compatible URL shape with
-      `?schema=public`.
-- [ ] PostgreSQL `14.23` is treated as acceptable for the MVP.
+- [ ] `.env` remains untracked and is not committed.
 
 ## Risks and caveats
 
-- Do not treat the `sudo -u postgres psql` directory warning as a PostgreSQL
-  failure if the `postgres=#` prompt opens.
-- Do not use the Prisma URL verbatim for manual `psql` testing; remove
-  `?schema=public` for `psql`.
-- Do not remove `?schema=public` from the Prisma environment URL unless the
-  project intentionally changes how Prisma scopes schemas.
-- If the role or database already exists, do not delete it unnecessarily. Use
-  `ALTER USER` for password correction and keep the database if it is already
-  usable.
-- `.env` must not be committed. The repository `.gitignore` excludes it.
-- This reference covers PostgreSQL setup only. It does not create the Prisma
-  schema, migrations, or seed data.
+- Do not proceed to Prisma migrations while PostgreSQL is not accepting
+  connections.
+- Do not commit `.env` or expose local passwords in documentation or commits.
+- If `CREATE USER ffp` reports that the role already exists, do not delete it
+  unnecessarily. Reset the password with `ALTER USER` only if needed.
+- If `CREATE DATABASE ffp_dev` reports that the database already exists, do not
+  delete it unless intentionally resetting local development state.
+- If manual `psql` rejects `?schema=public`, remove that query parameter only
+  for the manual `psql` test. Keep it in the Prisma `DATABASE_URL`.
+- This reference covers PostgreSQL configuration only. It does not define the
+  Prisma data model, migration SQL, audit-log triggers, or seed data.
 
 ## Reuse prompts
 
 - "Continue Phase 2 from PostgreSQL config check and teach me Step 3: create
   the Prisma schema."
-- "Help me verify my local PostgreSQL user/database for the Feature Flag
-  Platform."
-- "PostgreSQL is installed but Prisma cannot connect; troubleshoot my
-  `DATABASE_URL`."
-- "Explain why manual `psql` rejects `?schema=public` but Prisma accepts it."
-- "Explain why PostgreSQL 14.23 is acceptable for this Prisma Phase 2 MVP."
+- "Help me verify whether my `ffp` PostgreSQL role and `ffp_dev` database are
+  configured correctly."
+- "PostgreSQL is accepting connections, but Prisma cannot connect; troubleshoot
+  my `DATABASE_URL`."
+- "Explain why the Prisma connection string uses `?schema=public`."
+- "After Step 2, guide me through writing `apps/backend/prisma/schema.prisma`."
