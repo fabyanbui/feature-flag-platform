@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from 'dotenv';
 
@@ -16,7 +16,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function createAuditIfMissing(
     id: string,
-    data: Omit<Parameters<typeof prisma.auditLogEntry.create>[0]['data'], 'id'>,
+    data: Omit<Prisma.AuditLogEntryUncheckedCreateInput, 'id'>,
 ) {
     const existing = await prisma.auditLogEntry.findUnique({
         where: { id },
@@ -445,7 +445,7 @@ async function main() {
         targetKey: project.key,
         action: 'PROJECT_CREATED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             key: project.key,
             name: project.name,
@@ -466,7 +466,7 @@ async function main() {
         targetKey: production.key,
         action: 'ENVIRONMENT_CREATED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             key: production.key,
             name: production.name,
@@ -486,7 +486,7 @@ async function main() {
         targetKey: betaDashboard.key,
         action: 'FEATURE_FLAG_CREATED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             key: betaDashboard.key,
             name: betaDashboard.name,
@@ -506,7 +506,7 @@ async function main() {
         targetKey: newCheckout.key,
         action: 'FEATURE_FLAG_CREATED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             key: newCheckout.key,
             name: newCheckout.name,
@@ -528,7 +528,7 @@ async function main() {
         targetKey: newCheckout.key,
         action: 'FLAG_CONFIG_UPDATED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             flagKey: newCheckout.key,
             environmentKey: production.key,
@@ -552,7 +552,7 @@ async function main() {
         targetKey: newCheckout.key,
         action: 'FLAG_RULES_REPLACED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             flagKey: newCheckout.key,
             environmentKey: production.key,
@@ -588,7 +588,7 @@ async function main() {
         targetKey: 'demo-sample-users',
         action: 'SAMPLE_USER_CREATED',
         actor: 'system',
-        before: null,
+        before: Prisma.DbNull,
         after: {
             sampleUsers: [
                 'demo-user-beta',
