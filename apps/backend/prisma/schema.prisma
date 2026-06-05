@@ -4,13 +4,16 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-enum FlagStatus {
+enum FeatureFlagLifecycleStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum FlagConfigStatus {
   ENABLED
   DISABLED
-  ARCHIVED
 }
 
 enum ServingMode {
@@ -28,6 +31,7 @@ enum AuditTargetType {
   PROJECT
   ENVIRONMENT
   FEATURE_FLAG
+  FLAG_CONFIG
   FLAG_RULE
   SAMPLE_USER
 }
@@ -43,7 +47,13 @@ enum AuditAction {
 
   FEATURE_FLAG_CREATED
   FEATURE_FLAG_UPDATED
+  FEATURE_FLAG_ARCHIVED
+  FEATURE_FLAG_RESTORED
   FEATURE_FLAG_DELETED
+
+  FLAG_CONFIG_CREATED
+  FLAG_CONFIG_UPDATED
+  FLAG_CONFIG_DELETED
 
   FLAG_RULE_CREATED
   FLAG_RULE_UPDATED
@@ -64,6 +74,7 @@ model Project {
 
   environments       Environment[]
   flags              FeatureFlag[]
+  flagConfigs        FlagEnvironmentConfig[] @relation("ProjectFlagConfigs")
   sampleUserContexts SampleUserContext[]
   auditLogEntries    AuditLogEntry[]
 
@@ -86,44 +97,51 @@ model Environment {
   auditLogEntries AuditLogEntry[]
 
   @@unique([projectId, key])
+  @@unique([projectId, id])
   @@index([projectId])
   @@index([projectId, isDefault])
   @@map("environments")
 }
 
 model FeatureFlag {
-  id          String   @id @default(cuid())
-  projectId   String   @map("project_id")
-  key         String   @db.VarChar(64)
-  name        String   @db.VarChar(120)
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String                     @id @default(cuid())
+  projectId       String                     @map("project_id")
+  key             String                     @db.VarChar(64)
+  name            String                     @db.VarChar(120)
+  description     String?                    @db.Text
+  lifecycleStatus FeatureFlagLifecycleStatus @default(ACTIVE) @map("lifecycle_status")
+  archivedAt      DateTime?                  @map("archived_at")
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  updatedAt       DateTime                   @updatedAt @map("updated_at")
 
   project            Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
   environmentConfigs FlagEnvironmentConfig[]
 
   @@unique([projectId, key])
+  @@unique([projectId, id])
   @@index([projectId])
+  @@index([projectId, lifecycleStatus])
   @@map("feature_flags")
 }
 
 model FlagEnvironmentConfig {
-  id            String      @id @default(cuid())
-  flagId        String      @map("flag_id")
-  environmentId String      @map("environment_id")
-  status        FlagStatus  @default(DISABLED)
-  servingMode   ServingMode @default(TARGETED) @map("serving_mode")
-  killSwitch    Boolean     @default(false) @map("kill_switch")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  id            String           @id @default(cuid())
+  projectId     String           @map("project_id")
+  flagId        String           @map("flag_id")
+  environmentId String           @map("environment_id")
+  status        FlagConfigStatus @default(DISABLED)
+  servingMode   ServingMode      @default(TARGETED) @map("serving_mode")
+  killSwitch    Boolean          @default(false) @map("kill_switch")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
 
-  flag        FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
-  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  project     Project     @relation("ProjectFlagConfigs", fields: [projectId], references: [id], onDelete: Restrict)
+  flag        FeatureFlag @relation(fields: [projectId, flagId], references: [projectId, id], onDelete: Cascade)
+  environment Environment @relation(fields: [projectId, environmentId], references: [projectId, id], onDelete: Restrict)
   rules       FlagRule[]
 
   @@unique([flagId, environmentId])
-  @@index([environmentId])
+  @@index([projectId, environmentId, flagId])
   @@index([environmentId, status])
   @@index([flagId])
   @@map("flag_environment_configs")
@@ -143,7 +161,7 @@ model FlagRule {
 
   @@unique([flagConfigId, priority])
   @@index([flagConfigId])
-  @@index([flagConfigId, type])
+  @@index([flagConfigId, type, priority])
   @@map("flag_rules")
 }
 
@@ -188,8 +206,9 @@ model AuditLogEntry {
   @@index([projectId, createdAt])
   @@index([projectKey, createdAt])
   @@index([environmentId, createdAt])
-  @@index([projectId, targetType, targetKey])
-  @@index([projectId, actor])
-  @@index([projectId, action])
+  @@index([projectId, environmentKey, createdAt])
+  @@index([projectId, targetType, targetKey, createdAt])
+  @@index([projectId, actor, createdAt])
+  @@index([projectId, action, createdAt])
   @@map("audit_log_entries")
 }
