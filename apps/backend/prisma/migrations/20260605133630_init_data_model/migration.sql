@@ -224,3 +224,28 @@ ALTER TABLE "audit_log_entries" ADD CONSTRAINT "audit_log_entries_project_id_fke
 
 -- AddForeignKey
 ALTER TABLE "audit_log_entries" ADD CONSTRAINT "audit_log_entries_environment_id_fkey" FOREIGN KEY ("environment_id") REFERENCES "environments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- ManualConstraint
+-- Ensure each project has at most one default environment.
+CREATE UNIQUE INDEX "environments_one_default_per_project"
+ON "environments" ("project_id")
+WHERE "is_default" = true;
+
+-- ManualConstraint
+-- Audit log entries are append-only: inserts are allowed, updates/deletes are rejected.
+CREATE OR REPLACE FUNCTION prevent_audit_log_mutation()
+RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_log_entries is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER audit_log_entries_no_update
+BEFORE UPDATE ON "audit_log_entries"
+FOR EACH ROW
+EXECUTE FUNCTION prevent_audit_log_mutation();
+
+CREATE TRIGGER audit_log_entries_no_delete
+BEFORE DELETE ON "audit_log_entries"
+FOR EACH ROW
+EXECUTE FUNCTION prevent_audit_log_mutation();
