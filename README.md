@@ -56,12 +56,99 @@ criteria in `docs/requirement/info-init.md`.
 - Demo app requirements: `docs/requirement/demo/demo-app.md`
 - Research report: `docs/requirement/feature-flag-research.md`
 
-## Current Repository Status
+## Local Development
 
-This repository is documentation-first. Keep source code, generated build
-outputs, and documentation separated. When implementation is scaffolded, update
-this README with exact setup, migration, seed, run, and test commands for the
-backend API, admin dashboard, and demo app.
+### Prerequisites
+
+- Node.js 20.19+ or 22.12+
+- npm
+- Docker, or a local PostgreSQL installation
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Configure environment
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+The default local database URL is:
+
+```bash
+postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev?schema=public
+```
+
+### Start PostgreSQL with Docker
+
+```bash
+docker run --name ffp-postgres \
+  -e POSTGRES_USER=ffp \
+  -e POSTGRES_PASSWORD=ffp_dev_password \
+  -e POSTGRES_DB=ffp_dev \
+  -p 5432:5432 \
+  -d postgres:16
+```
+
+If the container already exists:
+
+```bash
+docker start ffp-postgres
+```
+
+Verify the database:
+
+```bash
+docker exec ffp-postgres psql -U ffp -d ffp_dev -c "select current_database(), current_user;"
+```
+
+### Run the apps
+
+Backend API:
+
+```bash
+npm run dev:backend
+```
+
+Admin dashboard:
+
+```bash
+npm run dev:admin
+```
+
+Demo app:
+
+```bash
+npm run dev:demo
+```
+
+Local URLs:
+
+```text
+Backend API: http://localhost:3000/v1
+Admin app:   http://localhost:5173
+Demo app:    http://localhost:5174
+```
+
+### Validate the scaffold
+
+```bash
+npm run build
+npm run test
+npm run diff:check
+```
+
+### Phase 1 scope note
+
+Phase 1 scaffolds the backend, admin app, demo app, shared TypeScript
+configuration, local environment, PostgreSQL setup, and README workflow.
+Database schema, Prisma migrations, seed data, APIs, and evaluation logic are
+implemented in later roadmap phases.
 
 ## Documentation Validation
 

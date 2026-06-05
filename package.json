@@ -1,0 +1,23 @@
+{
+  "name": "feature-flag-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A lightweight feature flag platform for researching and demonstrating safe feature release management in web applications.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fabyanbui/feature-flag-platform.git"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=@ffp/backend",
+    "dev:admin": "npm run dev --workspace=@ffp/admin -- --host 0.0.0.0 --port 5173",
+    "dev:demo": "npm run dev --workspace=@ffp/demo -- --host 0.0.0.0 --port 5174",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "diff:check": "git diff --check"
+  }
+}
