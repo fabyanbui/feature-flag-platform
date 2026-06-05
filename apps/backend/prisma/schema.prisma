@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FlagStatus {
+  ENABLED
+  DISABLED
+  ARCHIVED
+}
+
+enum ServingMode {
+  GLOBAL_ON
+  TARGETED
+}
+
+enum RuleType {
+  USER_ALLOWLIST
+  ROLE_TARGETING
+  PERCENTAGE_ROLLOUT
+}
+
+enum AuditTargetType {
+  PROJECT
+  FEATURE_FLAG
+  FLAG_RULE
+  SAMPLE_USER
+}
+
+enum AuditAction {
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+
+  FEATURE_FLAG_CREATED
+  FEATURE_FLAG_UPDATED
+  FEATURE_FLAG_DELETED
+
+  FLAG_RULE_CREATED
+  FLAG_RULE_UPDATED
+  FLAG_RULE_DELETED
+  FLAG_RULES_REPLACED
+
+  SAMPLE_USER_CREATED
+  SAMPLE_USER_DELETED
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  key         String   @unique @db.VarChar(64)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  flags              FeatureFlag[]
+  sampleUserContexts SampleUserContext[]
+  auditLogEntries    AuditLogEntry[]
+
+  @@map("projects")
+}
+
+model FeatureFlag {
+  id          String      @id @default(cuid())
+  projectId   String      @map("project_id")
+  key         String      @db.VarChar(64)
+  name        String      @db.VarChar(120)
+  description String?     @db.Text
+  status      FlagStatus  @default(DISABLED)
+  servingMode ServingMode @default(TARGETED) @map("serving_mode")
+  killSwitch  Boolean     @default(false) @map("kill_switch")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  rules   FlagRule[]
+
+  @@unique([projectId, key])
+  @@index([projectId])
+  @@index([projectId, status])
+  @@map("feature_flags")
+}
+
+model FlagRule {
+  id         String   @id @default(cuid())
+  flagId     String   @map("flag_id")
+  type       RuleType
+  priority   Int
+  enabled    Boolean  @default(true)
+  parameters Json     @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  flag FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  @@unique([flagId, priority])
+  @@index([flagId])
+  @@index([flagId, type])
+  @@map("flag_rules")
+}
+
+model SampleUserContext {
+  id           String   @id @default(cuid())
+  projectId    String   @map("project_id")
+  displayName  String   @map("display_name") @db.VarChar(120)
+  targetingKey String   @map("targeting_key") @db.VarChar(120)
+  userId       String?  @map("user_id") @db.VarChar(120)
+  roles        Json     @default("[]") @db.JsonB
+  attributes   Json     @default("{}") @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, targetingKey])
+  @@index([projectId])
+  @@map("sample_user_contexts")
+}
+
+model AuditLogEntry {
+  id         String          @id @default(cuid())
+  projectId  String          @map("project_id")
+  projectKey String          @map("project_key") @db.VarChar(64)
+  targetType AuditTargetType @map("target_type")
+  targetId   String          @map("target_id")
+  targetKey  String?         @map("target_key") @db.VarChar(120)
+  action     AuditAction
+  actor      String          @db.VarChar(120)
+  before     Json?           @db.JsonB
+  after      Json?           @db.JsonB
+  metadata   Json?           @db.JsonB
+  requestId  String          @map("request_id") @db.VarChar(120)
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, createdAt])
+  @@index([projectKey, createdAt])
+  @@index([projectId, targetType, targetKey])
+  @@index([projectId, actor])
+  @@index([projectId, action])
+  @@map("audit_log_entries")
+}
