@@ -33,6 +33,15 @@ url = "https://api.githubcopilot.com/mcp/"
 # Set this environment variable to a least-privilege GitHub PAT before starting Codex.
 bearer_token_env_var = "GITHUB_PAT_TOKEN"
 
+# Official Prisma MCP server for Prisma Postgres database context and operations.
+# Keep tool calls approval-gated because the server can execute SQL and manage databases.
+# Source: https://www.prisma.io/docs/ai/tools/mcp-server
+[mcp_servers.prisma]
+url = "https://mcp.prisma.io/mcp"
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+
 [mcp_servers.playwright]
 command = "bash"
 args = [
