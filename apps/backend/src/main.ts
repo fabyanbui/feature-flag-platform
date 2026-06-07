@@ -2,11 +2,18 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { API_PREFIX } from './common/constants/api.constants';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
+import { RequestContextService } from './common/request-context/request-context.service';
 
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const requestContext = app.get(RequestContextService);
+  const requestContextMiddleware = new RequestContextMiddleware(requestContext);
+
+  app.use(requestContextMiddleware.use.bind(requestContextMiddleware));
 
   app.setGlobalPrefix(API_PREFIX);
 
