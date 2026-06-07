@@ -2,10 +2,14 @@ import { ApiErrorCode } from './common/errors/api-error-code';
 import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { API_PREFIX } from './common/constants/api.constants';
+import {
+  API_PREFIX,
+  SWAGGER_PATH,
+} from './common/constants/api.constants';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { RequestContextService } from './common/request-context/request-context.service';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 const logger = new Logger('Bootstrap');
 
@@ -43,6 +47,47 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(app.get(ApiExceptionFilter));
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Feature Flag Platform API')
+    .setDescription(
+      'Management and evaluation APIs for a mini feature flag platform.',
+    )
+    .setVersion('1.0')
+    .addServer(`/${API_PREFIX}`)
+    .addTag('Health')
+    .addTag('Projects')
+    .addTag('Feature Flags')
+    .addTag('Rules')
+    .addTag('Evaluation')
+    .addTag('Sample Users')
+    .addTag('Audit Logs')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-Actor',
+        in: 'header',
+        description: 'MVP actor identity for audited mutation requests.',
+      },
+      'actor',
+    )
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-Request-Id',
+        in: 'header',
+        description:
+          'Optional correlation ID. If omitted, the backend generates one.',
+      },
+      'requestId',
+    )
+    .build();
+
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+
+  SwaggerModule.setup(SWAGGER_PATH, app, swaggerDocument, {
+    jsonDocumentUrl: `${SWAGGER_PATH}/json`,
+  });
 
   const allowedOrigins = [
     process.env.ADMIN_ORIGIN,
