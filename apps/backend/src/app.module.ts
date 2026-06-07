@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { RequestContextService } from './common/request-context/request-context.service';
 
 @Module({
@@ -12,6 +13,6 @@ import { RequestContextService } from './common/request-context/request-context.
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, RequestContextService],
+  providers: [AppService, RequestContextService, ApiExceptionFilter],
 })
-export class AppModule {}
+export class AppModule { }
