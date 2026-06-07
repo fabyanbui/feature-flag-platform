@@ -1,13 +1,14 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { API_PREFIX } from './common/constants/api.constants';
 
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix(API_PREFIX);
 
   const allowedOrigins = [
     process.env.ADMIN_ORIGIN,
