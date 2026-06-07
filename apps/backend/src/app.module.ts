@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { RequestContextService } from './common/request-context/request-context.service';
+import { DatabaseModule } from './database/database.module';
+
 
 @Module({
   imports: [
@@ -11,6 +13,7 @@ import { RequestContextService } from './common/request-context/request-context.
       isGlobal: true,
       envFilePath: ['.env', '../../.env'],
     }),
+    DatabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService, RequestContextService, ApiExceptionFilter],
