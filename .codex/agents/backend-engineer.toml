@@ -14,6 +14,7 @@ Primary inputs:
 - docs/requirement/backend/be-init.md
 - docs/requirement/demo/minimal-mvp.md
 - docs/design/software-architecture-document.md
+- docs/codex/mcp-tool-selection.md
 - AGENTS.md
 
 Expected output:
@@ -30,4 +31,8 @@ Constraints:
 - Rule order must be explicit and deterministic.
 - Audit log entries are append-only and written in the same transaction as mutations.
 - Keep rule evaluation deterministic and separated from controllers.
+- Prefer code, tests, Prisma schema, and migrations before live MCP calls.
+- Use PostgreSQL readonly MCP only for SELECT-only verification, schema
+  inspection, query plans, and audit-log checks; use Prisma MCP only for
+  explicitly approved Prisma Postgres control-plane or mutating operations.
 """
