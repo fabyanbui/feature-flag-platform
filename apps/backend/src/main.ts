@@ -1,4 +1,5 @@
-import { Logger } from '@nestjs/common';
+import { ApiErrorCode } from './common/errors/api-error-code';
+import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { API_PREFIX } from './common/constants/api.constants';
@@ -21,6 +22,29 @@ async function bootstrap() {
     process.env.ADMIN_ORIGIN,
     process.env.DEMO_ORIGIN,
   ].filter(Boolean) as string[];
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      exceptionFactory: (errors) => {
+        return new BadRequestException({
+          code: ApiErrorCode.VALIDATION_ERROR,
+          message: 'Request validation failed.',
+          details: errors.flatMap((error) =>
+            Object.values(error.constraints ?? {}).map((message) => ({
+              field: error.property,
+              message,
+            })),
+          ),
+        });
+      },
+    }),
+  );
 
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : false,
