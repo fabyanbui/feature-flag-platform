@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { RequestContextService } from './common/request-context/request-context.service';
 import { DatabaseModule } from './database/database.module';
-
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -14,6 +14,7 @@ import { DatabaseModule } from './database/database.module';
       envFilePath: ['.env', '../../.env'],
     }),
     DatabaseModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService, RequestContextService, ApiExceptionFilter],
