@@ -1,19 +1,22 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AppService } from './app.service';
+import { AppService, HealthResponse } from './app.service';
 
 @ApiTags('Health')
-@Controller()
+@Controller('health')
 export class AppController {
   constructor(private readonly appService: AppService) { }
 
   @ApiOkResponse({
     schema: {
-      example: 'Hello World!',
+      example: {
+        status: 'ok',
+        service: 'feature-flag-backend',
+      },
     },
   })
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getHealth(): HealthResponse {
+    return this.appService.getHealth();
   }
 }

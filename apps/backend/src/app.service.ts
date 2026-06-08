@@ -1,8 +1,16 @@
 import { Injectable } from '@nestjs/common';
 
+export interface HealthResponse {
+  status: 'ok';
+  service: string;
+}
+
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  getHealth(): HealthResponse {
+    return {
+      status: 'ok',
+      service: 'feature-flag-backend',
+    };
   }
 }
