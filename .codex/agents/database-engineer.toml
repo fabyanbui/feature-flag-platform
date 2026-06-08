@@ -14,6 +14,7 @@ Primary inputs:
 - docs/design/software-architecture-document.md
 - docs/requirement/demo/minimal-mvp.md
 - docs/requirement/backend/be-init.md
+- docs/codex/mcp-tool-selection.md
 - AGENTS.md
 
 Expected output:
@@ -28,4 +29,10 @@ Constraints:
 - Persist explicit rule ordering.
 - Audit logs are append-only and immutable.
 - Schema must support required list pagination and prevent orphaned flags and rules.
+- Prefer local Prisma schema and migration files for design/implementation.
+- Use PostgreSQL readonly MCP for live schema, SELECT-only data checks,
+  diagnostics, indexes, locks, bloat, and EXPLAIN.
+- Use Prisma MCP for Prisma Postgres database management, connection strings,
+  backups/recovery, managed introspection, and explicitly approved schema/data
+  operations.
 """

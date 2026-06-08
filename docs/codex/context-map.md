@@ -6,6 +6,7 @@
 - Submission and mentor criteria: `docs/requirement/info-init.md`
 - Active project goal: `docs/plan/project-goal.md`
 - Project guardrails: `AGENTS.md`
+- MCP tool selection: `docs/codex/mcp-tool-selection.md`
 - Architecture: `docs/design/software-architecture-document.md`
 - Project plan and roadmap: `docs/plan/project-plan.md`,
   `docs/plan/implementation-roadmap.md`
@@ -37,3 +38,16 @@ control-plane/data-plane separation.
 - Use `demo-scenarios` for demo app behavior.
 - Use `ui-status-semantics` for dashboard status/runtime-state display.
 - Use `workflow-quality-review` before demo/release.
+
+## MCP tool usage
+
+- Prefer local repo files, Prisma schema/migrations, tests, and docs before
+  live MCP calls.
+- Use the Prisma MCP for Prisma Postgres control-plane work: managed database
+  discovery/creation, connection strings, backups/recovery, managed
+  introspection, and explicitly approved schema/data operations.
+- Use the PostgreSQL readonly MCP for data-plane inspection:
+  schema descriptions, SELECT-only checks, seed/audit verification, query
+  plans, locks, health, indexes, bloat, roles, and privileges.
+- Never use the PostgreSQL readonly MCP for writes, schema changes, database
+  management, backups, or connection-string management.

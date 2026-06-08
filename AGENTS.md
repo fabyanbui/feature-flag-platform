@@ -61,6 +61,8 @@ Project guardrails:
   recommended deliverables.
 - `docs/requirement/info-init.md` is the source for submission dates and mentor
   evaluation criteria.
+- `docs/codex/mcp-tool-selection.md` defines when Codex should use the Prisma
+  MCP versus the PostgreSQL readonly MCP.
 - Single backend service hosts management and evaluation endpoints.
 - MVP stack is NestJS, Prisma, PostgreSQL, REST/Swagger, Jest, and in-memory cache.
 - Default rule order is global disable -> user allowlist -> role targeting -> percentage rollout -> default off.
@@ -70,3 +72,17 @@ Project guardrails:
 - Mutations for projects, flags, and rules must write append-only audit entries with before/after snapshots in the same transaction.
 - Use stable, non-PII identifiers for targeting and rollout keys.
 - Feature flag status labels (Enabled/Disabled/Archived) are distinct from runtime state (On/Off).
+
+MCP usage guardrails:
+- Prefer repository files and deterministic tests before live database MCP calls.
+- Use the Prisma MCP for Prisma Postgres control-plane operations, such as
+  database discovery, database creation, connection strings, backups/recovery,
+  Prisma-managed introspection, and explicitly approved schema/data operations.
+- Use the PostgreSQL readonly MCP for data-plane inspection only, such as
+  schema/table descriptions, SELECT-only validation, migration/seed checks,
+  query plans, locks, bloat/index checks, health checks, and audit-log review.
+- Never use the PostgreSQL readonly MCP for writes, schema updates, connection
+  string management, database creation, or backups.
+- Do not expose secrets or connection strings in responses unless explicitly
+  requested, and require confirmation before any MCP action that can mutate
+  data, alter schema, or manage cloud resources.

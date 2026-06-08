@@ -15,6 +15,12 @@ Use docs/plan/project-goal.md as the concise active project goal summary.
 Prioritize required MVP deliverables before recommended enhancements: research report, backend API, admin dashboard, demo app, database, validation/error handling, README run instructions, seed data, and short design docs.
 Keep work presentation-ready for the July 2, 2026 presentation: explain project need, practical value, novelty, chosen technologies, alternatives, and comparison with existing solutions.
 Preserve deterministic evaluation, append-only audit logging, safe defaults, stable non-PII rollout keys, and clear control-plane/data-plane separation.
+Use docs/codex/mcp-tool-selection.md when deciding whether live database context is needed.
+Prefer repository files, Prisma schema, migrations, and tests for design/implementation work before using an MCP.
+Use the Prisma MCP for Prisma Postgres control-plane tasks: workspace/database discovery, creating databases, connection strings, backups/recovery, Prisma-managed database introspection, and explicitly approved schema/data operations against Prisma Postgres.
+Use the PostgreSQL readonly MCP for data-plane inspection only: schema/table descriptions, SELECT-only validation, migration/seed verification, EXPLAIN plans, locks, bloat/index checks, health checks, and audit-log verification against POSTGRES_MCP_DATABASE_URL.
+Never use the readonly PostgreSQL MCP for writes, schema changes, database creation, backups, or connection-string management.
+Before any MCP action that can mutate data, change schema, reveal secrets, or manage cloud resources, explain the intended action and get confirmation. Prefer least-privilege read-only queries and never print connection strings or secrets unless the user explicitly asks.
 """
 
 approval_policy = "on-request"
@@ -32,6 +38,37 @@ max_depth = 1
 url = "https://api.githubcopilot.com/mcp/"
 # Set this environment variable to a least-privilege GitHub PAT before starting Codex.
 bearer_token_env_var = "GITHUB_PAT_TOKEN"
+
+# Official Prisma MCP server for Prisma Postgres database context and operations.
+# Keep tool calls approval-gated because the server can execute SQL and manage databases.
+# Source: https://www.prisma.io/docs/ai/tools/mcp-server
+[mcp_servers.prisma]
+url = "https://mcp.prisma.io/mcp"
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+
+# Read-only PostgreSQL MCP for inspecting the local/dev database after Prisma migrations.
+# Use a least-privilege database role in POSTGRES_MCP_DATABASE_URL; do not point this at
+# the application's write-capable DATABASE_URL.
+# Source: https://glama.ai/mcp/servers/YawLabs/postgres-mcp
+[mcp_servers.postgres_readonly]
+command = "bash"
+args = [
+  "-lc",
+  '''. ./.env \
+  && : "${POSTGRES_MCP_DATABASE_URL:?POSTGRES_MCP_DATABASE_URL must be set in .env to a least-privilege read-only PostgreSQL URL}" \
+  && exec env DATABASE_URL="$POSTGRES_MCP_DATABASE_URL" \
+  POSTGRES_MAX_ROWS="${POSTGRES_MAX_ROWS:-1000}" \
+  POSTGRES_STATEMENT_TIMEOUT_MS="${POSTGRES_STATEMENT_TIMEOUT_MS:-30000}" \
+  POSTGRES_CONNECTION_TIMEOUT_MS="${POSTGRES_CONNECTION_TIMEOUT_MS:-10000}" \
+  npx -y @yawlabs/postgres-mcp@latest
+  '''
+]
+default_tools_approval_mode = "prompt"
+disabled_tools = ["pg_query", "pg_kill"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
 
 [mcp_servers.playwright]
 command = "bash"
