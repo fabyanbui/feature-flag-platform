@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -77,6 +79,7 @@ export class FeatureFlagsController {
   @Post(':flagKey/archive')
   @UseGuards(ActorRequiredGuard)
   @ApiSecurity('actor')
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   archive(
     @Param() params: ProjectFlagKeyParamDto,
@@ -87,6 +90,7 @@ export class FeatureFlagsController {
   @Post(':flagKey/restore')
   @UseGuards(ActorRequiredGuard)
   @ApiSecurity('actor')
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   restore(
     @Param() params: ProjectFlagKeyParamDto,
