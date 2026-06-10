@@ -29,4 +29,4 @@ import { FlagConfigsRepository } from './flag-configs.repository';
     AuditLogsRepository,
   ],
 })
-export class RepositoriesModule { }
+export class RepositoriesModule {}

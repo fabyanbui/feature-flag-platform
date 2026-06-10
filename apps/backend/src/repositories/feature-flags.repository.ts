@@ -5,7 +5,7 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class FeatureFlagsRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   findByProjectIdAndKey(
     projectId: string,

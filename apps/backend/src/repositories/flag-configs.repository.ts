@@ -5,38 +5,38 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class FlagConfigsRepository {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    findByFlagIdAndEnvironmentId(
-        flagId: string,
-        environmentId: string,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.flagEnvironmentConfig.findUnique({
-            where: {
-                flagId_environmentId: {
-                    flagId,
-                    environmentId,
-                },
-            },
-        });
-    }
+  findByFlagIdAndEnvironmentId(
+    flagId: string,
+    environmentId: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.flagEnvironmentConfig.findUnique({
+      where: {
+        flagId_environmentId: {
+          flagId,
+          environmentId,
+        },
+      },
+    });
+  }
 
-    create(
-        data: Prisma.FlagEnvironmentConfigUncheckedCreateInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.flagEnvironmentConfig.create({ data });
-    }
+  create(
+    data: Prisma.FlagEnvironmentConfigUncheckedCreateInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.flagEnvironmentConfig.create({ data });
+  }
 
-    updateById(
-        id: string,
-        data: Prisma.FlagEnvironmentConfigUpdateInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.flagEnvironmentConfig.update({
-            where: { id },
-            data,
-        });
-    }
+  updateById(
+    id: string,
+    data: Prisma.FlagEnvironmentConfigUpdateInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.flagEnvironmentConfig.update({
+      where: { id },
+      data,
+    });
+  }
 }

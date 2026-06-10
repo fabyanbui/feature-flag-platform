@@ -5,7 +5,7 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class FlagRulesRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   findByConfigId(flagConfigId: string, db: RepositoryClient = this.prisma) {
     return db.flagRule.findMany({

@@ -7,4 +7,4 @@ import { RequestContextService } from './request-context/request-context.service
   providers: [RequestContextService, ApiExceptionFilter, ActorRequiredGuard],
   exports: [RequestContextService, ApiExceptionFilter, ActorRequiredGuard],
 })
-export class CommonModule { }
+export class CommonModule {}

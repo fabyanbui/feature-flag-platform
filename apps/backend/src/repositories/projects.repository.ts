@@ -5,7 +5,7 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class ProjectsRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   findByKey(projectKey: string, db: RepositoryClient = this.prisma) {
     return db.project.findUnique({

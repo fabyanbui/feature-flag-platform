@@ -5,7 +5,7 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class SampleUsersRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   findByProjectId(projectId: string, db: RepositoryClient = this.prisma) {
     return db.sampleUserContext.findMany({
