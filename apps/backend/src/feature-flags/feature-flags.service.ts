@@ -493,6 +493,8 @@ export class FeatureFlagsService {
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
       environmentConfigs: Array<{
+        id: string;
+        environmentId: string;
         status: FlagConfigStatus;
         servingMode: ServingMode;
         killSwitch: boolean;
