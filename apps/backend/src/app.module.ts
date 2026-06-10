@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
 import { RepositoriesModule } from './repositories/repositories.module';
 import { ProjectsModule } from './projects/projects.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ProjectsModule } from './projects/projects.module';
     RepositoriesModule,
     EvaluationModule,
     ProjectsModule,
+    FeatureFlagsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

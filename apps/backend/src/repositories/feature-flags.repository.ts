@@ -59,7 +59,11 @@ export class FeatureFlagsRepository {
       take,
       skip,
       include: {
-        environmentConfigs: true,
+        environmentConfigs: {
+          include: {
+            environment: true,
+          },
+        },
       },
     });
   }
