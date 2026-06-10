@@ -7,6 +7,7 @@ import { RequestContextService } from './common/request-context/request-context.
 import { DatabaseModule } from './database/database.module';
 import { AuditModule } from './audit/audit.module';
 import { RepositoriesModule } from './repositories/repositories.module';
+import { EvaluationModule } from './evaluation/evaluation.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RepositoriesModule } from './repositories/repositories.module';
     DatabaseModule,
     AuditModule,
     RepositoriesModule,
+    EvaluationModule,
   ],
   controllers: [AppController],
   providers: [AppService, RequestContextService, ApiExceptionFilter],
