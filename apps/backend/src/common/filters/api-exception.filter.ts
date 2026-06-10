@@ -79,7 +79,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     });
   }
 
-  private mapHttpStatusToErrorCode(status: number): ApiErrorCode {
+  private mapHttpStatusToErrorCode(status: HttpStatus): ApiErrorCode {
     switch (status) {
       case HttpStatus.BAD_REQUEST:
         return ApiErrorCode.VALIDATION_ERROR;
@@ -92,7 +92,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
   }
 
-  private mapHttpStatusToMessage(status: number): string {
+  private mapHttpStatusToMessage(status: HttpStatus): string {
     switch (status) {
       case HttpStatus.BAD_REQUEST:
         return 'Request validation failed.';
