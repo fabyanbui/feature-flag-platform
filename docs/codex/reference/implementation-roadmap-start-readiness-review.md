@@ -79,8 +79,8 @@ The recommended starting sequence was:
 5. Use the Phase 6 vertical slice as soon as possible to validate the full
    product loop.
 
-Because the submission deadline is July 1, 2026 and the presentation is
-July 2, 2026, the response concluded that starting implementation now is
+Because the submission deadline is July 7, 2026 and the presentation is
+July 9, 2026, the response concluded that starting implementation now is
 appropriate.
 
 ## Key decisions and rationale
@@ -161,7 +161,7 @@ Use this checklist before or during implementation:
   kill switch, and Docker Compose must not delay the required MVP.
 - A complete UI before a working evaluation loop would increase delivery risk.
   Prefer an early vertical slice.
-- The project must remain presentation-ready for the July 2, 2026 presentation,
+- The project must remain presentation-ready for the July 9, 2026 presentation,
   so design rationale and tradeoffs should be captured as work progresses.
 
 ## Reuse prompts

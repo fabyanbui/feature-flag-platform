@@ -9,13 +9,21 @@ Keep documentation, implementation choices, and Codex agent behavior aligned to
 that goal: a mini feature flag management platform with a research report,
 backend API, frontend dashboard, demo application, persistent storage,
 validation, error handling, seed data, short design documentation, and a
-presentation-ready explanation of practical value, technology choices, and
-comparison with existing solutions.
+presentation-ready explanation of practical value, technology choices,
+comparison with existing solutions, and visible problem-solving, design
+thinking, and system thinking. Slides and the research report are required final
+artifacts; recommended-level requirements are a plus after the required MVP is
+stable.
 
 ## Project Structure & Module Organization
 
-This repository is currently documentation-first. Core planning, requirements, research, and design artifacts live under `docs/`:
+This repository uses an npm workspace with implementation under `apps/` and
+project knowledge under `docs/`:
 
+- `apps/backend/` contains the NestJS backend API and future Prisma-backed
+  persistence/evaluation modules.
+- `apps/admin/` contains the admin dashboard.
+- `apps/demo/` contains the demo application that calls the evaluation API.
 - `docs/plan/` contains vision and project planning.
 - `docs/requirement/` contains backend, frontend, demo, and use-case requirements.
 - `docs/research/` and `docs/competitor-analysis/` contain supporting analysis.
@@ -23,16 +31,25 @@ This repository is currently documentation-first. Core planning, requirements, r
 - `.codex/agents/` contains repo-scoped Codex subagents for specialized architecture, backend, frontend, database, test, security, and research work.
 - `.agents/skills/` contains repo-scoped Codex skills so Codex can discover the same project expertise.
 
-When implementation is added, keep the planned layers clear: backend API, domain/evaluation engine, persistence, admin UI, and demo app. Do not mix generated build output into `docs/`.
+Keep planned layers clear: backend API, domain/evaluation engine, persistence,
+admin UI, and demo app. Do not mix generated build output into `docs/`.
 
 ## Build, Test, and Development Commands
 
-There is no application package manifest yet, so no repo-wide build or test command currently exists. Until implementation is scaffolded, validate documentation changes with:
+Use the root npm workspace commands documented in `README.md`:
 
-- `git diff --check` to catch whitespace errors.
-- `markdownlint docs/**/*.md README.md AGENTS.md` if `markdownlint` is installed.
+- `npm install` to install dependencies.
+- `npm run dev:backend` to start the backend API.
+- `npm run dev:admin` to start the admin dashboard.
+- `npm run dev:demo` to start the demo app.
+- `npm run build` to build all workspaces that define a build script.
+- `npm run test` to run workspace tests.
+- `npm run lint` to run workspace lint checks.
+- `npm run diff:check` or `git diff --check` to catch whitespace errors.
 
-Expected future stack from the architecture docs: NestJS, Prisma, PostgreSQL, REST/Swagger, and Jest. Once scaffolded, document exact commands such as `npm run start:dev`, `npm test`, `npm run lint`, and `npx prisma migrate dev` in `README.md` and keep this file aligned.
+For documentation-only changes, also run `markdownlint docs/**/*.md README.md
+AGENTS.md` if `markdownlint` is installed. Keep this file aligned when package
+scripts or local workflow commands change.
 
 ## Coding Style & Naming Conventions
 
@@ -59,8 +76,8 @@ Treat this file as the source of project guardrails. Preserve safe defaults, det
 Project guardrails:
 - `docs/requirement/requirement-init.md` is the product source for required and
   recommended deliverables.
-- `docs/requirement/info-init.md` is the source for submission dates and mentor
-  evaluation criteria.
+- `docs/requirement/info-init.md` is the source for submission dates, required
+  slides/report, and mentor evaluation criteria.
 - `docs/codex/mcp-tool-selection.md` defines when Codex should use the Prisma
   MCP versus the PostgreSQL readonly MCP.
 - Single backend service hosts management and evaluation endpoints.

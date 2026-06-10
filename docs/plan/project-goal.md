@@ -27,12 +27,14 @@ fast rollback through kill switches, and auditable configuration changes.
 
 ## Delivery Dates
 
-1. **Submission deadline:** July 1, 2026.
-2. **Presentation:** July 2, 2026.
+1. **Submission deadline:** July 7, 2026.
+2. **Presentation:** July 9, 2026.
 
 All plans, implementation sequencing, and recommended enhancements must protect
-these dates. The required MVP must be demo-ready before optional recommended
-work is selected.
+these dates. Slides and the research report are required delivery artifacts.
+The required MVP must be demo-ready before optional recommended work is
+selected; recommended-level requirements are a plus only after the MVP is
+stable.
 
 ## Required MVP Deliverables
 
@@ -122,15 +124,18 @@ smallest set that improves demo or evaluation value after the MVP is working.
 5. Configuration mutations are auditable and do not lose before/after context.
 6. README instructions and seed data allow the project to be run for a local
    demonstration.
-7. The team can explain why this mini project is needed, what practical value
+7. Slides and the research report are complete enough to explain the problem,
+   solution, workflow, architecture, technology choices, and comparison with
+   existing solutions.
+8. The team can explain why this mini project is needed, what practical value
    it provides, and what is novel or differentiating compared with existing
    feature flag solutions.
-8. The team can explain the chosen technologies and why they were selected over
+9. The team can explain the chosen technologies and why they were selected over
    reasonable alternatives.
-9. The live presentation demonstrates both the working project and the
+10. The live presentation demonstrates both the working project and the
    engineering mindset expected of a Viettel Digital Talent 2026 participant:
-   clear understanding, pragmatic tradeoffs, practical value, and delivery
-   discipline.
+   clear understanding, problem-solving, design thinking, system thinking,
+   pragmatic tradeoffs, practical value, and delivery discipline.
 
 ## Presentation and Mentor Evaluation Fit
 
@@ -144,3 +149,7 @@ The project should be prepared so a presenter can answer:
 5. Which technologies were used, and why were they chosen instead of
    alternatives?
 6. How does the demo prove safe rollout, targeting, rollback, and auditability?
+7. How do the slides and report show problem-solving, design thinking, and
+   system thinking?
+8. Which recommended-level requirement, if any, was selected after MVP, and why
+   was it worth the extra scope?

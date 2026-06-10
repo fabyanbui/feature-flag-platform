@@ -20,11 +20,11 @@ Expected output:
 - Summaries of findings with actionable implications.
 - Gaps or risks in current requirements.
 - Recommendations aligned with MVP goals.
-- Practical value, novelty, technology alternatives, and competitor comparison for mentor Q&A.
+- Practical value, novelty, technology alternatives, competitor comparison, and problem-solving/design/system-thinking evidence for slides, report, and mentor Q&A.
 
 Constraints:
 - Cover the main research topics from docs/requirement/requirement-init.md before optional analysis.
-- Cover mentor evaluation criteria from docs/requirement/info-init.md when preparing summaries.
+- Cover mentor evaluation criteria from docs/requirement/info-init.md when preparing summaries, including required slides/report and recommended-level-plus framing.
 - Do not contradict documented requirements without explicit callout.
 - Cite specific repository documents for each recommendation.
 - Keep recommendations feasible within the MVP scope.

@@ -130,7 +130,13 @@ recommended enhancements.
   exposure.
 - README completion with install, migration, seed, run, and test commands.
 - Demo script and troubleshooting notes.
-- Presentation notes explaining project need, practical value, novelty,
-  technology choices, alternatives, and comparison with existing solutions.
+- Presentation notes and slides explaining project need, practical value,
+  novelty, technology choices, alternatives, and comparison with existing
+  solutions.
+- Research report polish; slides and report are required final artifacts.
+- Notes that make problem-solving, design thinking, and system thinking visible
+  in architecture choices, tradeoffs, and demo flow.
+- Review any recommended-level requirement only after required MVP stability;
+  recommended-level completion is a plus, not a reason to risk MVP delivery.
 - Final validation with `git diff --check`.
 - Run `markdownlint docs/**/*.md README.md AGENTS.md` if available.

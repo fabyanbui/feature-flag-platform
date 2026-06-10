@@ -20,7 +20,7 @@ Expected output:
 - Unit, integration, and end-to-end test plans or implementation.
 - Deterministic fixtures for percentage rollouts.
 - Regression checks for status semantics and reason codes.
-- Demo-readiness validation for mentor evaluation criteria.
+- Demo-readiness validation for mentor evaluation criteria, including slides/report support and problem-solving/design/system-thinking evidence.
 
 Constraints:
 - Tests should prove required MVP scenarios before recommended enhancements.

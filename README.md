@@ -23,13 +23,18 @@ criteria in `docs/requirement/info-init.md`.
 
 ## Delivery Criteria
 
-- Submission deadline: July 1, 2026.
-- Presentation: July 2, 2026.
+- Submission deadline: July 7, 2026.
+- Presentation: July 9, 2026.
 - The project must be demonstrable and easy to explain.
+- Slides and the research report are required delivery artifacts, not optional
+  polish.
 - The team must be able to explain why the project is needed, what practical
   value or novelty it has, which technologies were used, why those technologies
   were chosen over alternatives, and how the platform compares with existing
   feature flag solutions.
+- The presentation should demonstrate problem-solving, design thinking, and
+  system thinking; recommended-level requirements are a plus only after the MVP
+  is stable.
 
 ## MVP Guardrails
 

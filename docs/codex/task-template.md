@@ -31,9 +31,13 @@ Read:
 - Use stable, non-PII identifiers for targeting and rollout keys.
 - Keep management API and evaluation API separated.
 - Complete required MVP deliverables before recommended enhancements.
-- Keep outputs presentation-ready: explain project need, practical value,
-  technology choices, alternatives, and comparison with existing solutions when
-  relevant.
+- Keep outputs submission- and presentation-ready for the current
+  `docs/requirement/info-init.md` dates: slides and report are required;
+  explain project need, practical value, technology choices, alternatives,
+  comparison with existing solutions, problem-solving, design thinking, and
+  system thinking when relevant.
+- Treat recommended-level requirements as a plus only after required MVP
+  stability.
 
 ## Expected output
 

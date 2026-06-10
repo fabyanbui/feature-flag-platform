@@ -9,6 +9,7 @@
 | 2026-05-31 | 1.3 | Add AI coding agents usage and increase mentor sync cadence | Principal Engineer (Copilot) |
 | 2026-06-03 | 1.4 | Align plan to initial requirement as active project goal | Codex |
 | 2026-06-03 | 1.5 | Add submission and mentor evaluation criteria | Codex |
+| 2026-06-10 | 1.6 | Align deadlines, slides/report, and mentor thinking criteria | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
@@ -45,9 +46,11 @@ Deliver a lightweight feature flag platform consisting of:
 15. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.4 Constraints
-1. Submission deadline: **2026-07-01**.  
-2. Presentation: **2026-07-02**.  
-3. MVP scope only; avoid enterprise-grade over-engineering.
+1. Submission deadline: **2026-07-07**.
+2. Presentation: **2026-07-09**.
+3. Slides and the research report are required delivery artifacts.
+4. MVP scope first; recommended-level requirements are a plus after the MVP is stable.
+5. Avoid enterprise-grade over-engineering.
 
 ## 2. Project Overview
 ### 2.1 Vision Alignment
@@ -75,8 +78,11 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 2. APIs and UI meet documented requirements.
 3. Clear documentation of architecture, schema, and API contract.
 4. Presentation-ready narrative explaining tradeoffs and comparisons.
-5. Presenter can explain the need for the project, novelty/practical value,
+5. Slides and research report are complete and consistent with the live demo.
+6. Presenter can explain the need for the project, novelty/practical value,
    chosen technologies, alternatives, and comparison with existing solutions.
+7. Presenter can show problem-solving, design thinking, and system thinking in
+   the design decisions, tradeoffs, and demo flow.
 
 ### 2.5 MVP-First Delivery Strategy
 1. **MVP is the only near-term scope**: required-level deliverables must be done end-to-end before any recommended work starts.
@@ -154,7 +160,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 | MVP Hardening | 2026-06-11 → 2026-06-12 | Seed data, docs, research report, demo script |
 | **Mentor Sync** | 2026-06-13 | Review MVP, choose recommended items |
 | Recommended Level | 2026-06-14 → 2026-06-25 | Selected enhancements from recommended list |
-| Transition | 2026-06-26 → 2026-07-02 | Final stabilization and presentation prep |
+| Transition | 2026-06-26 → 2026-07-09 | Final stabilization, submission, slides, report, and presentation prep |
 
 ## 6. Work Breakdown Structure
 ### 6.1 MVP Work Breakdown
@@ -169,7 +175,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 | Seed Data | Demo project, flags, rules, users | Seed scripts |
 | Documentation | README, API spec, architecture, research report | Complete docs |
 | Presentation Fit | Requirement traceability and demo scenarios | Evaluator-ready narrative |
-| Mentor Criteria | Tech rationale, alternatives, novelty, practical value, competitor comparison | Presentation notes |
+| Mentor Criteria | Tech rationale, alternatives, novelty, practical value, competitor comparison, problem-solving, design thinking, system thinking | Presentation notes, slides, report |
 
 ### 6.2 Recommended Level Backlog (Post-MVP)
 | Area | Work Items | Output |
@@ -232,6 +238,7 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 | UI complexity creep | Slower delivery | Medium | MVP-first UI; defer advanced features |
 | Audit log gaps | Compliance failure | Low | Instrument all mutations, DB transaction coupling |
 | CORS/security issues | Demo fails | Medium | Validate CORS early; fallback proxy option |
+| Slide/report gaps | Weak final evaluation | Medium | Treat slides and report as required deliverables, reviewed before submission |
 | Recommended scope creep | MVP delay | Medium | Enforce MVP gate before enhancements |
 
 ## 10. Quality Management
@@ -277,8 +284,11 @@ The platform emphasizes **safe rollouts**, **deterministic evaluation**, **audit
 2. Frontend dashboard.
 3. Demo application.
 4. Documentation and research report.
-5. Presentation/demo materials aligned with VDT criteria.
-6. Technology choice and competitor comparison notes suitable for mentor Q&A.
+5. Presentation slides and demo materials aligned with VDT criteria.
+6. Research report aligned with the final implementation and demo.
+7. Technology choice and competitor comparison notes suitable for mentor Q&A.
+8. Evidence of problem-solving, design thinking, and system thinking in the
+   presentation narrative.
 
 ## 14. Assumptions and Dependencies
 1. A relational DB is available for local development.

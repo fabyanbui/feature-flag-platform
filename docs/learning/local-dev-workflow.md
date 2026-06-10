@@ -8,8 +8,8 @@ PostgreSQL-backed APIs, seed data, and evaluation logic are added.
 ## 1. What Local Development Means in This Project
 
 Local development means running the whole mini feature flag platform on your
-machine so you can build and verify the MVP before the July 1, 2026 submission
-and July 2, 2026 presentation.
+machine so you can build and verify the MVP before the July 7, 2026 submission
+and July 9, 2026 presentation.
 
 The intended local loop is:
 

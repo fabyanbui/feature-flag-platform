@@ -22,11 +22,14 @@
 
 Always follow `AGENTS.md`. Required MVP work from
 `docs/requirement/requirement-init.md` must complete before recommended
-enhancements. Criteria from `docs/requirement/info-init.md` require a
-demonstrable project, clear technology rationale, practical value/novelty, and
-comparison with existing solutions. Preserve deterministic evaluation,
-append-only audit logging, safe defaults, non-PII rollout keys, and clear
-control-plane/data-plane separation.
+enhancements. Current dates from `docs/requirement/info-init.md` are submission
+on July 7, 2026 and presentation on July 9, 2026. Criteria from
+`docs/requirement/info-init.md` require a demonstrable project, required slides
+and report, clear technology rationale, practical value/novelty, comparison
+with existing solutions, and visible problem-solving, design thinking, and
+system thinking. Recommended-level requirements are a plus only after the MVP is
+stable. Preserve deterministic evaluation, append-only audit logging, safe
+defaults, non-PII rollout keys, and clear control-plane/data-plane separation.
 
 ## Important skills
 

@@ -6,6 +6,7 @@
 | 2026-05-30 | 1.0 | Initial vision draft | Principal Engineer (Copilot) |
 | 2026-06-03 | 1.1 | Align vision to initial requirement as active project goal | Codex |
 | 2026-06-03 | 1.2 | Add submission and mentor evaluation criteria | Codex |
+| 2026-06-10 | 1.3 | Align delivery dates and mentor thinking criteria | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
@@ -134,11 +135,16 @@ The platform acts as a centralized feature management system for web apps, consi
 6. **Maintainability:** clear rule evaluation design and consistent API shapes.
 
 ## 7. Constraints
-1. Delivery timeline aligned to VDT deadlines (submission: 2026-07-01, presentation: 2026-07-02).
-2. MVP scope excludes complex experimentation and enterprise governance.
-3. Avoid over-engineering: single deployable platform with clear architecture.
-4. The presentation must demonstrate clear understanding, practical value,
-   technology tradeoffs, and comparison with existing feature flag solutions.
+1. Delivery timeline aligned to VDT deadlines (submission: 2026-07-07,
+   presentation: 2026-07-09).
+2. Slides and the research report are required final artifacts.
+3. MVP scope excludes complex experimentation and enterprise governance.
+4. Avoid over-engineering: single deployable platform with clear architecture.
+5. The presentation must demonstrate clear understanding, practical value,
+   technology tradeoffs, comparison with existing feature flag solutions,
+   problem-solving, design thinking, and system thinking.
+6. Recommended-level requirements are a plus only after the required MVP is
+   stable and demonstrable.
 
 ## 8. External Interfaces
 ### 8.1 REST APIs
@@ -160,3 +166,5 @@ The platform acts as a centralized feature management system for web apps, consi
 5. **Presentation readiness:** explain why the project is needed, why the chosen
    stack is appropriate, and how the implementation compares with existing
    tools.
+6. **Thinking visibility:** make problem-solving, design thinking, and system
+   thinking visible in the demo narrative, slides, and report.
