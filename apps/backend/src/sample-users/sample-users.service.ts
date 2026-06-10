@@ -133,7 +133,7 @@ export class SampleUsersService {
           targetingKey: body.targetingKey,
           userId: body.userId ?? null,
           roles: body.roles ?? [],
-          attributes: body.attributes ?? {},
+          attributes: this.toInputJsonObject(body.attributes),
         },
         tx,
       );
@@ -327,6 +327,12 @@ export class SampleUsersService {
     }
 
     return value.filter((item): item is string => typeof item === 'string');
+  }
+
+  private toInputJsonObject(
+    value: Record<string, unknown> | undefined,
+  ): Prisma.InputJsonObject {
+    return (value ?? {}) as Prisma.InputJsonObject;
   }
 
   private toRecord(value: Prisma.JsonValue): Record<string, unknown> {
