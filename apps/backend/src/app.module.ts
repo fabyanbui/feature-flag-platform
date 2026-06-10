@@ -9,6 +9,7 @@ import { EvaluationModule } from './evaluation/evaluation.module';
 import { RepositoriesModule } from './repositories/repositories.module';
 import { ProjectsModule } from './projects/projects.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
+import { FlagRulesModule } from './flag-rules/flag-rules.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     EvaluationModule,
     ProjectsModule,
     FeatureFlagsModule,
+    FlagRulesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
