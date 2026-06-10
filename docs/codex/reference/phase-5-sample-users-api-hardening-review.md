@@ -304,4 +304,3 @@ Add integration tests for Sample Users API: whitespace validation, role normaliz
 ```text
 Check whether sample user targetingKey should adopt stricter key rules. If yes, update DTO validation, service normalization, seed data, and demo assumptions without breaking deterministic rollout semantics.
 ```
-
