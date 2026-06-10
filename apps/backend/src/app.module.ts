@@ -2,12 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ApiExceptionFilter } from './common/filters/api-exception.filter';
-import { RequestContextService } from './common/request-context/request-context.service';
-import { DatabaseModule } from './database/database.module';
 import { AuditModule } from './audit/audit.module';
-import { RepositoriesModule } from './repositories/repositories.module';
+import { CommonModule } from './common/common.module';
+import { DatabaseModule } from './database/database.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
+import { RepositoriesModule } from './repositories/repositories.module';
 
 @Module({
   imports: [
@@ -15,12 +14,13 @@ import { EvaluationModule } from './evaluation/evaluation.module';
       isGlobal: true,
       envFilePath: ['.env', '../../.env'],
     }),
+    CommonModule,
     DatabaseModule,
     AuditModule,
     RepositoriesModule,
     EvaluationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, RequestContextService, ApiExceptionFilter],
+  providers: [AppService],
 })
 export class AppModule { }
