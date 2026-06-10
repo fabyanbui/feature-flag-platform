@@ -11,11 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiExtraModels,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiSecurity,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { IsString, MaxLength } from 'class-validator';
 import { ProjectKeyParamDto } from '../common/dto/key-param.dto';
@@ -33,12 +35,34 @@ class SampleUserKeyParamDto extends ProjectKeyParamDto {
 }
 
 @ApiTags('Sample Users')
+@ApiExtraModels(SampleUserResponseDto)
 @Controller('projects/:projectKey/sample-users')
 export class SampleUsersController {
   constructor(private readonly sampleUsersService: SampleUsersService) {}
 
   @Get()
-  @ApiOkResponse({ type: SampleUserResponseDto, isArray: true })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { $ref: getSchemaPath(SampleUserResponseDto) },
+        },
+        page: {
+          type: 'object',
+          properties: {
+            limit: { type: 'number', example: 20 },
+            offset: { type: 'number', example: 0 },
+            total: { type: 'number', example: 3 },
+            hasNext: { type: 'boolean', example: false },
+          },
+          required: ['limit', 'offset', 'total', 'hasNext'],
+        },
+      },
+      required: ['items', 'page'],
+    },
+  })
   list(
     @Param() params: ProjectKeyParamDto,
     @Query() query: SampleUserQueryDto,

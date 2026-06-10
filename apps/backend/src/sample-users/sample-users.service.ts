@@ -22,6 +22,14 @@ const SAMPLE_USER_SORT_FIELDS = [
   'targetingKey',
 ] as const;
 
+interface NormalizedSampleUserInput {
+  displayName: string;
+  targetingKey: string;
+  userId: string | null;
+  roles: string[];
+  attributes?: Record<string, unknown>;
+}
+
 @Injectable()
 export class SampleUsersService {
   constructor(
@@ -38,6 +46,8 @@ export class SampleUsersService {
     if (!project) {
       throw notFoundError(`Project "${projectKey}" was not found.`);
     }
+
+    const roleFilter = query.role?.trim();
 
     const where: Prisma.SampleUserContextWhereInput = {
       projectId: project.id,
@@ -65,10 +75,10 @@ export class SampleUsersService {
             ],
           }
         : {}),
-      ...(query.role
+      ...(roleFilter
         ? {
             roles: {
-              array_contains: query.role,
+              array_contains: roleFilter,
             },
           }
         : {}),
@@ -98,7 +108,7 @@ export class SampleUsersService {
     projectKey: string,
     body: CreateSampleUserDto,
   ): Promise<SampleUserResponseDto> {
-    this.validateSampleUser(body);
+    const normalized = this.normalizeSampleUserInput(body);
 
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
@@ -112,12 +122,12 @@ export class SampleUsersService {
     const existing =
       await this.sampleUsersRepository.findByProjectIdAndTargetingKey(
         project.id,
-        body.targetingKey,
+        normalized.targetingKey,
       );
 
     if (existing) {
       throw conflictError(
-        `Sample user "${body.targetingKey}" already exists in project "${projectKey}".`,
+        `Sample user "${normalized.targetingKey}" already exists in project "${projectKey}".`,
       );
     }
 
@@ -129,11 +139,11 @@ export class SampleUsersService {
               id: project.id,
             },
           },
-          displayName: body.displayName,
-          targetingKey: body.targetingKey,
-          userId: body.userId ?? null,
-          roles: body.roles ?? [],
-          attributes: this.toInputJsonObject(body.attributes),
+          displayName: normalized.displayName,
+          targetingKey: normalized.targetingKey,
+          userId: normalized.userId,
+          roles: normalized.roles,
+          attributes: this.toInputJsonObject(normalized.attributes),
         },
         tx,
       );
@@ -161,6 +171,7 @@ export class SampleUsersService {
   }
 
   async delete(projectKey: string, targetingKey: string): Promise<void> {
+    const normalizedTargetingKey = this.normalizeTargetingKey(targetingKey);
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
 
@@ -174,19 +185,19 @@ export class SampleUsersService {
       const existing =
         await this.sampleUsersRepository.findByProjectIdAndTargetingKey(
           project.id,
-          targetingKey,
+          normalizedTargetingKey,
           tx,
         );
 
       if (!existing) {
         throw notFoundError(
-          `Sample user "${targetingKey}" was not found in project "${projectKey}".`,
+          `Sample user "${normalizedTargetingKey}" was not found in project "${projectKey}".`,
         );
       }
 
       await this.sampleUsersRepository.deleteByProjectIdAndTargetingKey(
         project.id,
-        targetingKey,
+        normalizedTargetingKey,
         tx,
       );
 
@@ -208,8 +219,44 @@ export class SampleUsersService {
     });
   }
 
-  private validateSampleUser(body: CreateSampleUserDto) {
-    const targetingKey = body.targetingKey.trim();
+  private normalizeSampleUserInput(
+    body: CreateSampleUserDto,
+  ): NormalizedSampleUserInput {
+    const displayName = body.displayName.trim();
+
+    if (!displayName) {
+      throw validationError('Sample user displayName is required.', [
+        {
+          field: 'displayName',
+          message: 'displayName must not be empty or whitespace only.',
+        },
+      ]);
+    }
+
+    const targetingKey = this.normalizeTargetingKey(body.targetingKey);
+    const userId = body.userId?.trim();
+
+    if (body.userId !== undefined && !userId) {
+      throw validationError('Invalid sample user userId.', [
+        {
+          field: 'userId',
+          message:
+            'userId must not be whitespace only when provided. Use a synthetic non-PII identifier.',
+        },
+      ]);
+    }
+
+    return {
+      displayName,
+      targetingKey,
+      userId: userId || null,
+      roles: this.normalizeRoles(body.roles),
+      attributes: body.attributes,
+    };
+  }
+
+  private normalizeTargetingKey(value: string): string {
+    const targetingKey = value.trim();
 
     if (!targetingKey) {
       throw validationError('Sample user targetingKey is required.', [
@@ -221,18 +268,13 @@ export class SampleUsersService {
       ]);
     }
 
-    if (body.roles) {
-      const invalidRole = body.roles.find((role) => role.trim().length === 0);
+    return targetingKey;
+  }
 
-      if (invalidRole !== undefined) {
-        throw validationError('Invalid sample user roles.', [
-          {
-            field: 'roles',
-            message: 'roles must contain non-empty strings.',
-          },
-        ]);
-      }
-    }
+  private normalizeRoles(roles: string[] | undefined): string[] {
+    return [
+      ...new Set((roles ?? []).map((role) => role.trim()).filter(Boolean)),
+    ];
   }
 
   private buildOrderBy(
