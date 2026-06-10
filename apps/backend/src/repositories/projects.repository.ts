@@ -5,7 +5,7 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class ProjectsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   findByKey(projectKey: string, db: RepositoryClient = this.prisma) {
     return db.project.findUnique({
@@ -26,5 +26,24 @@ export class ProjectsRepository {
       where: { key: projectKey },
       data,
     });
+  }
+
+  findMany(
+    where: Prisma.ProjectWhereInput,
+    orderBy: Prisma.ProjectOrderByWithRelationInput,
+    take: number,
+    skip: number,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.project.findMany({
+      where,
+      orderBy,
+      take,
+      skip,
+    });
+  }
+
+  count(where: Prisma.ProjectWhereInput, db: RepositoryClient = this.prisma) {
+    return db.project.count({ where });
   }
 }
