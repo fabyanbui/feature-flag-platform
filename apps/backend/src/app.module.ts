@@ -7,6 +7,7 @@ import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
 import { RepositoriesModule } from './repositories/repositories.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -19,8 +20,9 @@ import { RepositoriesModule } from './repositories/repositories.module';
     AuditModule,
     RepositoriesModule,
     EvaluationModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
