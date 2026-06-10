@@ -1,8 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-    EvaluationReason,
-    EvaluationVariant,
-} from '../engine/evaluation.types';
+import { EvaluationReason } from '../engine/evaluation.types';
+import type { EvaluationVariant } from '../engine/evaluation.types';
 
 export class EvaluateResponseDto {
     @ApiProperty({
