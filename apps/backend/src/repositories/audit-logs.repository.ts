@@ -5,26 +5,26 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class AuditLogsRepository {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    findMany(
-        where: Prisma.AuditLogEntryWhereInput,
-        take: number,
-        skip: number,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.auditLogEntry.findMany({
-            where,
-            take,
-            skip,
-            orderBy: { createdAt: 'desc' },
-        });
-    }
+  findMany(
+    where: Prisma.AuditLogEntryWhereInput,
+    take: number,
+    skip: number,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.auditLogEntry.findMany({
+      where,
+      take,
+      skip,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
-    count(
-        where: Prisma.AuditLogEntryWhereInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.auditLogEntry.count({ where });
-    }
+  count(
+    where: Prisma.AuditLogEntryWhereInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.auditLogEntry.count({ where });
+  }
 }

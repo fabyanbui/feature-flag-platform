@@ -6,13 +6,11 @@ export type TransactionClient = Prisma.TransactionClient;
 
 @Injectable()
 export class TransactionService {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    async run<T>(
-        callback: (tx: TransactionClient) => Promise<T>,
-    ): Promise<T> {
-        return this.prisma.$transaction(async (tx) => {
-            return callback(tx);
-        });
-    }
+  async run<T>(callback: (tx: TransactionClient) => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      return callback(tx);
+    });
+  }
 }

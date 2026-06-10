@@ -6,8 +6,8 @@ import { EvaluationRepository } from './evaluation.repository';
 import { EvaluationService } from './evaluation.service';
 
 @Module({
-    imports: [CommonModule, DatabaseModule],
-    controllers: [EvaluationController],
-    providers: [EvaluationService, EvaluationRepository],
+  imports: [CommonModule, DatabaseModule],
+  controllers: [EvaluationController],
+  providers: [EvaluationService, EvaluationRepository],
 })
-export class EvaluationModule { }
+export class EvaluationModule {}

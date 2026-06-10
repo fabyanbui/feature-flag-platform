@@ -7,12 +7,12 @@ import { EvaluationService } from './evaluation.service';
 @ApiTags('Evaluation')
 @Controller('evaluate')
 export class EvaluationController {
-    constructor(private readonly evaluationService: EvaluationService) { }
+  constructor(private readonly evaluationService: EvaluationService) {}
 
-    @Post()
-    @HttpCode(HttpStatus.OK)
-    @ApiOkResponse({ type: EvaluateResponseDto })
-    evaluate(@Body() body: EvaluateRequestDto): Promise<EvaluateResponseDto> {
-        return this.evaluationService.evaluate(body);
-    }
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: EvaluateResponseDto })
+  evaluate(@Body() body: EvaluateRequestDto): Promise<EvaluateResponseDto> {
+    return this.evaluationService.evaluate(body);
+  }
 }

@@ -3,7 +3,7 @@ import { PrismaService } from './prisma.service';
 import { TransactionService } from './transaction.service';
 
 @Module({
-    providers: [PrismaService, TransactionService],
-    exports: [PrismaService, TransactionService],
+  providers: [PrismaService, TransactionService],
+  exports: [PrismaService, TransactionService],
 })
-export class DatabaseModule { }
+export class DatabaseModule {}

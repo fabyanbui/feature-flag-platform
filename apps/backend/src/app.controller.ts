@@ -6,7 +6,7 @@ import type { HealthResponse } from './app.service';
 @ApiTags('Health')
 @Controller('health')
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @ApiOkResponse({
     schema: {
