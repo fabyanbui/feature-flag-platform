@@ -5,31 +5,22 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class FlagRulesRepository {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    findByConfigId(
-        flagConfigId: string,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.flagRule.findMany({
-            where: { flagConfigId },
-            orderBy: { priority: 'asc' },
-        });
-    }
+  findByConfigId(flagConfigId: string, db: RepositoryClient = this.prisma) {
+    return db.flagRule.findMany({
+      where: { flagConfigId },
+      orderBy: { priority: 'asc' },
+    });
+  }
 
-    create(
-        data: Prisma.FlagRuleCreateInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.flagRule.create({ data });
-    }
+  create(data: Prisma.FlagRuleCreateInput, db: RepositoryClient = this.prisma) {
+    return db.flagRule.create({ data });
+  }
 
-    deleteByConfigId(
-        flagConfigId: string,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.flagRule.deleteMany({
-            where: { flagConfigId },
-        });
-    }
+  deleteByConfigId(flagConfigId: string, db: RepositoryClient = this.prisma) {
+    return db.flagRule.deleteMany({
+      where: { flagConfigId },
+    });
+  }
 }

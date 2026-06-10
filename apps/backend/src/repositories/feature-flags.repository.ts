@@ -5,44 +5,44 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class FeatureFlagsRepository {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    findByProjectIdAndKey(
-        projectId: string,
-        flagKey: string,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.featureFlag.findUnique({
-            where: {
-                projectId_key: {
-                    projectId,
-                    key: flagKey,
-                },
-            },
-        });
-    }
+  findByProjectIdAndKey(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.findUnique({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+    });
+  }
 
-    create(
-        data: Prisma.FeatureFlagCreateInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.featureFlag.create({ data });
-    }
+  create(
+    data: Prisma.FeatureFlagCreateInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.create({ data });
+  }
 
-    updateByProjectIdAndKey(
-        projectId: string,
-        flagKey: string,
-        data: Prisma.FeatureFlagUpdateInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.featureFlag.update({
-            where: {
-                projectId_key: {
-                    projectId,
-                    key: flagKey,
-                },
-            },
-            data,
-        });
-    }
+  updateByProjectIdAndKey(
+    projectId: string,
+    flagKey: string,
+    data: Prisma.FeatureFlagUpdateInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.update({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      data,
+    });
+  }
 }

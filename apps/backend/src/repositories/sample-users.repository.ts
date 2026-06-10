@@ -5,22 +5,19 @@ import { RepositoryClient } from './repository-client.type';
 
 @Injectable()
 export class SampleUsersRepository {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    findByProjectId(
-        projectId: string,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.sampleUserContext.findMany({
-            where: { projectId },
-            orderBy: { createdAt: 'desc' },
-        });
-    }
+  findByProjectId(projectId: string, db: RepositoryClient = this.prisma) {
+    return db.sampleUserContext.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
-    create(
-        data: Prisma.SampleUserContextCreateInput,
-        db: RepositoryClient = this.prisma,
-    ) {
-        return db.sampleUserContext.create({ data });
-    }
+  create(
+    data: Prisma.SampleUserContextCreateInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.sampleUserContext.create({ data });
+  }
 }

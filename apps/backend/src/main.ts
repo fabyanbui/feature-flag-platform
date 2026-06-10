@@ -2,10 +2,7 @@ import { ApiErrorCode } from './common/errors/api-error-code';
 import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import {
-  API_PREFIX,
-  SWAGGER_PATH,
-} from './common/constants/api.constants';
+import { API_PREFIX, SWAGGER_PATH } from './common/constants/api.constants';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { RequestContextService } from './common/request-context/request-context.service';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';

@@ -7,20 +7,20 @@ import { ProjectsRepository } from './projects.repository';
 import { SampleUsersRepository } from './sample-users.repository';
 
 @Module({
-    imports: [DatabaseModule],
-    providers: [
-        ProjectsRepository,
-        FeatureFlagsRepository,
-        FlagRulesRepository,
-        SampleUsersRepository,
-        AuditLogsRepository,
-    ],
-    exports: [
-        ProjectsRepository,
-        FeatureFlagsRepository,
-        FlagRulesRepository,
-        SampleUsersRepository,
-        AuditLogsRepository,
-    ],
+  imports: [DatabaseModule],
+  providers: [
+    ProjectsRepository,
+    FeatureFlagsRepository,
+    FlagRulesRepository,
+    SampleUsersRepository,
+    AuditLogsRepository,
+  ],
+  exports: [
+    ProjectsRepository,
+    FeatureFlagsRepository,
+    FlagRulesRepository,
+    SampleUsersRepository,
+    AuditLogsRepository,
+  ],
 })
-export class RepositoriesModule { }
+export class RepositoriesModule {}
