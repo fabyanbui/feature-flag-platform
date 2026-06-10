@@ -11,6 +11,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { FlagRulesModule } from './flag-rules/flag-rules.module';
 import { SampleUsersModule } from './sample-users/sample-users.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SampleUsersModule } from './sample-users/sample-users.module';
     FeatureFlagsModule,
     FlagRulesModule,
     SampleUsersModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
