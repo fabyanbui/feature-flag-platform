@@ -27,4 +27,23 @@ export class ProjectsRepository {
       data,
     });
   }
+
+  findMany(
+    where: Prisma.ProjectWhereInput,
+    orderBy: Prisma.ProjectOrderByWithRelationInput,
+    take: number,
+    skip: number,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.project.findMany({
+      where,
+      orderBy,
+      take,
+      skip,
+    });
+  }
+
+  count(where: Prisma.ProjectWhereInput, db: RepositoryClient = this.prisma) {
+    return db.project.count({ where });
+  }
 }

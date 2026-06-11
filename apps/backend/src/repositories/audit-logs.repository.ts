@@ -9,15 +9,16 @@ export class AuditLogsRepository {
 
   findMany(
     where: Prisma.AuditLogEntryWhereInput,
+    orderBy: Prisma.AuditLogEntryOrderByWithRelationInput,
     take: number,
     skip: number,
     db: RepositoryClient = this.prisma,
   ) {
     return db.auditLogEntry.findMany({
       where,
+      orderBy,
       take,
       skip,
-      orderBy: { createdAt: 'desc' },
     });
   }
 

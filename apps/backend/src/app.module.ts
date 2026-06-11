@@ -7,6 +7,11 @@ import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
 import { RepositoriesModule } from './repositories/repositories.module';
+import { ProjectsModule } from './projects/projects.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
+import { FlagRulesModule } from './flag-rules/flag-rules.module';
+import { SampleUsersModule } from './sample-users/sample-users.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -19,6 +24,11 @@ import { RepositoriesModule } from './repositories/repositories.module';
     AuditModule,
     RepositoriesModule,
     EvaluationModule,
+    ProjectsModule,
+    FeatureFlagsModule,
+    FlagRulesModule,
+    SampleUsersModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

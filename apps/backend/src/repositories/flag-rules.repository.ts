@@ -23,4 +23,30 @@ export class FlagRulesRepository {
       where: { flagConfigId },
     });
   }
+
+  findMany(
+    where: Prisma.FlagRuleWhereInput,
+    orderBy: Prisma.FlagRuleOrderByWithRelationInput,
+    take: number,
+    skip: number,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.flagRule.findMany({
+      where,
+      orderBy,
+      take,
+      skip,
+    });
+  }
+
+  count(where: Prisma.FlagRuleWhereInput, db: RepositoryClient = this.prisma) {
+    return db.flagRule.count({ where });
+  }
+
+  createMany(
+    data: Prisma.FlagRuleCreateManyInput[],
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.flagRule.createMany({ data });
+  }
 }
