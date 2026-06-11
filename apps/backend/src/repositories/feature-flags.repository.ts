@@ -45,4 +45,60 @@ export class FeatureFlagsRepository {
       data,
     });
   }
+
+  findMany(
+    where: Prisma.FeatureFlagWhereInput,
+    orderBy: Prisma.FeatureFlagOrderByWithRelationInput,
+    take: number,
+    skip: number,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.findMany({
+      where,
+      orderBy,
+      take,
+      skip,
+      include: {
+        environmentConfigs: {
+          include: {
+            environment: true,
+          },
+        },
+      },
+    });
+  }
+
+  count(
+    where: Prisma.FeatureFlagWhereInput,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.count({ where });
+  }
+
+  findByProjectIdAndKeyWithConfigs(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.findUnique({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      include: {
+        environmentConfigs: {
+          include: {
+            environment: true,
+            rules: {
+              orderBy: {
+                priority: 'asc',
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 }
