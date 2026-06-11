@@ -108,15 +108,19 @@ Purpose: compact context for future Codex sessions. Use this as an index, not a 
 
 ## Current observed working tree notes
 
-- Observed before writing this file on 2026-06-11:
-  - Branch: `feat/control-plane-api...origin/feat/control-plane-api`.
-  - `HEAD`: `03a7efa` (`docs: fix reference markdown trailing blanks`).
-  - Working tree was clean before creating
-    `docs/codex/history/2026-06-10-context-index.md`.
-- `develop`/`origin/develop` currently point at `dbe1d97`, the PR #19 merge for
-  Phase 4 data-plane API.
-- Current branch diff versus `origin/develop` is Phase 5 control-plane work plus
-  reference docs, centered on:
+- Current filesystem inspection on 2026-06-11 reports:
+  - Branch: `develop...origin/develop [ahead 1]`.
+  - `HEAD`: `186a3d7` (`docs: add June 10th codex context history index`).
+  - Working tree has this file modified after the latest summary corrections.
+- During this update, git status observations changed across commands
+  (`feat/control-plane-api` at `03a7efa`, then `docs/codebase-infra-lab` at
+  `bbb6ddb`, then `develop` at `186a3d7`). Treat that as concurrent local
+  branch/commit activity and trust the latest filesystem state above.
+- `origin/develop` currently points at `78846ef`, a 2026-06-11 merge of PR #20
+  from `feat/control-plane-api`. That merge is after the day summarized here,
+  so the June 10 PR #20 review notes are historical context.
+- Current branch includes Phase 5 control-plane work plus reference docs, centered
+  on:
   - `apps/backend/src/projects/**`
   - `apps/backend/src/feature-flags/**`
   - `apps/backend/src/flag-rules/**`
@@ -124,6 +128,8 @@ Purpose: compact context for future Codex sessions. Use this as an index, not a 
   - `apps/backend/src/audit-logs/**`
   - `apps/backend/test/phase-5-management.e2e-spec.ts`
   - `docs/codex/reference/phase-5-*.md`
+- Current local inspection still shows the three P2 PR #20 concerns likely
+  relevant in code; verify and fix them before relying on Phase 5 behavior.
 - Known caveat: e2e tests can need execution outside the Codex sandbox because
   Supertest local server binding may be blocked with `listen EPERM`.
 - Known data caveat: do not try to delete from `audit_log_entries` in tests;
@@ -131,17 +137,20 @@ Purpose: compact context for future Codex sessions. Use this as an index, not a 
 
 ## Best next prompt for Codex
 
-Continue on `feat/control-plane-api`. Read `AGENTS.md`,
+Continue from `develop` after the Phase 5 merge. Read `AGENTS.md`,
 `docs/plan/project-goal.md`, `docs/plan/implementation-roadmap.md`,
 `docs/design/mvp-api-and-contracts.md`, and
-`docs/codex/reference/phase-5-management-apis-implementation.md`. Before merging
-PR #20, fix the three P2 review issues: default flag-rule list order should be
-priority ascending, rule target arrays should trim or reject surrounding
+`docs/codex/reference/phase-5-management-apis-implementation.md`. First
+verify/fix the three Phase 5 review issues: default flag-rule list order should
+be priority ascending, rule target arrays should trim or reject surrounding
 whitespace, and feature-flag `sort=status` should either sort by actual status
-or be removed from allowed sort fields. Add/adjust focused backend tests, then
-run backend unit tests, build, e2e tests if available, and `git diff --check`.
-Preserve append-only audit logging, safe defaults, deterministic evaluation,
-stable non-PII rollout keys, and control-plane/data-plane separation.
+or be removed from allowed sort fields. Add focused backend tests, then run
+backend unit tests, build, e2e tests if available, and `git diff --check`. After
+that, move to Phase 6 early vertical slice: seed/verify a demo project, create a
+flag, configure at least one rule, evaluate through `POST /v1/evaluate`, verify
+audit entries, and document exact demo commands. Preserve append-only audit
+logging, safe defaults, deterministic evaluation, stable non-PII rollout keys,
+and control-plane/data-plane separation.
 
 ## Session index, compressed
 
