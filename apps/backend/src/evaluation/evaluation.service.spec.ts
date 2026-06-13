@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
     FeatureFlagLifecycleStatus,
     FlagConfigStatus,
@@ -16,9 +17,14 @@ describe('EvaluationService', () => {
     };
 
     let service: EvaluationService;
+    let loggerErrorSpy: jest.SpyInstance;
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        loggerErrorSpy = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
 
         requestContext.getRequestId.mockReturnValue('req-test');
 
@@ -26,6 +32,10 @@ describe('EvaluationService', () => {
             evaluationRepository as never,
             requestContext as never,
         );
+    });
+
+    afterEach(() => {
+        loggerErrorSpy.mockRestore();
     });
 
     it('calls repository with projectKey, environmentKey, and flagKey', async () => {
@@ -136,6 +146,11 @@ describe('EvaluationService', () => {
         });
 
         expect(requestContext.getRequestId).toHaveBeenCalled();
+
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+            expect.stringContaining('requestId=req-test'),
+            expect.any(String),
+        );
     });
 
     it('does not include environmentKey in engine input response', async () => {
