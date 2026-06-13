@@ -64,11 +64,12 @@ describe('ProjectsService', () => {
     let service: ProjectsService;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        jest.resetAllMocks();
 
         transactionService.run.mockImplementation(
             async (callback: (tx: never) => Promise<unknown>) => callback(tx),
         );
+
         requestContext.getActor.mockReturnValue('mentor@example.local');
         requestContext.getRequestId.mockReturnValue('req-test');
 
@@ -205,9 +206,7 @@ describe('ProjectsService', () => {
                 updatedAt: fixedDate,
             });
 
-            expect(projectsRepository.findByKey).toHaveBeenCalledWith(
-                'demo-project',
-            );
+            expect(projectsRepository.findByKey).toHaveBeenCalledWith('demo-project');
         });
 
         it('throws NOT_FOUND when project does not exist', async () => {
@@ -255,9 +254,7 @@ describe('ProjectsService', () => {
                 }),
             });
 
-            expect(projectsRepository.findByKey).toHaveBeenCalledWith(
-                'demo-project',
-            );
+            expect(projectsRepository.findByKey).toHaveBeenCalledWith('demo-project');
             expect(transactionService.run).not.toHaveBeenCalled();
             expect(auditLogService.record).not.toHaveBeenCalled();
         });
@@ -345,6 +342,168 @@ describe('ProjectsService', () => {
                     metadata: {
                         source: 'api',
                         defaultEnvironmentKey: 'production',
+                    },
+                    requestId: 'req-test',
+                }),
+            );
+        });
+    });
+
+    describe('update', () => {
+        it('rejects missing actor before mutation', async () => {
+            requestContext.getActor.mockReturnValue(undefined);
+
+            await expect(
+                service.update('demo-project', {
+                    name: 'Updated Project',
+                }),
+            ).rejects.toMatchObject({
+                response: expect.objectContaining({
+                    code: ApiErrorCode.VALIDATION_ERROR,
+                }),
+            });
+
+            expect(transactionService.run).not.toHaveBeenCalled();
+            expect(projectsRepository.updateByKey).not.toHaveBeenCalled();
+            expect(auditLogService.record).not.toHaveBeenCalled();
+        });
+
+        it('throws NOT_FOUND when project does not exist inside transaction', async () => {
+            projectsRepository.findByKey.mockResolvedValue(null);
+
+            await expect(
+                service.update('missing-project', {
+                    name: 'Updated Project',
+                }),
+            ).rejects.toMatchObject({
+                response: expect.objectContaining({
+                    code: ApiErrorCode.NOT_FOUND,
+                }),
+            });
+
+            expect(transactionService.run).toHaveBeenCalledTimes(1);
+            expect(projectsRepository.findByKey).toHaveBeenCalledWith(
+                'missing-project',
+                tx,
+            );
+            expect(projectsRepository.updateByKey).not.toHaveBeenCalled();
+            expect(auditLogService.record).not.toHaveBeenCalled();
+        });
+
+        it('updates mutable fields inside transaction', async () => {
+            const existing = createProject({
+                name: 'Old Project',
+                description: 'Old description.',
+            });
+
+            const updated = createProject({
+                name: 'Updated Project',
+                description: 'Updated description.',
+            });
+
+            projectsRepository.findByKey.mockResolvedValue(existing);
+            projectsRepository.updateByKey.mockResolvedValue(updated);
+
+            const result = await service.update('demo-project', {
+                name: 'Updated Project',
+                description: 'Updated description.',
+            });
+
+            expect(projectsRepository.findByKey).toHaveBeenCalledWith(
+                'demo-project',
+                tx,
+            );
+
+            expect(projectsRepository.updateByKey).toHaveBeenCalledWith(
+                'demo-project',
+                {
+                    name: 'Updated Project',
+                    description: 'Updated description.',
+                },
+                tx,
+            );
+
+            expect(result).toEqual({
+                id: 'project-1',
+                key: 'demo-project',
+                name: 'Updated Project',
+                description: 'Updated description.',
+                createdAt: fixedDate,
+                updatedAt: fixedDate,
+            });
+        });
+
+        it('passes undefined description through as undefined so existing description can be preserved', async () => {
+            const existing = createProject({
+                name: 'Old Project',
+                description: 'Old description.',
+            });
+
+            const updated = createProject({
+                name: 'Updated Project',
+                description: 'Old description.',
+            });
+
+            projectsRepository.findByKey.mockResolvedValue(existing);
+            projectsRepository.updateByKey.mockResolvedValue(updated);
+
+            await service.update('demo-project', {
+                name: 'Updated Project',
+            });
+
+            expect(projectsRepository.updateByKey).toHaveBeenCalledWith(
+                'demo-project',
+                {
+                    name: 'Updated Project',
+                    description: undefined,
+                },
+                tx,
+            );
+        });
+
+        it('writes PROJECT_UPDATED audit entry with before and after snapshots in the same transaction', async () => {
+            const existing = createProject({
+                name: 'Old Project',
+                description: 'Old description.',
+            });
+
+            const updated = createProject({
+                name: 'Updated Project',
+                description: 'Updated description.',
+            });
+
+            projectsRepository.findByKey.mockResolvedValue(existing);
+            projectsRepository.updateByKey.mockResolvedValue(updated);
+
+            await service.update('demo-project', {
+                name: 'Updated Project',
+                description: 'Updated description.',
+            });
+
+            expect(auditLogService.record).toHaveBeenCalledWith(
+                tx,
+                expect.objectContaining({
+                    projectId: 'project-1',
+                    projectKey: 'demo-project',
+                    targetType: AuditTargetType.PROJECT,
+                    targetId: 'project-1',
+                    targetKey: 'demo-project',
+                    action: AuditAction.PROJECT_UPDATED,
+                    actor: 'mentor@example.local',
+                    before: {
+                        id: 'project-1',
+                        key: 'demo-project',
+                        name: 'Old Project',
+                        description: 'Old description.',
+                    },
+                    after: {
+                        id: 'project-1',
+                        key: 'demo-project',
+                        name: 'Updated Project',
+                        description: 'Updated description.',
+                    },
+                    metadata: {
+                        source: 'api',
                     },
                     requestId: 'req-test',
                 }),
