@@ -1,3 +1,4 @@
+import { AuditAction, AuditTargetType } from '@prisma/client';
 import { ApiErrorCode } from '../common/errors/api-error-code';
 import { ProjectsService } from './projects.service';
 
@@ -15,7 +16,26 @@ function createProject(overrides = {}) {
     };
 }
 
+function createEnvironment(overrides = {}) {
+    return {
+        id: 'environment-1',
+        projectId: 'project-1',
+        key: 'production',
+        name: 'Production',
+        description: 'Default production environment.',
+        isDefault: true,
+        sortOrder: 0,
+        createdAt: fixedDate,
+        updatedAt: fixedDate,
+        ...overrides,
+    };
+}
+
 describe('ProjectsService', () => {
+    const tx = {
+        kind: 'transaction-client',
+    } as never;
+
     const projectsRepository = {
         findByKey: jest.fn(),
         findMany: jest.fn(),
@@ -46,6 +66,9 @@ describe('ProjectsService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
+        transactionService.run.mockImplementation(
+            async (callback: (tx: never) => Promise<unknown>) => callback(tx),
+        );
         requestContext.getActor.mockReturnValue('mentor@example.local');
         requestContext.getRequestId.mockReturnValue('req-test');
 
@@ -182,7 +205,9 @@ describe('ProjectsService', () => {
                 updatedAt: fixedDate,
             });
 
-            expect(projectsRepository.findByKey).toHaveBeenCalledWith('demo-project');
+            expect(projectsRepository.findByKey).toHaveBeenCalledWith(
+                'demo-project',
+            );
         });
 
         it('throws NOT_FOUND when project does not exist', async () => {
@@ -193,6 +218,137 @@ describe('ProjectsService', () => {
                     code: ApiErrorCode.NOT_FOUND,
                 }),
             });
+        });
+    });
+
+    describe('create', () => {
+        it('rejects missing actor before mutation', async () => {
+            requestContext.getActor.mockReturnValue(undefined);
+
+            await expect(
+                service.create({
+                    key: 'demo-project',
+                    name: 'Demo Project',
+                }),
+            ).rejects.toMatchObject({
+                response: expect.objectContaining({
+                    code: ApiErrorCode.VALIDATION_ERROR,
+                }),
+            });
+
+            expect(projectsRepository.findByKey).not.toHaveBeenCalled();
+            expect(transactionService.run).not.toHaveBeenCalled();
+            expect(auditLogService.record).not.toHaveBeenCalled();
+        });
+
+        it('rejects duplicate project key with CONFLICT', async () => {
+            projectsRepository.findByKey.mockResolvedValue(createProject());
+
+            await expect(
+                service.create({
+                    key: 'demo-project',
+                    name: 'Demo Project',
+                }),
+            ).rejects.toMatchObject({
+                response: expect.objectContaining({
+                    code: ApiErrorCode.CONFLICT,
+                }),
+            });
+
+            expect(projectsRepository.findByKey).toHaveBeenCalledWith(
+                'demo-project',
+            );
+            expect(transactionService.run).not.toHaveBeenCalled();
+            expect(auditLogService.record).not.toHaveBeenCalled();
+        });
+
+        it('creates project and default production environment in one transaction', async () => {
+            const project = createProject();
+            const environment = createEnvironment();
+
+            projectsRepository.findByKey.mockResolvedValue(null);
+            projectsRepository.create.mockResolvedValue(project);
+            environmentsRepository.create.mockResolvedValue(environment);
+
+            const result = await service.create({
+                key: 'demo-project',
+                name: 'Demo Project',
+                description: 'Demo project description.',
+            });
+
+            expect(transactionService.run).toHaveBeenCalledTimes(1);
+
+            expect(projectsRepository.create).toHaveBeenCalledWith(
+                {
+                    key: 'demo-project',
+                    name: 'Demo Project',
+                    description: 'Demo project description.',
+                },
+                tx,
+            );
+
+            expect(environmentsRepository.create).toHaveBeenCalledWith(
+                {
+                    projectId: 'project-1',
+                    key: 'production',
+                    name: 'Production',
+                    description: 'Default production environment.',
+                    isDefault: true,
+                    sortOrder: 0,
+                },
+                tx,
+            );
+
+            expect(result).toEqual({
+                id: 'project-1',
+                key: 'demo-project',
+                name: 'Demo Project',
+                description: 'Demo project description.',
+                createdAt: fixedDate,
+                updatedAt: fixedDate,
+            });
+        });
+
+        it('writes PROJECT_CREATED audit entry in the same transaction', async () => {
+            const project = createProject();
+            const environment = createEnvironment();
+
+            projectsRepository.findByKey.mockResolvedValue(null);
+            projectsRepository.create.mockResolvedValue(project);
+            environmentsRepository.create.mockResolvedValue(environment);
+
+            await service.create({
+                key: 'demo-project',
+                name: 'Demo Project',
+                description: 'Demo project description.',
+            });
+
+            expect(auditLogService.record).toHaveBeenCalledWith(
+                tx,
+                expect.objectContaining({
+                    projectId: 'project-1',
+                    projectKey: 'demo-project',
+                    environmentId: 'environment-1',
+                    environmentKey: 'production',
+                    targetType: AuditTargetType.PROJECT,
+                    targetId: 'project-1',
+                    targetKey: 'demo-project',
+                    action: AuditAction.PROJECT_CREATED,
+                    actor: 'mentor@example.local',
+                    before: null,
+                    after: {
+                        id: 'project-1',
+                        key: 'demo-project',
+                        name: 'Demo Project',
+                        description: 'Demo project description.',
+                    },
+                    metadata: {
+                        source: 'api',
+                        defaultEnvironmentKey: 'production',
+                    },
+                    requestId: 'req-test',
+                }),
+            );
         });
     });
 });
