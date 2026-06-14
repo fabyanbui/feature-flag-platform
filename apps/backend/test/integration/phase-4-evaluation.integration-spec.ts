@@ -6,19 +6,28 @@ import {
     createUniqueRunId,
     withRequestContext,
 } from './integration-test-helpers';
+import { PrismaService } from '../../src/database/prisma.service';
+import { FeatureFlagsService } from '../../src/feature-flags/feature-flags.service';
+import { FlagRulesService } from '../../src/flag-rules/flag-rules.service';
 
 describe('Phase 4 evaluation integration', () => {
     let moduleRef: TestingModule;
+    let prisma: PrismaService;
     let evaluationService: EvaluationService;
     let projectsService: ProjectsService;
+    let featureFlagsService: FeatureFlagsService;
+    let flagRulesService: FlagRulesService;
 
     const actor = 'integration-test@example.local';
 
     beforeAll(async () => {
         moduleRef = await createIntegrationTestingModule();
 
+        prisma = moduleRef.get(PrismaService);
         evaluationService = moduleRef.get(EvaluationService);
         projectsService = moduleRef.get(ProjectsService);
+        featureFlagsService = moduleRef.get(FeatureFlagsService);
+        flagRulesService = moduleRef.get(FlagRulesService);
     });
 
     afterAll(async () => {
@@ -81,5 +90,103 @@ describe('Phase 4 evaluation integration', () => {
             reason: 'NOT_FOUND',
             matchedRuleId: null,
         });
+    });
+
+    it('evaluates a persisted role-targeting rule as ROLE_MATCH', async () => {
+        const runId = createUniqueRunId('eval');
+        const projectKey = `${runId}-project`;
+        const flagKey = `${runId}-flag`;
+        const requestId = `${runId}-request`;
+        const betaRole = `${runId}-beta`;
+        const targetingKey = `${runId}-user`;
+
+        await withRequestContext(moduleRef, { actor, requestId }, () =>
+            projectsService.create({
+                key: projectKey,
+                name: 'Persisted Evaluation Project',
+            }),
+        );
+
+        await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-flag`,
+            },
+            () =>
+                featureFlagsService.create(projectKey, {
+                    key: flagKey,
+                    name: 'Persisted Evaluation Flag',
+                }),
+        );
+
+        await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-rules`,
+            },
+            () =>
+                flagRulesService.replace(projectKey, flagKey, {
+                    rules: [
+                        {
+                            type: 'ROLE_TARGETING',
+                            priority: 10,
+                            enabled: true,
+                            parameters: {
+                                roles: [betaRole],
+                            },
+                        },
+                    ],
+                }),
+        );
+
+        await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-enable`,
+            },
+            () =>
+                featureFlagsService.update(projectKey, flagKey, {
+                    status: 'ENABLED',
+                    servingMode: 'TARGETED',
+                    killSwitch: false,
+                }),
+        );
+
+        const auditCountBefore = await prisma.auditLogEntry.count({
+            where: {
+                projectKey,
+            },
+        });
+
+        const result = await evaluationService.evaluate({
+            projectKey,
+            flagKey,
+            context: {
+                targetingKey,
+                userId: targetingKey,
+                roles: [betaRole],
+            },
+        });
+
+        expect(result).toMatchObject({
+            projectKey,
+            flagKey,
+            enabled: true,
+            variant: 'on',
+            reason: 'ROLE_MATCH',
+        });
+
+        expect(result.matchedRuleId).toEqual(expect.any(String));
+
+        const auditCountAfter = await prisma.auditLogEntry.count({
+            where: {
+                projectKey,
+            },
+        });
+
+        expect(auditCountAfter).toBe(auditCountBefore);
     });
 });
