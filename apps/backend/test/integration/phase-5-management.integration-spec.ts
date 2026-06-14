@@ -9,11 +9,13 @@ import {
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { AuditLogService } from '../../src/audit/audit-log.service';
+import { FeatureFlagsService } from '../../src/feature-flags/feature-flags.service';
 
 describe('Phase 5 management integration', () => {
     let moduleRef: TestingModule;
     let prisma: PrismaService;
     let projectsService: ProjectsService;
+    let featureFlagsService: FeatureFlagsService;
 
     const actor = 'integration-test@example.local';
 
@@ -22,6 +24,7 @@ describe('Phase 5 management integration', () => {
 
         prisma = moduleRef.get(PrismaService);
         projectsService = moduleRef.get(ProjectsService);
+        featureFlagsService = moduleRef.get(FeatureFlagsService);
     });
 
     afterAll(async () => {
@@ -98,6 +101,106 @@ describe('Phase 5 management integration', () => {
         expect(audit?.metadata).toMatchObject({
             source: 'api',
             defaultEnvironmentKey: 'production',
+        });
+    });
+
+    it('creates a feature flag with safe default config and audit log', async () => {
+        const runId = createUniqueRunId('ff');
+        const projectKey = `${runId}-project`;
+        const flagKey = `${runId}-flag`;
+        const requestId = `${runId}-request`;
+
+        await withRequestContext(moduleRef, { actor, requestId }, () =>
+            projectsService.create({
+                key: projectKey,
+                name: 'Flag Integration Project',
+            }),
+        );
+
+        const created = await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-flag`,
+            },
+            () =>
+                featureFlagsService.create(projectKey, {
+                    key: flagKey,
+                    name: 'New Checkout',
+                    description: 'Checkout rollout test flag',
+                }),
+        );
+
+        expect(created).toMatchObject({
+            projectKey,
+            key: flagKey,
+            name: 'New Checkout',
+            description: 'Checkout rollout test flag',
+            lifecycleStatus: 'ACTIVE',
+            status: 'DISABLED',
+            servingMode: 'TARGETED',
+            killSwitch: false,
+            environmentKey: 'production',
+        });
+
+        const flag = await prisma.featureFlag.findFirst({
+            where: {
+                key: flagKey,
+                project: {
+                    key: projectKey,
+                },
+            },
+        });
+
+        expect(flag).toBeTruthy();
+        expect(flag).toMatchObject({
+            key: flagKey,
+            lifecycleStatus: 'ACTIVE',
+        });
+
+        const config = await prisma.flagEnvironmentConfig.findFirst({
+            where: {
+                flagId: flag?.id,
+                environment: {
+                    key: 'production',
+                    isDefault: true,
+                },
+            },
+        });
+
+        expect(config).toBeTruthy();
+        expect(config).toMatchObject({
+            status: 'DISABLED',
+            servingMode: 'TARGETED',
+            killSwitch: false,
+        });
+
+        const audit = await prisma.auditLogEntry.findFirst({
+            where: {
+                projectKey,
+                targetType: 'FEATURE_FLAG',
+                targetKey: flagKey,
+                action: 'FEATURE_FLAG_CREATED',
+                actor,
+                requestId: `${requestId}-flag`,
+            },
+        });
+
+        expect(audit).toBeTruthy();
+        expect(audit?.environmentKey).toBe('production');
+        expect(audit?.before).toBeNull();
+        expect(audit?.after).toMatchObject({
+            projectKey,
+            key: flagKey,
+            name: 'New Checkout',
+            lifecycleStatus: 'ACTIVE',
+            status: 'DISABLED',
+            servingMode: 'TARGETED',
+            killSwitch: false,
+            environmentKey: 'production',
+        });
+        expect(audit?.metadata).toMatchObject({
+            source: 'api',
         });
     });
 });
