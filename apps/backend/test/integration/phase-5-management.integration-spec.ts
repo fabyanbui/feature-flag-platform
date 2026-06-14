@@ -6,6 +6,9 @@ import {
     createUniqueRunId,
     withRequestContext,
 } from './integration-test-helpers';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../../src/app.module';
+import { AuditLogService } from '../../src/audit/audit-log.service';
 
 describe('Phase 5 management integration', () => {
     let moduleRef: TestingModule;
@@ -96,5 +99,65 @@ describe('Phase 5 management integration', () => {
             source: 'api',
             defaultEnvironmentKey: 'production',
         });
+    });
+});
+
+describe('Phase 5 management rollback integration', () => {
+    let moduleRef: TestingModule;
+    let prisma: PrismaService;
+    let projectsService: ProjectsService;
+
+    const actor = 'integration-test@example.local';
+
+    beforeAll(async () => {
+        moduleRef = await Test.createTestingModule({
+            imports: [AppModule],
+        })
+            .overrideProvider(AuditLogService)
+            .useValue({
+                record: jest.fn().mockRejectedValue(new Error('forced audit failure')),
+            })
+            .compile();
+
+        await moduleRef.init();
+
+        prisma = moduleRef.get(PrismaService);
+        projectsService = moduleRef.get(ProjectsService);
+    });
+
+    afterAll(async () => {
+        await moduleRef.close();
+    });
+
+    it('rolls back project creation when audit logging fails', async () => {
+        const runId = createUniqueRunId('rb');
+        const projectKey = `${runId}-project`;
+        const requestId = `${runId}-request`;
+
+        await expect(
+            withRequestContext(moduleRef, { actor, requestId }, () =>
+                projectsService.create({
+                    key: projectKey,
+                    name: 'Rollback Project',
+                }),
+            ),
+        ).rejects.toThrow('forced audit failure');
+
+        const projectCount = await prisma.project.count({
+            where: {
+                key: projectKey,
+            },
+        });
+
+        const environmentCount = await prisma.environment.count({
+            where: {
+                project: {
+                    key: projectKey,
+                },
+            },
+        });
+
+        expect(projectCount).toBe(0);
+        expect(environmentCount).toBe(0);
     });
 });
