@@ -9,6 +9,5 @@
     "testRegex": ".integration-spec.ts$",
     "transform": {
         "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "runInBand": true
+    }
 }
