@@ -189,4 +189,98 @@ describe('Phase 4 evaluation integration', () => {
 
         expect(auditCountAfter).toBe(auditCountBefore);
     });
+
+    it('evaluates persisted percentage rollout deterministically for the same targeting key', async () => {
+        const runId = createUniqueRunId('rollout');
+        const projectKey = `${runId}-project`;
+        const flagKey = `${runId}-flag`;
+        const requestId = `${runId}-request`;
+        const targetingKey = `${runId}-stable-user`;
+
+        await withRequestContext(moduleRef, { actor, requestId }, () =>
+            projectsService.create({
+                key: projectKey,
+                name: 'Percentage Rollout Project',
+            }),
+        );
+
+        await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-flag`,
+            },
+            () =>
+                featureFlagsService.create(projectKey, {
+                    key: flagKey,
+                    name: 'Percentage Rollout Flag',
+                }),
+        );
+
+        await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-rules`,
+            },
+            () =>
+                flagRulesService.replace(projectKey, flagKey, {
+                    rules: [
+                        {
+                            type: 'PERCENTAGE_ROLLOUT',
+                            priority: 10,
+                            enabled: true,
+                            parameters: {
+                                percentage: 100,
+                            },
+                        },
+                    ],
+                }),
+        );
+
+        await withRequestContext(
+            moduleRef,
+            {
+                actor,
+                requestId: `${requestId}-enable`,
+            },
+            () =>
+                featureFlagsService.update(projectKey, flagKey, {
+                    status: 'ENABLED',
+                    servingMode: 'TARGETED',
+                    killSwitch: false,
+                }),
+        );
+
+        const firstResult = await evaluationService.evaluate({
+            projectKey,
+            flagKey,
+            context: {
+                targetingKey,
+                userId: targetingKey,
+                roles: [],
+            },
+        });
+
+        const secondResult = await evaluationService.evaluate({
+            projectKey,
+            flagKey,
+            context: {
+                targetingKey,
+                userId: targetingKey,
+                roles: [],
+            },
+        });
+
+        expect(firstResult).toMatchObject({
+            projectKey,
+            flagKey,
+            enabled: true,
+            variant: 'on',
+            reason: 'PERCENTAGE_ROLLOUT',
+        });
+
+        expect(secondResult).toEqual(firstResult);
+        expect(firstResult.matchedRuleId).toEqual(expect.any(String));
+    });
 });
