@@ -382,6 +382,6 @@ export class SampleUsersService {
       return {};
     }
 
-    return value as Record<string, unknown>;
+    return value;
   }
 }
