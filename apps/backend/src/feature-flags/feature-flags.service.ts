@@ -247,7 +247,7 @@ export class FeatureFlagsService {
         tx,
       );
 
-      const config = await this.flagConfigsRepository.updateById(
+      await this.flagConfigsRepository.updateById(
         existingDefaultConfig.id,
         {
           status: body.status,

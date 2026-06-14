@@ -19,7 +19,9 @@ export async function createE2eApp(): Promise<INestApplication<App>> {
 
   const app = moduleFixture.createNestApplication<App>();
 
-  const requestContext = app.get(RequestContextService);
+  const requestContext = moduleFixture.get<RequestContextService>(
+    RequestContextService,
+  );
   const requestContextMiddleware = new RequestContextMiddleware(requestContext);
 
   app.use(requestContextMiddleware.use.bind(requestContextMiddleware));
