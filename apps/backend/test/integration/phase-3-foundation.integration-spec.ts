@@ -11,6 +11,8 @@ import { createUniqueRunId } from './integration-test-helpers';
 describe('Phase 3 foundation app integration', () => {
   let app: INestApplication<App>;
 
+  const httpServer = (): App => app.getHttpAdapter().getInstance() as App;
+
   beforeAll(async () => {
     app = await createE2eApp();
   });
@@ -23,7 +25,7 @@ describe('Phase 3 foundation app integration', () => {
     const runId = createUniqueRunId('infra');
     const requestId = `${runId}-request`;
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(httpServer())
       .post('/v1/projects')
       .set(REQUEST_ID_HEADER, requestId)
       .send({
@@ -46,7 +48,7 @@ describe('Phase 3 foundation app integration', () => {
     const runId = createUniqueRunId('infra');
     const requestId = `${runId}-request`;
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(httpServer())
       .post('/v1/evaluate')
       .set(REQUEST_ID_HEADER, requestId)
       .send({
@@ -75,7 +77,7 @@ describe('Phase 3 foundation app integration', () => {
     const projectKey = `${runId}-missing-project`;
     const flagKey = `${runId}-flag`;
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(httpServer())
       .post('/v1/evaluate')
       .send({
         projectKey,
