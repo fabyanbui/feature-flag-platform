@@ -30,7 +30,7 @@ function removeUndefinedAndNormalize(
   if (Array.isArray(value)) {
     return value
       .map((item) => removeUndefinedAndNormalize(item))
-      .filter((item) => item !== undefined) as Prisma.InputJsonArray;
+      .filter((item) => item !== undefined);
   }
 
   if (typeof value === 'object') {
