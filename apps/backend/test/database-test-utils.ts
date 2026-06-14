@@ -1,6 +1,8 @@
 import { PrismaService } from '../src/database/prisma.service';
 
 export async function cleanDatabase(_prisma: PrismaService) {
+  void _prisma;
+
   // Intentionally no-op.
   //
   // The database enforces audit logs as append-only, so tests must not delete

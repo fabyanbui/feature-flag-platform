@@ -18,17 +18,17 @@ describe('ActorRequiredGuard', () => {
   it('returns true when request context has actor', () => {
     requestContext.getActor.mockReturnValue('mentor@example.local');
 
-    expect(guard.canActivate({} as never)).toBe(true);
+    expect(guard.canActivate({})).toBe(true);
     expect(requestContext.getActor).toHaveBeenCalled();
   });
 
   it('throws VALIDATION_ERROR when actor is missing', () => {
     requestContext.getActor.mockReturnValue(undefined);
 
-    expect(() => guard.canActivate({} as never)).toThrow(BadRequestException);
+    expect(() => guard.canActivate({})).toThrow(BadRequestException);
 
     try {
-      guard.canActivate({} as never);
+      guard.canActivate({});
     } catch (error) {
       expect(error).toBeInstanceOf(BadRequestException);
       expect((error as BadRequestException).getResponse()).toEqual({
@@ -48,6 +48,6 @@ describe('ActorRequiredGuard', () => {
   it('throws VALIDATION_ERROR when actor is empty string', () => {
     requestContext.getActor.mockReturnValue('');
 
-    expect(() => guard.canActivate({} as never)).toThrow(BadRequestException);
+    expect(() => guard.canActivate({})).toThrow(BadRequestException);
   });
 });

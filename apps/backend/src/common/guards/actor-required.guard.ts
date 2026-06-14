@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, CanActivate, Injectable } from '@nestjs/common';
 import { ApiErrorCode } from '../errors/api-error-code';
 import { RequestContextService } from '../request-context/request-context.service';
 
@@ -11,7 +6,7 @@ import { RequestContextService } from '../request-context/request-context.servic
 export class ActorRequiredGuard implements CanActivate {
   constructor(private readonly requestContext: RequestContextService) {}
 
-  canActivate(_context: ExecutionContext): boolean {
+  canActivate(): boolean {
     const actor = this.requestContext.getActor();
 
     if (!actor) {

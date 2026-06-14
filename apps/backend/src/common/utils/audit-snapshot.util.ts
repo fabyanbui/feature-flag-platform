@@ -49,5 +49,13 @@ function removeUndefinedAndNormalize(
     return value;
   }
 
-  return String(value);
+  if (typeof value === 'symbol' || typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  if (typeof value === 'function') {
+    return `[Function ${value.name || 'anonymous'}]`;
+  }
+
+  return null;
 }
