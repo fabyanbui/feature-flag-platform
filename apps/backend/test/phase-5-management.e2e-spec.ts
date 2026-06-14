@@ -35,7 +35,7 @@ describe('Phase 5 management APIs (e2e)', () => {
   });
 
   it('creates a project with default environment and audit log', async () => {
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(app.getHttpServer())
       .post('/v1/projects')
       .set('X-Actor', actor)
       .set('X-Request-Id', requestId)
@@ -79,7 +79,7 @@ describe('Phase 5 management APIs (e2e)', () => {
   });
 
   it('rejects project creation without X-Actor', async () => {
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(app.getHttpServer())
       .post('/v1/projects')
       .send({
         key: projectKey,
@@ -93,7 +93,7 @@ describe('Phase 5 management APIs (e2e)', () => {
   });
 
   it('returns conflict for duplicate project key', async () => {
-    await request(app.getHttpAdapter().getInstance())
+    await request(app.getHttpServer())
       .post('/v1/projects')
       .set('X-Actor', actor)
       .send({
@@ -102,7 +102,7 @@ describe('Phase 5 management APIs (e2e)', () => {
       })
       .expect(201);
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(app.getHttpServer())
       .post('/v1/projects')
       .set('X-Actor', actor)
       .send({
@@ -119,7 +119,7 @@ describe('Phase 5 management APIs (e2e)', () => {
   it('creates, updates, archives, and restores a feature flag with audit logs', async () => {
     await createProject(app, actor, projectKey);
 
-    const created = await request(app.getHttpAdapter().getInstance())
+    const created = await request(app.getHttpServer())
       .post(`/v1/projects/${projectKey}/flags`)
       .set('X-Actor', actor)
       .send({
@@ -139,7 +139,7 @@ describe('Phase 5 management APIs (e2e)', () => {
       environmentKey: 'production',
     });
 
-    const updated = await request(app.getHttpAdapter().getInstance())
+    const updated = await request(app.getHttpServer())
       .patch(`/v1/projects/${projectKey}/flags/${flagKey}`)
       .set('X-Actor', actor)
       .send({
@@ -154,7 +154,7 @@ describe('Phase 5 management APIs (e2e)', () => {
       servingMode: 'GLOBAL_ON',
     });
 
-    await request(app.getHttpAdapter().getInstance())
+    await request(app.getHttpServer())
       .post(`/v1/projects/${projectKey}/flags/${flagKey}/archive`)
       .set('X-Actor', actor)
       .expect(200)
@@ -162,7 +162,7 @@ describe('Phase 5 management APIs (e2e)', () => {
         expect(body.lifecycleStatus).toBe('ARCHIVED');
       });
 
-    await request(app.getHttpAdapter().getInstance())
+    await request(app.getHttpServer())
       .post(`/v1/projects/${projectKey}/flags/${flagKey}/restore`)
       .set('X-Actor', actor)
       .expect(200)
@@ -185,7 +185,7 @@ describe('Phase 5 management APIs (e2e)', () => {
     await createProject(app, actor, projectKey);
     await createFlag(app, actor, projectKey, flagKey);
 
-    await request(app.getHttpAdapter().getInstance())
+    await request(app.getHttpServer())
       .put(`/v1/projects/${projectKey}/flags/${flagKey}/rules`)
       .set('X-Actor', actor)
       .send({
@@ -210,7 +210,7 @@ describe('Phase 5 management APIs (e2e)', () => {
         });
       });
 
-    await request(app.getHttpAdapter().getInstance())
+    await request(app.getHttpServer())
       .patch(`/v1/projects/${projectKey}/flags/${flagKey}`)
       .set('X-Actor', actor)
       .send({
@@ -219,7 +219,7 @@ describe('Phase 5 management APIs (e2e)', () => {
       })
       .expect(200);
 
-    const evaluation = await request(app.getHttpAdapter().getInstance())
+    const evaluation = await request(app.getHttpServer())
       .post('/v1/evaluate')
       .send({
         projectKey,
@@ -256,7 +256,7 @@ describe('Phase 5 management APIs (e2e)', () => {
     await createProject(app, actor, projectKey);
     await createFlag(app, actor, projectKey, flagKey);
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(app.getHttpServer())
       .put(`/v1/projects/${projectKey}/flags/${flagKey}/rules`)
       .set('X-Actor', actor)
       .send({
@@ -289,7 +289,7 @@ describe('Phase 5 management APIs (e2e)', () => {
   it('creates normalized sample users', async () => {
     await createProject(app, actor, projectKey);
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(app.getHttpServer())
       .post(`/v1/projects/${projectKey}/sample-users`)
       .set('X-Actor', actor)
       .send({
@@ -326,7 +326,7 @@ describe('Phase 5 management APIs (e2e)', () => {
     await createProject(app, actor, projectKey);
     await createFlag(app, actor, projectKey, flagKey);
 
-    const response = await request(app.getHttpAdapter().getInstance())
+    const response = await request(app.getHttpServer())
       .get(`/v1/projects/${projectKey}/audit-logs`)
       .query({
         targetType: 'FEATURE_FLAG',
@@ -359,7 +359,7 @@ async function createProject(
   actor: string,
   projectKey: string,
 ) {
-  return request(app.getHttpAdapter().getInstance())
+  return request(app.getHttpServer())
     .post('/v1/projects')
     .set('X-Actor', actor)
     .send({
@@ -375,7 +375,7 @@ async function createFlag(
   projectKey: string,
   flagKey: string,
 ) {
-  return request(app.getHttpAdapter().getInstance())
+  return request(app.getHttpServer())
     .post(`/v1/projects/${projectKey}/flags`)
     .set('X-Actor', actor)
     .send({
