@@ -97,6 +97,11 @@ recommended enhancements.
 - Verify audit entries are written for setup mutations.
 - Use the slice to validate API contracts before expanding UI scope.
 
+**Phase 6 validation note:** The early vertical slice is covered by
+`apps/backend/test/phase-6-vertical-slice.e2e-spec.ts` and the demo app now
+calls `/v1/evaluate` to display `projectKey`, `flagKey`, `enabled`, and
+`reason` for beta-tester and regular-user contexts.
+
 ## Phase 7 — Admin UI
 
 - Project list.
