@@ -548,3 +548,63 @@ textarea {
   flex-wrap: wrap;
   gap: 0.75rem;
 }
+
+.rule-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.rule-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: rgba(30, 41, 59, 0.58);
+}
+
+.rule-card-header,
+.rule-card-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rule-card-header h3,
+.rule-card-header p {
+  margin: 0;
+}
+
+.rule-card-header p {
+  margin-top: 0.35rem;
+  color: #94a3b8;
+}
+
+.switch-field {
+  display: inline-flex;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.switch-field input {
+  width: auto;
+}
+
+.fallback-card,
+.evaluation-result {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 1rem;
+  background: rgba(88, 28, 135, 0.22);
+}
+
+.fallback-card h3,
+.fallback-card p,
+.evaluation-result h3 {
+  margin: 0;
+}

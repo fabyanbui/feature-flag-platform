@@ -3,6 +3,7 @@ import './App.css';
 import { FlagListPage } from './pages/FlagListPage';
 import { ProjectListPage } from './pages/ProjectListPage';
 import { FlagForm } from './pages/FlagForm';
+import { RuleEditorPage } from './pages/RuleEditorPage';
 
 type AdminView = 'projects' | 'flags' | 'flag-form' | 'rules';
 
@@ -97,22 +98,11 @@ function App() {
       ) : null}
 
       {view === 'rules' && selectedProjectKey && selectedFlagKey ? (
-        <section className="page-stack">
-          <div className="state-card">
-            <h1>Rule editor coming in Step 8</h1>
-            <p>
-              Project: <code>{selectedProjectKey}</code> / Flag:{' '}
-              <code>{selectedFlagKey}</code>
-            </p>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => setView('flags')}
-            >
-              Back to flags
-            </button>
-          </div>
-        </section>
+        <RuleEditorPage
+          projectKey={selectedProjectKey}
+          flagKey={selectedFlagKey}
+          onBackToFlags={() => setView('flags')}
+        />
       ) : null}
     </main>
   );
