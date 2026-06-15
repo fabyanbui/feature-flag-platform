@@ -61,9 +61,6 @@ export function AuditLogPage({
     const [error, setError] = useState<string | null>(null);
 
     const loadAuditLogs = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
         try {
             const response = await adminApi.listAuditLogs(projectKey, {
                 targetType: submittedFilters.targetType || undefined,
@@ -90,15 +87,23 @@ export function AuditLogPage({
     }, [projectKey, submittedFilters]);
 
     useEffect(() => {
-        void loadAuditLogs();
+        const timeoutId = window.setTimeout(() => {
+            void loadAuditLogs();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [loadAuditLogs]);
 
     function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setLoading(true);
+        setError(null);
         setSubmittedFilters(filters);
     }
 
     function resetFilters() {
+        setLoading(true);
+        setError(null);
         setFilters(initialFilters);
         setSubmittedFilters(initialFilters);
     }
@@ -258,7 +263,11 @@ export function AuditLogPage({
                     <button
                         type="button"
                         className="button button-secondary"
-                        onClick={loadAuditLogs}
+                        onClick={() => {
+              setLoading(true);
+              setError(null);
+              void loadAuditLogs();
+            }}
                     >
                         Refresh
                     </button>

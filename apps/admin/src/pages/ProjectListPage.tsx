@@ -33,9 +33,6 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
     const [formError, setFormError] = useState<string | null>(null);
 
     const loadProjects = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
         try {
             const response = await adminApi.listProjects({
                 search: submittedSearch,
@@ -57,11 +54,17 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
     }, [submittedSearch]);
 
     useEffect(() => {
-        void loadProjects();
+        const timeoutId = window.setTimeout(() => {
+            void loadProjects();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [loadProjects]);
 
     function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setLoading(true);
+        setError(null);
         setSubmittedSearch(search.trim());
     }
 

@@ -56,9 +56,6 @@ export function FlagForm({
             return;
         }
 
-        setLoading(true);
-        setError(null);
-
         try {
             const flag = await adminApi.getFlag(projectKey, flagKey);
 
@@ -84,7 +81,11 @@ export function FlagForm({
     }, [projectKey, flagKey]);
 
     useEffect(() => {
-        void loadFlag();
+        const timeoutId = window.setTimeout(() => {
+            void loadFlag();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [loadFlag]);
 
     const previewFlag = useMemo<FeatureFlag | null>(() => {

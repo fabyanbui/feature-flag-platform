@@ -64,9 +64,6 @@ export function RuleEditorPage({
     );
 
     const loadRules = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
         try {
             const response = await adminApi.listRules(projectKey, flagKey, {
                 sort: 'priority',
@@ -88,7 +85,11 @@ export function RuleEditorPage({
     }, [projectKey, flagKey]);
 
     useEffect(() => {
-        void loadRules();
+        const timeoutId = window.setTimeout(() => {
+            void loadRules();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [loadRules]);
 
     function updateRule<Value extends keyof DraftRule>(

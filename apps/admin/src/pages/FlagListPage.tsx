@@ -47,9 +47,6 @@ export function FlagListPage({
     );
 
     const loadFlags = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
         try {
             const response = await adminApi.listFlags(projectKey, {
                 search: submittedSearch,
@@ -73,11 +70,17 @@ export function FlagListPage({
     }, [projectKey, submittedSearch, status, lifecycleStatus]);
 
     useEffect(() => {
-        void loadFlags();
+        const timeoutId = window.setTimeout(() => {
+            void loadFlags();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [loadFlags]);
 
     function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setLoading(true);
+        setError(null);
         setSubmittedSearch(search.trim());
     }
 
