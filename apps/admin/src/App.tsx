@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import './App.css';
+import { AuditLogPage } from './pages/AuditLogPage';
+import { FlagForm } from './pages/FlagForm';
 import { FlagListPage } from './pages/FlagListPage';
 import { ProjectListPage } from './pages/ProjectListPage';
-import { FlagForm } from './pages/FlagForm';
 import { RuleEditorPage } from './pages/RuleEditorPage';
 
-type AdminView = 'projects' | 'flags' | 'flag-form' | 'rules';
+type AdminView = 'projects' | 'flags' | 'flag-form' | 'rules' | 'audit';
 
 function App() {
   const [view, setView] = useState<AdminView>('projects');
@@ -63,13 +64,23 @@ function App() {
           </button>
 
           {selectedProjectKey ? (
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => setView('flags')}
-            >
-              Flags
-            </button>
+            <>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => setView('flags')}
+              >
+                Flags
+              </button>
+
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => setView('audit')}
+              >
+                Audit logs
+              </button>
+            </>
           ) : null}
         </div>
       </nav>
@@ -101,6 +112,13 @@ function App() {
         <RuleEditorPage
           projectKey={selectedProjectKey}
           flagKey={selectedFlagKey}
+          onBackToFlags={() => setView('flags')}
+        />
+      ) : null}
+
+      {view === 'audit' && selectedProjectKey ? (
+        <AuditLogPage
+          projectKey={selectedProjectKey}
           onBackToFlags={() => setView('flags')}
         />
       ) : null}

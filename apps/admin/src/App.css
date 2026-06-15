@@ -608,3 +608,88 @@ textarea {
 .evaluation-result h3 {
   margin: 0;
 }
+
+.audit-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.audit-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.audit-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: rgba(30, 41, 59, 0.58);
+}
+
+.audit-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.audit-card-header h3,
+.audit-card-header p {
+  margin: 0;
+}
+
+.audit-card-header p {
+  margin-top: 0.35rem;
+  color: #cbd5e1;
+}
+
+.audit-card time {
+  color: #bfdbfe;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.snapshot-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.snapshot-grid details {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.snapshot-grid summary {
+  cursor: pointer;
+  padding: 0.75rem;
+  font-weight: 800;
+}
+
+.snapshot-grid pre {
+  max-height: 22rem;
+  overflow: auto;
+  margin: 0;
+  padding: 0.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  color: #dbeafe;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .audit-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-card-header {
+    flex-direction: column;
+  }
+
+  .audit-card time {
+    white-space: normal;
+  }
+}
