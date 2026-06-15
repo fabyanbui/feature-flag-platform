@@ -1,31 +1,39 @@
+import { useState } from 'react';
 import './App.css';
+import { ProjectListPage } from './pages/ProjectListPage';
 
 function App() {
+  const [selectedProjectKey, setSelectedProjectKey] = useState<string | null>(
+    null,
+  );
+
   return (
     <main className="app-shell">
-      <section className="hero-card">
-        <p className="eyebrow">Feature Flag Platform</p>
-        <h1>Admin Dashboard</h1>
-        <p>
-          Control-plane workspace for managing projects, feature flags, rollout
-          rules, and audit logs.
-        </p>
+      <nav className="top-nav" aria-label="Admin navigation">
+        <div>
+          <strong>Feature Flag Platform</strong>
+          <span>Admin Dashboard</span>
+        </div>
 
-        <dl className="status-grid" aria-label="Phase 1 admin scaffold status">
-          <div>
-            <dt>API base URL</dt>
-            <dd>{import.meta.env.VITE_API_BASE_URL ?? 'Not configured'}</dd>
-          </div>
-          <div>
-            <dt>Default project</dt>
-            <dd>{import.meta.env.VITE_DEFAULT_PROJECT_KEY ?? 'demo-project'}</dd>
-          </div>
-          <div>
-            <dt>Runtime state</dt>
-            <dd>Not evaluated in admin scaffold</dd>
-          </div>
-        </dl>
-      </section>
+        <div className="top-nav-actions">
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => setSelectedProjectKey(null)}
+          >
+            Projects
+          </button>
+        </div>
+      </nav>
+
+      <ProjectListPage onOpenProject={setSelectedProjectKey} />
+
+      {selectedProjectKey ? (
+        <aside className="toast" role="status" aria-live="polite">
+          Selected project: <strong>{selectedProjectKey}</strong>. Flag list is
+          coming in Step 6.
+        </aside>
+      ) : null}
     </main>
   );
 }
