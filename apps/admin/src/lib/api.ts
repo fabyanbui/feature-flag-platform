@@ -204,6 +204,10 @@ export const adminApi = {
         );
     },
 
+    getFlag(projectKey: string, flagKey: string) {
+        return apiRequest<FeatureFlag>(flagPath(projectKey, flagKey));
+    },
+
     createFlag(projectKey: string, body: CreateFlagInput) {
         return apiRequest<FeatureFlag>(`${projectPath(projectKey)}/flags`, {
             method: 'POST',

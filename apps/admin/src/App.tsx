@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './App.css';
 import { FlagListPage } from './pages/FlagListPage';
 import { ProjectListPage } from './pages/ProjectListPage';
+import { FlagForm } from './pages/FlagForm';
 
 type AdminView = 'projects' | 'flags' | 'flag-form' | 'rules';
 
@@ -87,27 +88,12 @@ function App() {
       ) : null}
 
       {view === 'flag-form' && selectedProjectKey ? (
-        <section className="page-stack">
-          <div className="state-card">
-            <h1>Flag form coming in Step 7</h1>
-            <p>
-              Project: <code>{selectedProjectKey}</code>
-              {selectedFlagKey ? (
-                <>
-                  {' '}
-                  / Flag: <code>{selectedFlagKey}</code>
-                </>
-              ) : null}
-            </p>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => setView('flags')}
-            >
-              Back to flags
-            </button>
-          </div>
-        </section>
+        <FlagForm
+          projectKey={selectedProjectKey}
+          flagKey={selectedFlagKey}
+          onCancel={() => setView('flags')}
+          onSaved={() => setView('flags')}
+        />
       ) : null}
 
       {view === 'rules' && selectedProjectKey && selectedFlagKey ? (
