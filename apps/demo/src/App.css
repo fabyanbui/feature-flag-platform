@@ -67,3 +67,74 @@ dd {
   color: #f0fdf4;
   font-weight: 600;
 }
+
+.panel,
+.error-panel,
+.feature-card {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(134, 239, 172, 0.2);
+  border-radius: 1rem;
+  background: rgba(31, 41, 55, 0.76);
+}
+
+.panel h2,
+.error-panel h2,
+.feature-card h2 {
+  margin: 0 0 0.75rem;
+}
+
+.scenario-options {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.scenario-option {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem;
+  border: 1px solid rgba(134, 239, 172, 0.18);
+  border-radius: 0.85rem;
+  cursor: pointer;
+}
+
+.scenario-option small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #bbf7d0;
+}
+
+button {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.error-panel {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(127, 29, 29, 0.45);
+}
+
+.feature-card {
+  border-width: 2px;
+}
+
+.feature-on {
+  border-color: rgba(34, 197, 94, 0.72);
+}
+
+.feature-off {
+  border-color: rgba(148, 163, 184, 0.5);
+}
