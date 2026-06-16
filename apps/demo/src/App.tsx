@@ -10,34 +10,95 @@ type EvaluationResponse = {
   matchedRuleId: string | null;
 };
 
-type DemoUser = {
-  label: string;
-  description: string;
-  context: {
-    targetingKey: string;
-    userId: string;
-    roles: string[];
-  };
+type EvaluationContext = {
+  targetingKey?: string;
+  userId?: string;
+  roles?: string[];
+  attributes?: Record<string, unknown>;
 };
 
-const demoUsers: DemoUser[] = [
+type DemoScenario = {
+  id: string;
+  title: string;
+  description: string;
+  projectKey: string;
+  flagKey: string;
+  context: EvaluationContext;
+  presenterNote: string;
+};
+
+const demoScenarios: DemoScenario[] = [
   {
-    label: 'Beta tester',
-    description: 'Expected to match ROLE_TARGETING and see New Checkout.',
+    id: 'global-toggle',
+    title: 'Global Toggle',
+    description:
+      'Evaluates a globally served flag. Toggle this flag in the admin dashboard, then retry evaluation here.',
+    projectKey: 'demo-project',
+    flagKey: 'beta-dashboard',
+    context: {
+      targetingKey: 'demo-user-global',
+      userId: 'demo-user-global',
+      roles: ['user'],
+    },
+    presenterNote:
+      'Use the admin dashboard to enable/disable or kill-switch beta-dashboard, then click Evaluate.',
+  },
+  {
+    id: 'role-targeting-on',
+    title: 'Role Targeting — Beta Tester',
+    description:
+      'A beta tester should match the ROLE_TARGETING rule for new-checkout.',
+    projectKey: 'demo-project',
+    flagKey: 'new-checkout',
     context: {
       targetingKey: 'demo-user-beta',
       userId: 'demo-user-beta',
       roles: ['beta-tester'],
+      attributes: { plan: 'pro' },
     },
+    presenterNote: 'Expected reason: ROLE_MATCH.',
   },
   {
-    label: 'Regular user',
-    description: 'Expected to fall through to DEFAULT_OFF.',
+    id: 'percentage-on',
+    title: 'Percentage Rollout — Included User',
+    description:
+      'This user has no matching role but falls inside the deterministic 50% rollout bucket.',
+    projectKey: 'demo-project',
+    flagKey: 'new-checkout',
     context: {
-      targetingKey: 'demo-user-regular',
-      userId: 'demo-user-regular',
+      targetingKey: 'demo-rollout-on',
+      userId: 'demo-rollout-on',
       roles: ['user'],
     },
+    presenterNote: 'Expected reason: PERCENTAGE_ROLLOUT.',
+  },
+  {
+    id: 'percentage-off',
+    title: 'Percentage Rollout — Excluded User',
+    description:
+      'This user has no matching role and falls outside the deterministic 50% rollout bucket.',
+    projectKey: 'demo-project',
+    flagKey: 'new-checkout',
+    context: {
+      targetingKey: 'demo-rollout-off',
+      userId: 'demo-rollout-off',
+      roles: ['user'],
+    },
+    presenterNote: 'Expected reason: DEFAULT_OFF.',
+  },
+  {
+    id: 'not-found',
+    title: 'Missing Project / Flag',
+    description:
+      'Demonstrates safe fallback when the project or flag does not exist.',
+    projectKey: 'missing-project',
+    flagKey: 'missing-flag',
+    context: {
+      targetingKey: 'demo-missing-user',
+      userId: 'demo-missing-user',
+      roles: ['user'],
+    },
+    presenterNote: 'Expected result: enabled=false, reason=NOT_FOUND.',
   },
 ];
 
@@ -46,14 +107,19 @@ const projectKey = import.meta.env.VITE_DEFAULT_PROJECT_KEY ?? 'phase6-demo';
 const flagKey = import.meta.env.VITE_DEFAULT_FLAG_KEY ?? 'new-checkout';
 
 function App() {
-  const [selectedUserIndex, setSelectedUserIndex] = useState(0);
+  const [selectedScenarioId, setSelectedScenarioId] = useState(
+    demoScenarios[0].id,
+  );
+
   const [result, setResult] = useState<EvaluationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const selectedUser = useMemo(
-    () => demoUsers[selectedUserIndex],
-    [selectedUserIndex],
+  const selectedScenario = useMemo(
+    () =>
+      demoScenarios.find((scenario) => scenario.id === selectedScenarioId) ??
+      demoScenarios[0],
+    [selectedScenarioId],
   );
 
   const evaluateFlag = useCallback(async () => {
@@ -67,9 +133,9 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          projectKey,
-          flagKey,
-          context: selectedUser.context,
+          projectKey: selectedScenario.projectKey,
+          flagKey: selectedScenario.flagKey,
+          context: selectedScenario.context,
         }),
       });
 
@@ -87,7 +153,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedUser]);
+  }, [selectedScenario]);
 
   useEffect(() => {
     void evaluateFlag();
@@ -107,23 +173,26 @@ function App() {
         </p>
 
         <section className="panel" aria-labelledby="scenario-heading">
-          <h2 id="scenario-heading">Scenario</h2>
+          <h2 id="scenario-heading">Demo scenario</h2>
+
           <div className="scenario-options">
-            {demoUsers.map((user, index) => (
-              <label className="scenario-option" key={user.label}>
+            {demoScenarios.map((scenario) => (
+              <label className="scenario-option" key={scenario.id}>
                 <input
-                  checked={selectedUserIndex === index}
-                  name="demo-user"
-                  onChange={() => setSelectedUserIndex(index)}
+                  checked={selectedScenario.id === scenario.id}
+                  name="demo-scenario"
+                  onChange={() => setSelectedScenarioId(scenario.id)}
                   type="radio"
                 />
                 <span>
-                  <strong>{user.label}</strong>
-                  <small>{user.description}</small>
+                  <strong>{scenario.title}</strong>
+                  <small>{scenario.description}</small>
                 </span>
               </label>
             ))}
           </div>
+
+          <p className="presenter-note">{selectedScenario.presenterNote}</p>
 
           <button disabled={isLoading} onClick={evaluateFlag} type="button">
             {isLoading ? 'Evaluating...' : 'Evaluate flag'}
