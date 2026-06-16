@@ -78,9 +78,12 @@ args = [
   && : "${CHROMIUM_BROWSER_PATH:=$PWD/.playwright-browsers/chromium-1228/chrome-linux64/chrome}" \
   && test -x "$CHROMIUM_BROWSER_PATH" \
   && exec npx @playwright/mcp@latest --executable-path "$CHROMIUM_BROWSER_PATH" \
-  --headless --no-sandbox --isolated
+  --no-sandbox --isolated
   '''
 ]
+env_vars = ["DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"]
+startup_timeout_sec = 20
+tool_timeout_sec = 120
 
 [mcp_servers.playwright.tools.browser_tabs]
 approval_mode = "approve"
