@@ -124,6 +124,13 @@ calls `/v1/evaluate` to display `projectKey`, `flagKey`, `enabled`, and
 - Loading/error states with retry.
 - Demo-safe defaults with no browser-exposed secrets.
 
+**Phase 8 validation note:** The demo app now provides scenario-based
+evaluation for global toggle, role targeting, deterministic percentage rollout
+included/excluded users, and missing project/flag fallback. It displays
+`projectKey`, `flagKey`, `enabled`, `reason`, targeting context, loading/error
+states, and retry behavior while keeping the demo app data-plane only with no
+browser-exposed secrets.
+
 ## Phase 9 — Quality review and release readiness
 
 - End-to-end test coverage for the main demo flow.
