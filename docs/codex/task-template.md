@@ -22,6 +22,11 @@ Read:
 - `docs/design/software-architecture-document.md`
 - ...
 
+For frontend UI/UX work, also read:
+- `.agents/skills/frontend-ui-ux-editor/SKILL.md`
+- `docs/requirement/frontend/fe-init.md`
+- `docs/requirement/demo/demo-app.md` if the demo app is affected
+
 ## Guardrails
 
 - Preserve deterministic evaluation.
@@ -38,6 +43,9 @@ Read:
   system thinking when relevant.
 - Treat recommended-level requirements as a plus only after required MVP
   stability.
+- For UI/UX changes, reuse existing design-system components/tokens, preserve
+  accessibility and responsive behavior, and use browser/Playwright checks when
+  available.
 
 ## Expected output
 

@@ -29,7 +29,7 @@ project knowledge under `docs/`:
 - `docs/research/` and `docs/competitor-analysis/` contain supporting analysis.
 - `docs/design/software-architecture-document.md` is the architecture baseline.
 - `.codex/agents/` contains repo-scoped Codex subagents for specialized architecture, backend, frontend, database, test, security, and research work.
-- `.agents/skills/` contains repo-scoped Codex skills so Codex can discover the same project expertise.
+- `.agents/skills/` contains repo-scoped Codex skills so Codex can discover the same project expertise, including general frontend UI/UX editing guidance.
 
 Keep planned layers clear: backend API, domain/evaluation engine, persistence,
 admin UI, and demo app. Do not mix generated build output into `docs/`.
@@ -89,6 +89,10 @@ Project guardrails:
 - Mutations for projects, flags, and rules must write append-only audit entries with before/after snapshots in the same transaction.
 - Use stable, non-PII identifiers for targeting and rollout keys.
 - Feature flag status labels (Enabled/Disabled/Archived) are distinct from runtime state (On/Off).
+- Use the `frontend-ui-ux-editor` skill for frontend UI/UX edits from screenshots,
+  design briefs, Figma notes, visual references, or UX feedback. Pair it with
+  `ui-status-semantics`, `demo-scenarios`, or project-specific requirement docs
+  when feature-flag domain behavior is part of the UI change.
 
 MCP usage guardrails:
 - Prefer repository files and deterministic tests before live database MCP calls.

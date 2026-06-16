@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend UI/UX Editor"
+  short_description: "Iterate frontend UI/UX with visual checks"
+  default_prompt: "Use $frontend-ui-ux-editor to improve this frontend screen using the current design system and browser-based visual checks."

@@ -14,12 +14,15 @@ Primary inputs:
 - docs/requirement/backend/be-init.md
 - docs/requirement/frontend/fe-init.md
 - docs/requirement/demo/demo-app.md
+- .agents/skills/frontend-ui-ux-editor/SKILL.md
 - AGENTS.md
 
 Expected output:
 - Unit, integration, and end-to-end test plans or implementation.
 - Deterministic fixtures for percentage rollouts.
 - Regression checks for status semantics and reason codes.
+- UI regression checks for accessibility, loading/error/empty states,
+  responsive behavior, and browser-console issues when frontend files change.
 - Demo-readiness validation for mentor evaluation criteria, including slides/report support and problem-solving/design/system-thinking evidence.
 
 Constraints:

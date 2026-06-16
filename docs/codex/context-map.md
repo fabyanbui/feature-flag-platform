@@ -39,6 +39,9 @@ defaults, non-PII rollout keys, and clear control-plane/data-plane separation.
 - Use `workflow-feature-delivery` for end-to-end features.
 - Use `security-defaults` for targeting/privacy/client exposure review.
 - Use `demo-scenarios` for demo app behavior.
+- Use `frontend-ui-ux-editor` for general frontend UI/UX edits from screenshots,
+  design briefs, Figma notes, visual references, or UX feedback, including
+  responsive and browser-based visual checks.
 - Use `ui-status-semantics` for dashboard status/runtime-state display.
 - Use `workflow-quality-review` before demo/release.
 

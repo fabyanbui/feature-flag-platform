@@ -15,6 +15,7 @@ Use docs/plan/project-goal.md as the concise active project goal summary.
 Prioritize required MVP deliverables before recommended enhancements: research report, backend API, admin dashboard, demo app, database, validation/error handling, README run instructions, seed data, and short design docs.
 Keep work submission-ready for the July 7, 2026 deadline and presentation-ready for the July 9, 2026 presentation: slides and report are required; explain project need, practical value, novelty, chosen technologies, alternatives, comparison with existing solutions, problem-solving, design thinking, and system thinking. Treat recommended-level requirements as a plus only after the required MVP is stable.
 Preserve deterministic evaluation, append-only audit logging, safe defaults, stable non-PII rollout keys, and clear control-plane/data-plane separation.
+For frontend UI/UX changes, use the repo-scoped frontend-ui-ux-editor skill to reuse existing components/tokens, preserve accessibility and responsive states, and validate with browser/Playwright checks when available.
 Use docs/codex/mcp-tool-selection.md when deciding whether live database context is needed.
 Prefer repository files, Prisma schema, migrations, and tests for design/implementation work before using an MCP.
 Use the Prisma MCP for Prisma Postgres control-plane tasks: workspace/database discovery, creating databases, connection strings, backups/recovery, Prisma-managed database introspection, and explicitly approved schema/data operations against Prisma Postgres.
