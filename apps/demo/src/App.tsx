@@ -120,6 +120,12 @@ function App() {
     [selectedScenarioId],
   );
 
+  const handleScenarioChange = useCallback((scenarioId: string) => {
+    setSelectedScenarioId(scenarioId);
+    setResult(null);
+    setErrorMessage(null);
+  }, []);
+
   const evaluateFlag = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -146,7 +152,7 @@ function App() {
     } catch {
       setResult(null);
       setErrorMessage(
-        'Could not evaluate the feature flag. Check that the backend is running and the Phase 6 project exists.',
+        'Could not evaluate this scenario. Check that the backend is running, the database is seeded, and CORS allows the demo app.',
       );
     } finally {
       setIsLoading(false);
@@ -154,7 +160,11 @@ function App() {
   }, [selectedScenario]);
 
   useEffect(() => {
-    void evaluateFlag();
+    const timeoutId = window.setTimeout(() => {
+      void evaluateFlag();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [evaluateFlag]);
 
   const runtimeState = result ? (result.enabled ? 'On' : 'Off') : 'Not evaluated';
@@ -169,6 +179,9 @@ function App() {
           New Checkout feature is runtime On or Off for the selected user
           context.
         </p>
+        <p className="sr-only" aria-live="polite">
+          {isLoading ? 'Evaluating selected feature flag scenario.' : ''}
+        </p>
 
         <section className="panel" aria-labelledby="scenario-heading">
           <h2 id="scenario-heading">Demo scenario</h2>
@@ -179,7 +192,7 @@ function App() {
                 <input
                   checked={selectedScenario.id === scenario.id}
                   name="demo-scenario"
-                  onChange={() => setSelectedScenarioId(scenario.id)}
+                  onChange={() => handleScenarioChange(scenario.id)}
                   type="radio"
                 />
                 <span>
@@ -202,7 +215,7 @@ function App() {
             <h2>Evaluation unavailable</h2>
             <p>{errorMessage}</p>
             <button onClick={evaluateFlag} type="button">
-              Retry
+              Retry selected scenario
             </button>
           </section>
         ) : null}
@@ -253,19 +266,25 @@ function App() {
           {result?.enabled ? (
             <>
               <p className="eyebrow">Feature On</p>
-              <h2>New Checkout Widget</h2>
+              <h2>{selectedScenario.flagKey} is visible</h2>
               <p>
-                This user can see the new checkout because the feature flag
-                evaluated to On.
+                This demo feature is visible because the evaluation API returned
+                enabled=true for the selected scenario.
+              </p>
+              <p>
+                Reason: <strong>{result.reason}</strong>
               </p>
             </>
           ) : (
             <>
               <p className="eyebrow">Feature Off</p>
-              <h2>Checkout remains hidden</h2>
+              <h2>{selectedScenario.flagKey} is hidden safely</h2>
               <p>
-                The new checkout is hidden for this user context. This is the
-                safe default when no targeting rule matches.
+                This feature is hidden because evaluation returned Off, the flag was not
+                found, or the app has not evaluated the selected scenario yet.
+              </p>
+              <p>
+                Reason: <strong>{result?.reason ?? 'Not evaluated'}</strong>
               </p>
             </>
           )}
