@@ -103,8 +103,6 @@ const demoScenarios: DemoScenario[] = [
 ];
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
-const projectKey = import.meta.env.VITE_DEFAULT_PROJECT_KEY ?? 'phase6-demo';
-const flagKey = import.meta.env.VITE_DEFAULT_FLAG_KEY ?? 'new-checkout';
 
 function App() {
   const [selectedScenarioId, setSelectedScenarioId] = useState(
@@ -159,7 +157,7 @@ function App() {
     void evaluateFlag();
   }, [evaluateFlag]);
 
-  const runtimeState = result?.enabled ? 'On' : 'Off';
+  const runtimeState = result ? (result.enabled ? 'On' : 'Off') : 'Not evaluated';
 
   return (
     <main className="demo-shell">
@@ -216,11 +214,23 @@ function App() {
           </div>
           <div>
             <dt>Project key</dt>
-            <dd>{result?.projectKey ?? projectKey}</dd>
+            <dd>{result?.projectKey ?? selectedScenario.projectKey}</dd>
           </div>
           <div>
             <dt>Flag key</dt>
-            <dd>{result?.flagKey ?? flagKey}</dd>
+            <dd>{result?.flagKey ?? selectedScenario.flagKey}</dd>
+          </div>
+          <div>
+            <dt>Targeting key</dt>
+            <dd>{selectedScenario.context.targetingKey ?? 'None'}</dd>
+          </div>
+          <div>
+            <dt>User roles</dt>
+            <dd>
+              {selectedScenario.context.roles?.length
+                ? selectedScenario.context.roles.join(', ')
+                : 'None'}
+            </dd>
           </div>
           <div>
             <dt>Runtime state</dt>
