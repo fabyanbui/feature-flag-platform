@@ -13,12 +13,17 @@ Primary inputs:
 - docs/plan/project-goal.md
 - docs/requirement/frontend/fe-init.md
 - docs/requirement/demo/demo-app.md
+- .agents/skills/frontend-ui-ux-editor/SKILL.md
+- .agents/skills/ui-status-semantics/SKILL.md
+- .agents/skills/demo-scenarios/SKILL.md
 - AGENTS.md
 
 Expected output:
 - Admin screens for projects, flags, rules, and audit logs.
 - Demo UI that calls the evaluation API and shows gated behavior.
 - Consistent status label versus runtime state display.
+- UI/UX changes that reuse the current design system, remain accessible, and
+  are checked at relevant responsive breakpoints.
 - Demo-ready UX that helps explain project value, problem-solving, design thinking, and system thinking during the July 9, 2026 presentation.
 
 Constraints:
@@ -28,4 +33,7 @@ Constraints:
 - Provide loading, empty, and error states.
 - Keep UI accessible and text-backed, not color-only.
 - Match existing frontend conventions if implementation has been scaffolded.
+- Use the frontend-ui-ux-editor skill for visual/UI polish from screenshots,
+  design briefs, Figma notes, references, or UX feedback; validate with
+  Playwright/browser inspection when practical.
 """
