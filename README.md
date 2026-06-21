@@ -59,7 +59,13 @@ criteria in `docs/requirement/info-init.md`.
 - Backend requirements: `docs/requirement/backend/be-init.md`
 - Frontend requirements: `docs/requirement/frontend/fe-init.md`
 - Demo app requirements: `docs/requirement/demo/demo-app.md`
-- Research report: `docs/requirement/feature-flag-research.md`
+- Final research report:
+  `docs/research/feature-flag-platform-research-report.md`
+- Demo script: `docs/release/demo-script.md`
+- Troubleshooting notes: `docs/release/troubleshooting.md`
+- Security review: `docs/release/security-review.md`
+- Audit log release review: `docs/release/audit-log-release-review.md`
+- Slide outline: `docs/presentation/slide-outline.md`
 
 ## Local Development
 
@@ -89,6 +95,16 @@ The default local database URL is:
 postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev?schema=public
 ```
 
+For browser apps, copy app-specific examples only when you need local overrides:
+
+```bash
+cp apps/admin/.env.example apps/admin/.env
+cp apps/demo/.env.example apps/demo/.env
+```
+
+Only browser-safe `VITE_*` values belong in frontend `.env` files. Do not put
+database URLs or backend secrets in `apps/admin/.env` or `apps/demo/.env`.
+
 ### Start PostgreSQL with Docker
 
 ```bash
@@ -111,6 +127,34 @@ Verify the database:
 ```bash
 docker exec ffp-postgres psql -U ffp -d ffp_dev -c "select current_database(), current_user;"
 ```
+
+### Apply migrations and seed data
+
+Apply the Prisma migration:
+
+```bash
+npm run prisma:migrate --workspace=@ffp/backend
+```
+
+Generate the Prisma client if needed:
+
+```bash
+npm run prisma:generate --workspace=@ffp/backend
+```
+
+Seed demo data:
+
+```bash
+npm run db:seed --workspace=@ffp/backend
+```
+
+Seed data creates:
+
+- project `demo-project`,
+- environments `production`, `staging`, and `development`,
+- flags `beta-dashboard` and `new-checkout`,
+- sample users for beta, regular, and admin scenarios,
+- audit entries for seeded setup.
 
 ### Run the apps
 
@@ -138,22 +182,49 @@ Local URLs:
 Backend API: http://localhost:3000/v1
 Admin app:   http://localhost:5173
 Demo app:    http://localhost:5174
+Swagger UI:  http://localhost:3000/docs
 ```
 
-### Validate the scaffold
+### Validate the project
 
 ```bash
+npm run lint
 npm run build
 npm run test
+npm run test:integration --workspace=@ffp/backend
+npm run test:e2e --workspace=@ffp/backend
 npm run diff:check
 ```
 
-### Phase 1 scope note
+Optional Prisma schema validation:
 
-Phase 1 scaffolds the backend, admin app, demo app, shared TypeScript
-configuration, local environment, PostgreSQL setup, and README workflow.
-Database schema, Prisma migrations, seed data, APIs, and evaluation logic are
-implemented in later roadmap phases.
+```bash
+npm run prisma:validate --workspace=@ffp/backend
+```
+
+For a targeted Phase 9 release-readiness check:
+
+```bash
+npm run test:e2e --workspace=@ffp/backend -- phase-9-api-hardening.e2e-spec.ts phase-9-demo-flow.e2e-spec.ts
+```
+
+### Demo flow
+
+Use the seeded data for a local presentation:
+
+1. Start PostgreSQL, backend, admin app, and demo app.
+2. Open the admin dashboard and inspect `demo-project`.
+3. Show flags `beta-dashboard` and `new-checkout`.
+4. Open the demo app and evaluate:
+   - Global Toggle,
+   - Role Targeting — Beta Tester,
+   - Percentage Rollout — Included User,
+   - Percentage Rollout — Excluded User,
+   - Missing Project / Flag.
+5. Return to the admin dashboard and show audit log entries for configuration
+   changes.
+
+Detailed presenter notes are in `docs/release/demo-script.md`.
 
 ## Documentation Validation
 

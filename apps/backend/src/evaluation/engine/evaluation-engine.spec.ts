@@ -108,6 +108,39 @@ describe('evaluateFlag', () => {
     expect(result.reason).toBe(EvaluationReason.KILL_SWITCH);
   });
 
+  it('returns KILL_SWITCH before evaluating matching targeting rules', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        config: {
+          status: FlagConfigStatus.ENABLED,
+          servingMode: ServingMode.TARGETED,
+          killSwitch: true,
+        },
+        rules: [
+          createRule({
+            id: 'allowlist-rule',
+            type: RuleType.USER_ALLOWLIST,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+          createRule({
+            id: 'percentage-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            parameters: {
+              percentage: 100,
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result.enabled).toBe(false);
+    expect(result.reason).toBe(EvaluationReason.KILL_SWITCH);
+    expect(result.matchedRuleId).toBeNull();
+  });
+
   it('returns FLAG_DISABLED when config is disabled', () => {
     const result = evaluateFlag(
       baseInput,

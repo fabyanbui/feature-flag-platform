@@ -152,3 +152,10 @@ browser-exposed secrets.
   recommended-level completion is a plus, not a reason to risk MVP delivery.
 - Final validation with `git diff --check`.
 - Run `markdownlint docs/**/*.md README.md AGENTS.md` if available.
+
+**Phase 9 validation note:** Release-readiness evidence now includes a Phase 9
+demo-flow E2E test, API-hardening E2E test, explicit kill-switch precedence
+test, security review, audit-log release review, completed README setup/run/test
+instructions, demo script, troubleshooting notes, final research report, and
+presentation slide outline. Recommended-level enhancements remain deferred until
+the required MVP is stable.
