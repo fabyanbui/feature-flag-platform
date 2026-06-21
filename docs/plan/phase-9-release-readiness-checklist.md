@@ -84,16 +84,17 @@ Evidence files:
 
 ### Audit behavior
 
-- [ ] Project mutations write audit entries.
-- [ ] Feature flag mutations write audit entries.
-- [ ] Rule replacement writes audit entries.
-- [ ] Audit entries include actor, target, timestamp, request ID, and
+- [x] Project mutations write audit entries.
+- [x] Feature flag mutations write audit entries.
+- [x] Rule replacement writes audit entries.
+- [x] Audit entries include actor, target, timestamp, request ID, and
       before/after snapshots.
-- [ ] Audit writes happen in the same transaction as the mutation.
-- [ ] Audit logs are append-only from the API perspective.
+- [x] Audit writes happen in the same transaction as the mutation.
+- [x] Audit logs are append-only from the API perspective.
 
 Evidence files:
 
+- `docs/release/audit-log-release-review.md`
 - `apps/backend/src/audit/audit-log.service.spec.ts`
 - `apps/backend/src/projects/projects.service.spec.ts`
 - `apps/backend/src/feature-flags/feature-flags.service.spec.ts`
@@ -102,15 +103,15 @@ Evidence files:
 
 ## 2. Security Review
 
-- [ ] Safe defaults are documented and tested.
-- [ ] Evaluation errors fail closed.
-- [ ] Missing project/flag returns off with `NOT_FOUND`.
-- [ ] Targeting and rollout examples use stable non-PII keys.
-- [ ] Demo app does not expose database URLs, backend secrets, admin tokens, or
+- [x] Safe defaults are documented and tested.
+- [x] Evaluation errors fail closed.
+- [x] Missing project/flag returns off with `NOT_FOUND`.
+- [x] Targeting and rollout examples use stable non-PII keys.
+- [x] Demo app does not expose database URLs, backend secrets, admin tokens, or
       actor credentials.
-- [ ] CORS allows only configured admin and demo origins.
-- [ ] Control-plane operations stay in the admin app/API.
-- [ ] Demo app remains data-plane only and calls only evaluation behavior.
+- [x] CORS allows only configured admin and demo origins.
+- [x] Control-plane operations stay in the admin app/API.
+- [x] Demo app remains data-plane only and calls only evaluation behavior.
 
 Recommended evidence file:
 
