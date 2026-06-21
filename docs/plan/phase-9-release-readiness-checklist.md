@@ -44,17 +44,17 @@ Evidence files:
 
 ### Evaluation behavior
 
-- [ ] Rule order is tested:
+- [x] Rule order is tested:
   - global disable / kill switch,
   - user allowlist,
   - role targeting,
   - percentage rollout,
   - default off.
-- [ ] Stable hashing returns the same bucket for the same stable rollout key.
-- [ ] Kill switch returns off before any targeting rule can enable the flag.
-- [ ] Missing project or flag returns `enabled=false` with `reason=NOT_FOUND`.
-- [ ] No matching rule returns `enabled=false` with `reason=DEFAULT_OFF`.
-- [ ] Percentage rollout uses stable, non-PII targeting keys.
+- [x] Stable hashing returns the same bucket for the same stable rollout key.
+- [x] Kill switch returns off before any targeting rule can enable the flag.
+- [x] Missing project or flag returns `enabled=false` with `reason=NOT_FOUND`.
+- [x] No matching rule returns `enabled=false` with `reason=DEFAULT_OFF`.
+- [x] Percentage rollout uses stable, non-PII targeting keys.
 
 Evidence files:
 
@@ -65,15 +65,16 @@ Evidence files:
 
 ### API behavior
 
-- [ ] Validation errors have a consistent API error shape.
-- [ ] Pagination responses include items and page metadata.
-- [ ] Conflict cases are tested for duplicate project, flag, or rule keys.
-- [ ] Missing resources return the documented not-found behavior.
-- [ ] Mutation endpoints require an actor header where audit logging is needed.
-- [ ] Unsupported sort/filter inputs are rejected safely.
+- [x] Validation errors have a consistent API error shape.
+- [x] Pagination responses include items and page metadata.
+- [x] Conflict cases are tested for duplicate project, flag, or rule keys.
+- [x] Missing resources return the documented not-found behavior.
+- [x] Mutation endpoints require an actor header where audit logging is needed.
+- [x] Unsupported sort/filter inputs are rejected safely.
 
 Evidence files:
 
+- `apps/backend/test/phase-9-api-hardening.e2e-spec.ts`
 - `apps/backend/test/phase-5-management.e2e-spec.ts`
 - `apps/backend/src/common/filters/api-exception.filter.spec.ts`
 - `apps/backend/src/common/dto/pagination-query.dto.spec.ts`
