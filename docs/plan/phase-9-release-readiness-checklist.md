@@ -28,20 +28,19 @@ Delivery dates:
 
 ### End-to-end demo flow
 
-- [ ] Main demo flow is covered by an E2E test.
-- [ ] Demo flow proves project creation or seeded project availability.
-- [ ] Demo flow proves flag creation/configuration or seeded flag availability.
-- [ ] Demo flow proves runtime evaluation through `POST /v1/evaluate`.
-- [ ] Demo flow proves at least one enabled result.
-- [ ] Demo flow proves at least one disabled or fallback result.
-- [ ] Demo flow proves missing project/flag returns `enabled=false` and
+- [x] Main demo flow is covered by an E2E test.
+- [x] Demo flow proves project creation or seeded project availability.
+- [x] Demo flow proves flag creation/configuration or seeded flag availability.
+- [x] Demo flow proves runtime evaluation through `POST /v1/evaluate`.
+- [x] Demo flow proves at least one enabled result.
+- [x] Demo flow proves at least one disabled or fallback result.
+- [x] Demo flow proves missing project/flag returns `enabled=false` and
       `reason=NOT_FOUND`.
 
 Evidence files:
 
 - `apps/backend/test/phase-6-vertical-slice.e2e-spec.ts`
-- `apps/backend/test/phase-9-demo-flow.e2e-spec.ts` if additional coverage is
-  needed.
+- `apps/backend/test/phase-9-demo-flow.e2e-spec.ts`
 
 ### Evaluation behavior
 

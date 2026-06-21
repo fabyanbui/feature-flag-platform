@@ -13,16 +13,15 @@ Related checklist:
 ## Summary
 
 The backend already has strong coverage for evaluation behavior, management API
-flows, audit logging, and integration paths. The main remaining Phase 9 testing
-gap is a presentation-shaped demo-flow E2E test that directly proves the Phase 8
-demo scenarios, especially the missing project/flag fallback, in one place.
+flows, audit logging, and integration paths. Phase 9 now includes a
+presentation-shaped demo-flow E2E test that directly proves the Phase 8 demo
+scenarios, including the missing project/flag fallback, in one place.
 
 Recommended next test work:
 
-1. Add a focused Phase 9 demo-flow E2E test.
-2. Add one explicit evaluation-engine test proving kill switch/global disable
+1. Add one explicit evaluation-engine test proving kill switch/global disable
    wins even when targeting rules would otherwise match.
-3. Optionally add a compact API-hardening E2E test only if final review needs a
+2. Optionally add a compact API-hardening E2E test only if final review needs a
    single file proving validation, error shape, pagination, and conflict
    behavior together.
 
@@ -30,11 +29,11 @@ Recommended next test work:
 
 | Requirement | Current status | Existing evidence | Gap / next action |
 | --- | --- | --- | --- |
-| Main demo flow E2E coverage | Partially covered | `apps/backend/test/phase-6-vertical-slice.e2e-spec.ts` creates a project, creates a flag, configures role targeting, evaluates enabled and default-off results, and verifies audit entries. | Add `apps/backend/test/phase-9-demo-flow.e2e-spec.ts` to mirror Phase 8 demo scenarios and include `NOT_FOUND`. |
+| Main demo flow E2E coverage | Covered | `apps/backend/test/phase-6-vertical-slice.e2e-spec.ts` creates a project, creates a flag, configures role targeting, evaluates enabled and default-off results, and verifies audit entries. `apps/backend/test/phase-9-demo-flow.e2e-spec.ts` mirrors Phase 8 demo scenarios and includes `NOT_FOUND`. | Keep as release-readiness evidence. |
 | Runtime evaluation through `POST /v1/evaluate` | Covered | `apps/backend/test/phase-6-vertical-slice.e2e-spec.ts`; `apps/backend/test/integration/phase-4-evaluation.integration-spec.ts`; `apps/backend/test/integration/phase-3-foundation.integration-spec.ts` | Keep as evidence. |
 | Enabled evaluation result | Covered | Phase 6 E2E checks `ROLE_MATCH`; Phase 4 integration checks persisted role targeting; evaluation engine checks `GLOBAL_ON`, `USER_ALLOWLIST`, `ROLE_MATCH`, and `PERCENTAGE_ROLLOUT`. | Keep as evidence. |
 | Disabled/default-off evaluation result | Covered | Phase 6 E2E checks regular user `DEFAULT_OFF`; evaluation engine checks `DEFAULT_OFF`; Phase 4 integration checks deterministic percentage behavior. | Keep as evidence. |
-| Missing project/flag returns `enabled=false`, `reason=NOT_FOUND` | Covered, but not in demo-flow E2E | `apps/backend/src/evaluation/engine/evaluation-engine.spec.ts`; `apps/backend/src/evaluation/evaluation.service.spec.ts`; `apps/backend/test/integration/phase-4-evaluation.integration-spec.ts`; `apps/backend/test/integration/phase-3-foundation.integration-spec.ts` | Include in the new Phase 9 demo-flow E2E test for presentation evidence. |
+| Missing project/flag returns `enabled=false`, `reason=NOT_FOUND` | Covered | `apps/backend/src/evaluation/engine/evaluation-engine.spec.ts`; `apps/backend/src/evaluation/evaluation.service.spec.ts`; `apps/backend/test/integration/phase-4-evaluation.integration-spec.ts`; `apps/backend/test/integration/phase-3-foundation.integration-spec.ts`; `apps/backend/test/phase-9-demo-flow.e2e-spec.ts` | Keep as evidence. |
 | Rule order: kill switch/global disable first | Mostly covered | Evaluation engine tests `KILL_SWITCH`, `FLAG_DISABLED`, `GLOBAL_ON`, and rule precedence among rule types. | Add explicit test that kill switch wins even when an allowlist/role rule would match. |
 | Rule order: user allowlist before role targeting | Covered | `apps/backend/src/evaluation/engine/evaluation-engine.spec.ts` has `uses type precedence before priority across different rule types`. | Keep as evidence. |
 | Rule order: priority within same type | Covered | `apps/backend/src/evaluation/engine/evaluation-engine.spec.ts` has `uses lower priority first within the same rule type`. | Keep as evidence. |
