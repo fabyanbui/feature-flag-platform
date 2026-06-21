@@ -1,0 +1,262 @@
+# Demo Script — Feature Flag Platform
+
+## Purpose
+
+Use this script for the July 9, 2026 presentation. The goal is to show that the
+platform separates deployment from release, supports safe rollout decisions, and
+keeps configuration changes auditable.
+
+## Pre-Demo Setup
+
+From the repository root:
+
+```bash
+npm install
+cp .env.example .env
+docker start ffp-postgres
+npm run prisma:migrate --workspace=@ffp/backend
+npm run db:seed --workspace=@ffp/backend
+```
+
+Start the apps in separate terminals:
+
+```bash
+npm run dev:backend
+npm run dev:admin
+npm run dev:demo
+```
+
+Open:
+
+```text
+Backend Swagger: http://localhost:3000/docs
+Admin app:       http://localhost:5173
+Demo app:        http://localhost:5174
+```
+
+## Main Story
+
+> We deployed one application, but we can release features gradually through
+> configuration instead of redeploying code.
+
+The demo has two planes:
+
+- **Control plane:** admin dashboard and management APIs.
+- **Data plane:** demo app calling `POST /v1/evaluate`.
+
+## Demo Flow
+
+### 1. Show the project and flags
+
+Open the admin dashboard.
+
+Show:
+
+- project `demo-project`,
+- flag `beta-dashboard`,
+- flag `new-checkout`.
+
+Explain:
+
+- `beta-dashboard` demonstrates global serving.
+- `new-checkout` demonstrates role targeting and percentage rollout.
+
+### 2. Show Global Toggle
+
+Open the demo app and select:
+
+```text
+Global Toggle
+```
+
+Click **Evaluate flag**.
+
+Expected result with seed data:
+
+```text
+projectKey: demo-project
+flagKey: beta-dashboard
+enabled: true
+reason: GLOBAL_ON
+runtime state: On
+```
+
+Presenter point:
+
+> This shows a release decision made by configuration. The code is already
+> deployed; the feature becomes visible because the flag evaluates to On.
+
+Optional live change:
+
+1. In admin, update `beta-dashboard` to disabled or enable kill switch.
+2. Return to demo app.
+3. Click **Evaluate flag** again.
+
+Expected result:
+
+```text
+enabled: false
+reason: FLAG_DISABLED or KILL_SWITCH
+runtime state: Off
+```
+
+Presenter point:
+
+> This is the fast rollback story. We can turn off risky behavior without a
+> redeploy.
+
+### 3. Show Role Targeting
+
+Select:
+
+```text
+Role Targeting — Beta Tester
+```
+
+Expected result:
+
+```text
+projectKey: demo-project
+flagKey: new-checkout
+enabled: true
+reason: ROLE_MATCH
+runtime state: On
+```
+
+Presenter point:
+
+> Only users with the beta-tester role see this feature. This supports internal
+> testing or limited beta release.
+
+### 4. Show Percentage Rollout
+
+Select:
+
+```text
+Percentage Rollout — Included User
+```
+
+Expected result:
+
+```text
+enabled: true
+reason: PERCENTAGE_ROLLOUT
+```
+
+Then select:
+
+```text
+Percentage Rollout — Excluded User
+```
+
+Expected result:
+
+```text
+enabled: false
+reason: DEFAULT_OFF
+```
+
+Presenter point:
+
+> Percentage rollout uses stable hashing. The same user context gets the same
+> result on repeated evaluations, so the user experience is stable.
+
+### 5. Show Safe Fallback
+
+Select:
+
+```text
+Missing Project / Flag
+```
+
+Expected result:
+
+```text
+projectKey: missing-project
+flagKey: missing-flag
+enabled: false
+reason: NOT_FOUND
+runtime state: Off
+```
+
+Presenter point:
+
+> The evaluation API fails closed. Missing configuration does not accidentally
+> expose a feature.
+
+### 6. Show Audit Logs
+
+Return to the admin dashboard audit log screen.
+
+Show entries for:
+
+- project creation,
+- flag creation,
+- flag update,
+- rule replacement.
+
+Presenter point:
+
+> Configuration changes affect runtime behavior, so they must be accountable.
+> Audit logs capture actor, target, action, and before/after snapshots.
+
+## Required Talking Points
+
+### Project need
+
+Feature flags reduce release risk by separating code deployment from user
+release. Teams can ship code safely, validate with targeted users, roll out
+gradually, and roll back quickly.
+
+### Practical value
+
+The platform demonstrates common production release-management practices:
+
+- global enable/disable,
+- role-based targeting,
+- percentage rollout,
+- kill switch,
+- safe default off behavior,
+- audit logs.
+
+### Novelty for this mini project
+
+The project is intentionally small but system-oriented. It shows not only CRUD
+screens, but also deterministic evaluation, control-plane/data-plane
+separation, auditability, and presentation-ready release scenarios.
+
+### Technology choices
+
+- NestJS for structured backend modules and DTO validation.
+- Prisma for typed database access and migrations.
+- PostgreSQL for persistent relational data and audit history.
+- React/Vite for admin and demo apps.
+- Jest/Supertest for unit, integration, and E2E test evidence.
+
+### Alternatives
+
+- Express was simpler but less structured than NestJS.
+- In-memory storage was faster to start but could not prove persistence or audit
+  history.
+- No-code flag tools are mature but would not demonstrate system design.
+
+### Comparison with existing solutions
+
+Compared with LaunchDarkly, Unleash, Flagsmith, ConfigCat, and Split, this MVP
+is smaller and educational. It borrows the core ideas: management UI, targeting,
+rollout, kill switch, evaluation API, and audit logs. It intentionally avoids
+enterprise complexity such as full RBAC, streaming SDKs, experimentation
+analytics, and multi-region operations.
+
+## If Something Fails During Demo
+
+Use `docs/release/troubleshooting.md`.
+
+Most common fixes:
+
+```bash
+docker start ffp-postgres
+npm run prisma:migrate --workspace=@ffp/backend
+npm run db:seed --workspace=@ffp/backend
+npm run dev:backend
+```

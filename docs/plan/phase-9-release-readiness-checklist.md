@@ -121,13 +121,13 @@ Recommended evidence file:
 
 ### README
 
-- [ ] Root README includes install instructions.
-- [ ] Root README includes environment setup.
-- [ ] Root README includes database startup instructions.
-- [ ] Root README includes migration instructions.
-- [ ] Root README includes seed instructions.
-- [ ] Root README includes backend, admin, and demo run instructions.
-- [ ] Root README includes test, lint, build, and diff-check commands.
+- [x] Root README includes install instructions.
+- [x] Root README includes environment setup.
+- [x] Root README includes database startup instructions.
+- [x] Root README includes migration instructions.
+- [x] Root README includes seed instructions.
+- [x] Root README includes backend, admin, and demo run instructions.
+- [x] Root README includes test, lint, build, and diff-check commands.
 
 Evidence file:
 
@@ -135,12 +135,12 @@ Evidence file:
 
 ### Demo support
 
-- [ ] Demo script explains the presenter flow.
-- [ ] Demo script includes global toggle behavior.
-- [ ] Demo script includes role targeting or percentage rollout behavior.
-- [ ] Demo script includes missing project/flag safe fallback.
-- [ ] Demo script includes audit-log proof.
-- [ ] Troubleshooting notes cover database, seed data, CORS, ports, and app
+- [x] Demo script explains the presenter flow.
+- [x] Demo script includes global toggle behavior.
+- [x] Demo script includes role targeting or percentage rollout behavior.
+- [x] Demo script includes missing project/flag safe fallback.
+- [x] Demo script includes audit-log proof.
+- [x] Troubleshooting notes cover database, seed data, CORS, ports, and app
       startup issues.
 
 Recommended evidence files:
@@ -150,17 +150,17 @@ Recommended evidence files:
 
 ### Research report and slides
 
-- [ ] Research report explains what feature flags are.
-- [ ] Research report explains deployment vs. release.
-- [ ] Research report explains release, experiment, ops/kill-switch, and
+- [x] Research report explains what feature flags are.
+- [x] Research report explains deployment vs. release.
+- [x] Research report explains release, experiment, ops/kill-switch, and
       permission flags.
-- [ ] Research report explains rollout strategies.
-- [ ] Research report explains audit logging, caching, consistency, defaults,
+- [x] Research report explains rollout strategies.
+- [x] Research report explains audit logging, caching, consistency, defaults,
       and endpoint security.
-- [ ] Research report compares the project with existing solutions.
-- [ ] Slide outline explains project need, practical value, novelty, chosen
+- [x] Research report compares the project with existing solutions.
+- [x] Slide outline explains project need, practical value, novelty, chosen
       technologies, alternatives, and comparison with existing solutions.
-- [ ] Slides make problem-solving, design thinking, and system thinking visible.
+- [x] Slides make problem-solving, design thinking, and system thinking visible.
 
 Recommended evidence files:
 
@@ -192,6 +192,22 @@ Optional Prisma validation:
 ```bash
 npm run prisma:validate --workspace=@ffp/backend
 ```
+
+Latest Phase 9 validation result, completed on June 21, 2026:
+
+- [x] `npm run lint`
+- [x] `npm run test`
+- [x] `npm run test:integration --workspace=@ffp/backend`
+  - Required an unrestricted local run because sandboxed execution could not
+    connect to local PostgreSQL or bind local test ports.
+- [x] `npm run test:e2e --workspace=@ffp/backend`
+  - Required an unrestricted local run because Supertest binds local test
+    server ports.
+- [x] `npm run build`
+- [x] `npm run diff:check`
+- [x] `npm run prisma:validate --workspace=@ffp/backend`
+- [ ] `markdownlint docs/**/*.md README.md AGENTS.md`
+  - Not run because `markdownlint` was not installed in the current shell.
 
 ## 5. Phase 9 Definition of Done
 
