@@ -15,6 +15,10 @@ Primary sources:
 - `docs/requirement/info-init.md`
 - `AGENTS.md`
 
+Supporting Phase 9 evidence:
+
+- `docs/plan/phase-9-test-coverage-map.md`
+
 Delivery dates:
 
 - Submission deadline: July 7, 2026.
