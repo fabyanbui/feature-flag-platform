@@ -1,6 +1,7 @@
 import { AuditAction, AuditTargetType } from '@prisma/client';
 import { ApiErrorCode } from '../common/errors/api-error-code';
 import { AuditLogsService } from './audit-logs.service';
+import { FlagHistoryQueryDto } from './dto/flag-history-query.dto';
 
 const fixedDate = new Date('2026-06-01T00:00:00.000Z');
 
@@ -548,6 +549,71 @@ describe('AuditLogsService', () => {
         10,
       );
       expect(auditLogsRepository.count).toHaveBeenCalledWith(expectedWhere);
+    });
+
+    it('returns hasNext=false on the final history page', async () => {
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        createFlagWithConfigs(),
+      );
+      auditLogsRepository.findMany.mockResolvedValue([createAuditLogEntry()]);
+      auditLogsRepository.count.mockResolvedValue(21);
+
+      const result = await service.listFlagHistory(
+        'demo-project',
+        'new-checkout',
+        {
+          limit: 20,
+          offset: 20,
+          sort: 'createdAt',
+          order: 'desc',
+        },
+      );
+
+      expect(result.page).toEqual({
+        limit: 20,
+        offset: 20,
+        total: 21,
+        hasNext: false,
+      });
+    });
+
+    it('defaults to newest-first stable ordering when order is omitted', async () => {
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        createFlagWithConfigs({
+          environmentConfigs: [],
+        }),
+      );
+      auditLogsRepository.findMany.mockResolvedValue([]);
+      auditLogsRepository.count.mockResolvedValue(0);
+
+      const query = {
+        limit: 20,
+        offset: 0,
+        sort: 'createdAt',
+      } as FlagHistoryQueryDto;
+
+      await service.listFlagHistory(
+        'demo-project',
+        'new-checkout',
+        query,
+      );
+
+      expect(auditLogsRepository.findMany).toHaveBeenCalledWith(
+        {
+          projectId: 'project-1',
+          OR: [
+            {
+              targetType: AuditTargetType.FEATURE_FLAG,
+              targetId: 'flag-1',
+            },
+          ],
+        },
+        [{ createdAt: 'desc' }, { id: 'desc' }],
+        20,
+        0,
+      );
     });
   });
 });
