@@ -17,6 +17,7 @@ import {
 import { RequestContextService } from '../common/request-context/request-context.service';
 import { cleanAuditSnapshot } from '../common/utils/audit-snapshot.util';
 import { TransactionService } from '../database/transaction.service';
+import { EvaluationCacheInvalidator } from '../evaluation/cache/evaluation-cache-invalidator';
 import { EnvironmentsRepository } from '../repositories/environments.repository';
 import { FeatureFlagsRepository } from '../repositories/feature-flags.repository';
 import { FlagConfigsRepository } from '../repositories/flag-configs.repository';
@@ -44,6 +45,7 @@ export class FeatureFlagsService {
     private readonly transactionService: TransactionService,
     private readonly auditLogService: AuditLogService,
     private readonly requestContext: RequestContextService,
+    private readonly cacheInvalidator: EvaluationCacheInvalidator,
   ) {}
 
   async list(projectKey: string, query: FeatureFlagQueryDto) {
@@ -213,6 +215,10 @@ export class FeatureFlagsService {
   ): Promise<FeatureFlagResponseDto> {
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
+    const affectsEvaluation =
+      body.status !== undefined ||
+      body.servingMode !== undefined ||
+      body.killSwitch !== undefined;
 
     const updated = await this.transactionService.run(async (tx) => {
       const project = await this.projectsRepository.findByKey(projectKey, tx);
@@ -286,8 +292,15 @@ export class FeatureFlagsService {
         requestId,
       });
 
-      return { project, flag: afterFlag };
+      return { project, flag: afterFlag, affectsEvaluation };
     });
+
+    if (updated.affectsEvaluation) {
+      await this.cacheInvalidator.invalidateFlag(
+        updated.project.key,
+        updated.flag.key,
+      );
+    }
 
     return this.toResponse(updated.project.key, updated.flag);
   }
@@ -392,6 +405,11 @@ export class FeatureFlagsService {
 
       return { project, flag: afterFlag };
     });
+
+    await this.cacheInvalidator.invalidateFlag(
+      result.project.key,
+      result.flag.key,
+    );
 
     return this.toResponse(result.project.key, result.flag);
   }

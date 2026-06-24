@@ -95,6 +95,16 @@ The default local database URL is:
 postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev?schema=public
 ```
 
+The backend caches reusable evaluation configuration snapshots in memory. The
+default TTL is 30 seconds and can be changed in `.env`:
+
+```env
+EVALUATION_CACHE_TTL_MS=30000
+```
+
+The cache does not store user context or final evaluation decisions. Cache
+read or write failures preserve safe repository-backed evaluation.
+
 For browser apps, copy app-specific examples only when you need local overrides:
 
 ```bash
@@ -232,6 +242,15 @@ For a targeted Phase 9 release-readiness check:
 
 ```bash
 npm run test:e2e --workspace=@ffp/backend -- phase-9-api-hardening.e2e-spec.ts phase-9-demo-flow.e2e-spec.ts
+```
+
+For a targeted Phase 13 cache consistency check:
+
+```bash
+npm run test:e2e --workspace=@ffp/backend -- \
+  phase-12-group-kill-switch.e2e-spec.ts \
+  phase-13-evaluation-cache.e2e-spec.ts \
+  --runInBand
 ```
 
 ### Demo flow

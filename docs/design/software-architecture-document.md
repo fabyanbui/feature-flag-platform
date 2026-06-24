@@ -303,23 +303,59 @@ graph LR
 6. `feature_flags (1) -> (N) flag_rules`
 7. `projects (1) -> (N) audit_log_entries`
 
-### 9.3 Future Cache Invalidation Contract
+### 9.3 Evaluation Snapshot Cache Contract
 
-Phase 12 does not implement caching, but it freezes the invalidation
-requirements needed by Phase 13:
+Phase 13 caches reusable `EvaluationSnapshot` configuration, not
+context-specific evaluation decisions. A cached snapshot contains only the
+configuration required by the deterministic evaluation engine:
 
-| Mutation | Future cache invalidation |
+- feature flag lifecycle status,
+- environment configuration status, serving mode, and kill-switch state,
+- optional group kill-switch state,
+- ordered flag rules and their parameters.
+
+The cache must not contain raw user IDs, targeting keys, roles, attributes,
+final `enabled` decisions, variants, matched rule IDs, validation failures,
+`NOT_FOUND` results, or evaluation errors.
+
+The initial provider is a process-local in-memory cache backed by a `Map`. Its
+TTL is configurable through `EVALUATION_CACHE_TTL_MS` and defaults to 30
+seconds. No Prisma schema change or public evaluation response change is
+required.
+
+The conceptual cache key is:
+
+```text
+evaluation-snapshot:{projectKey}:{environmentScope}:{flagKey}
+```
+
+An explicit environment uses its stable environment key. A request that omits
+`environmentKey` uses the private `__default__` scope rather than assuming a
+specific default environment key. Cache keys and values contain no request
+context or PII.
+
+Cache read failures fall back to repository access. Cache write failures do not
+change the evaluation result. Repository or evaluation-engine failures retain
+the existing fail-closed `enabled=false`, `reason=ERROR` behavior.
+
+| Mutation | Cache invalidation |
 |---|---|
-| Create group | None |
-| Rename group | None for evaluation |
-| Assign flag | Assigned flag in every environment |
-| Reassign flag | Reassigned flag in every environment |
-| Unassign flag | Unassigned flag in every environment |
+| Create flag or group | None required |
+| Rename flag or group | None for evaluation |
+| Change flag lifecycle | Flag in every cached environment scope |
+| Change flag config | Flag in every cached environment scope |
+| Replace flag rules | Flag in every cached environment scope |
+| Assign or reassign flag group | Flag in every cached environment scope |
+| Unassign flag group | Flag in every cached environment scope |
 | Toggle group switch | Every assigned flag in the affected environment |
 
-Cache invalidation must run only after the database transaction commits. It
-must not expose uncommitted configuration or invalidate for a transaction that
-later rolls back.
+Initial flag-level invalidation may conservatively remove every cached
+environment scope for the flag. This avoids stale default-environment aliases
+while keeping the implementation small and safe.
+
+Invalidation runs only after the database mutation and append-only audit entry
+commit successfully. It must not expose uncommitted configuration or invalidate
+for a transaction that later rolls back.
 
 ## 10. Size and Performance
 1. Evaluation API target latency: <= 1s (demo scale).

@@ -16,6 +16,7 @@ import {
 import { RequestContextService } from '../common/request-context/request-context.service';
 import { cleanAuditSnapshot } from '../common/utils/audit-snapshot.util';
 import { TransactionService } from '../database/transaction.service';
+import { EvaluationCacheInvalidator } from '../evaluation/cache/evaluation-cache-invalidator';
 import { isValidRolloutPercentage } from '../evaluation/engine/stable-rollout-hash';
 import { FeatureFlagsRepository } from '../repositories/feature-flags.repository';
 import { FlagRulesRepository } from '../repositories/flag-rules.repository';
@@ -35,6 +36,7 @@ export class FlagRulesService {
     private readonly transactionService: TransactionService,
     private readonly auditLogService: AuditLogService,
     private readonly requestContext: RequestContextService,
+    private readonly cacheInvalidator: EvaluationCacheInvalidator,
   ) {}
 
   async list(projectKey: string, flagKey: string, query: RuleQueryDto) {
@@ -78,7 +80,7 @@ export class FlagRulesService {
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
 
-    const rules = await this.transactionService.run(async (tx) => {
+    const result = await this.transactionService.run(async (tx) => {
       const project = await this.projectsRepository.findByKey(projectKey, tx);
 
       if (!project) {
@@ -144,10 +146,19 @@ export class FlagRulesService {
         requestId,
       });
 
-      return after;
+      return {
+        projectKey: project.key,
+        flagKey: flag.key,
+        rules: after,
+      };
     });
 
-    return rules.map((rule) => this.toResponse(rule));
+    await this.cacheInvalidator.invalidateFlag(
+      result.projectKey,
+      result.flagKey,
+    );
+
+    return result.rules.map((rule) => this.toResponse(rule));
   }
 
   private validateRules(rules: RuleInputDto[]) {

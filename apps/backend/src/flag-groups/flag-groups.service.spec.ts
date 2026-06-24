@@ -121,6 +121,7 @@ describe('FlagGroupsService', () => {
     findByProjectIdAndKeyWithGroup: jest.fn(),
     updateGroupByProjectIdAndKey: jest.fn(),
     findByProjectIdAndKeyWithConfigs: jest.fn(),
+    findKeysByGroupId: jest.fn(),
   };
   const transactionService = {
     run: jest.fn(),
@@ -132,6 +133,10 @@ describe('FlagGroupsService', () => {
     getActor: jest.fn(),
     getRequestId: jest.fn(),
   };
+  const cacheInvalidator = {
+    invalidateFlag: jest.fn(),
+    invalidateFlags: jest.fn(),
+  };
 
   let service: FlagGroupsService;
 
@@ -140,6 +145,9 @@ describe('FlagGroupsService', () => {
     transactionService.run.mockImplementation(async (callback) => callback(tx));
     requestContext.getActor.mockReturnValue('mentor@example.local');
     requestContext.getRequestId.mockReturnValue('req-phase-12');
+    featureFlagsRepository.findKeysByGroupId.mockResolvedValue([]);
+    cacheInvalidator.invalidateFlag.mockResolvedValue(undefined);
+    cacheInvalidator.invalidateFlags.mockResolvedValue(undefined);
 
     service = new FlagGroupsService(
       projectsRepository as never,
@@ -150,6 +158,7 @@ describe('FlagGroupsService', () => {
       transactionService as never,
       auditLogService,
       requestContext as never,
+      cacheInvalidator as never,
     );
   });
 
@@ -394,6 +403,10 @@ describe('FlagGroupsService', () => {
     flagGroupsRepository.findByProjectIdAndKeyWithConfigs
       .mockResolvedValueOnce(existing)
       .mockResolvedValueOnce(updated);
+    featureFlagsRepository.findKeysByGroupId.mockResolvedValue([
+      { id: 'flag-1', key: 'new-checkout' },
+      { id: 'flag-2', key: 'recommendations' },
+    ]);
 
     const result = await service.updateConfig('demo-project', 'checkout', {
       environmentKey: 'production',
@@ -413,6 +426,10 @@ describe('FlagGroupsService', () => {
       tx,
     );
     expect(auditLogService.record).toHaveBeenCalledTimes(1);
+    expect(featureFlagsRepository.findKeysByGroupId).toHaveBeenCalledWith(
+      'group-1',
+      tx,
+    );
     expect(auditLogService.record).toHaveBeenCalledWith(
       tx,
       expect.objectContaining({
@@ -434,7 +451,75 @@ describe('FlagGroupsService', () => {
         },
       }),
     );
+    expect(cacheInvalidator.invalidateFlags).toHaveBeenCalledWith(
+      'demo-project',
+      ['new-checkout', 'recommendations'],
+      'production',
+    );
+    expect(transactionService.run.mock.invocationCallOrder[0]).toBeLessThan(
+      cacheInvalidator.invalidateFlags.mock.invocationCallOrder[0],
+    );
     expect(result.killSwitch).toBe(true);
+  });
+
+  it('does not invalidate an idempotent group switch update', async () => {
+    projectsRepository.findByKey.mockResolvedValue(createProject());
+    environmentsRepository.findByProjectIdAndKey.mockResolvedValue(
+      createEnvironment(),
+    );
+    flagGroupsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+      createGroup(),
+    );
+
+    await service.updateConfig('demo-project', 'checkout', {
+      environmentKey: 'production',
+      killSwitch: false,
+    });
+
+    expect(
+      flagGroupConfigsRepository.upsertByGroupIdAndEnvironmentId,
+    ).not.toHaveBeenCalled();
+    expect(featureFlagsRepository.findKeysByGroupId).not.toHaveBeenCalled();
+    expect(auditLogService.record).not.toHaveBeenCalled();
+    expect(cacheInvalidator.invalidateFlags).not.toHaveBeenCalled();
+  });
+
+  it('does not invalidate when a group switch affects no flags', async () => {
+    const existing = createGroup({ _count: { flags: 0 } });
+    const updated = createGroup({
+      _count: { flags: 0 },
+      configs: [
+        {
+          ...createGroup().configs[0],
+          killSwitch: true,
+        },
+      ],
+    });
+
+    projectsRepository.findByKey.mockResolvedValue(createProject());
+    environmentsRepository.findByProjectIdAndKey.mockResolvedValue(
+      createEnvironment(),
+    );
+    flagGroupsRepository.findByProjectIdAndKeyWithConfigs
+      .mockResolvedValueOnce(existing)
+      .mockResolvedValueOnce(updated);
+    featureFlagsRepository.findKeysByGroupId.mockResolvedValue([]);
+
+    await service.updateConfig('demo-project', 'checkout', {
+      environmentKey: 'production',
+      killSwitch: true,
+    });
+
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        metadata: {
+          source: 'api',
+          affectedFlagCount: 0,
+        },
+      }),
+    );
+    expect(cacheInvalidator.invalidateFlags).not.toHaveBeenCalled();
   });
 
   it('assigns a flag and audits the feature flag mutation', async () => {
@@ -479,6 +564,13 @@ describe('FlagGroupsService', () => {
         },
       }),
     );
+    expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+      'demo-project',
+      'new-checkout',
+    );
+    expect(transactionService.run.mock.invocationCallOrder[0]).toBeLessThan(
+      cacheInvalidator.invalidateFlag.mock.invocationCallOrder[0],
+    );
     expect(result.group).toEqual({
       key: 'checkout',
       name: 'Checkout flags',
@@ -510,6 +602,47 @@ describe('FlagGroupsService', () => {
       featureFlagsRepository.updateGroupByProjectIdAndKey,
     ).not.toHaveBeenCalled();
     expect(auditLogService.record).not.toHaveBeenCalled();
+    expect(cacheInvalidator.invalidateFlag).not.toHaveBeenCalled();
+  });
+
+  it('invalidates all environments when reassigning a flag', async () => {
+    const previousGroup = createGroup({
+      id: 'old-group',
+      key: 'old-checkout',
+    });
+    const nextGroup = createGroup({
+      id: 'new-group',
+      key: 'new-checkout-group',
+    });
+    const beforeFlag = createFlag({
+      groupId: 'old-group',
+      group: previousGroup,
+    });
+    const afterFlag = createFlag({
+      groupId: 'new-group',
+      group: nextGroup,
+    });
+
+    projectsRepository.findByKey.mockResolvedValue(createProject());
+    featureFlagsRepository.findByProjectIdAndKeyWithGroup.mockResolvedValue(
+      beforeFlag,
+    );
+    flagGroupsRepository.findByProjectIdAndKey.mockResolvedValue(nextGroup);
+    featureFlagsRepository.updateGroupByProjectIdAndKey.mockResolvedValue(
+      afterFlag,
+    );
+    featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+      afterFlag,
+    );
+
+    await service.assignFlag('demo-project', 'new-checkout', {
+      groupKey: 'new-checkout-group',
+    });
+
+    expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+      'demo-project',
+      'new-checkout',
+    );
   });
 
   it('unassigns a flag and records the previous group', async () => {
@@ -547,7 +680,25 @@ describe('FlagGroupsService', () => {
         },
       }),
     );
+    expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+      'demo-project',
+      'new-checkout',
+    );
     expect(result.group).toBeNull();
+  });
+
+  it('does not invalidate when a group mutation transaction fails', async () => {
+    transactionService.run.mockRejectedValue(new Error('transaction failed'));
+
+    await expect(
+      service.updateConfig('demo-project', 'checkout', {
+        environmentKey: 'production',
+        killSwitch: true,
+      }),
+    ).rejects.toThrow('transaction failed');
+
+    expect(cacheInvalidator.invalidateFlags).not.toHaveBeenCalled();
+    expect(cacheInvalidator.invalidateFlag).not.toHaveBeenCalled();
   });
 
   it('requires an actor before any mutation transaction', async () => {

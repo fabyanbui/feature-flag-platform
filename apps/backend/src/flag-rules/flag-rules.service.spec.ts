@@ -106,6 +106,11 @@ describe('FlagRulesService', () => {
     getRequestId: jest.fn(),
   };
 
+  const cacheInvalidator = {
+    invalidateFlag: jest.fn(),
+    invalidateFlags: jest.fn(),
+  };
+
   let service: FlagRulesService;
 
   beforeEach(() => {
@@ -114,6 +119,7 @@ describe('FlagRulesService', () => {
     transactionService.run.mockImplementation(async (callback) => callback(tx));
     requestContext.getActor.mockReturnValue('mentor@example.local');
     requestContext.getRequestId.mockReturnValue('req-test');
+    cacheInvalidator.invalidateFlag.mockResolvedValue(undefined);
 
     service = new FlagRulesService(
       projectsRepository as never,
@@ -122,6 +128,7 @@ describe('FlagRulesService', () => {
       transactionService as never,
       auditLogService,
       requestContext as never,
+      cacheInvalidator as never,
     );
   });
 
@@ -598,6 +605,10 @@ describe('FlagRulesService', () => {
       );
 
       expect(result).toEqual([]);
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
     });
 
     it('creates replacement rules and returns persisted rules', async () => {
@@ -671,6 +682,13 @@ describe('FlagRulesService', () => {
           updatedAt: fixedDate,
         },
       ]);
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
+      expect(transactionService.run.mock.invocationCallOrder[0]).toBeLessThan(
+        cacheInvalidator.invalidateFlag.mock.invocationCallOrder[0],
+      );
     });
 
     it('writes FLAG_RULES_REPLACED audit entry in the same transaction', async () => {
@@ -756,6 +774,18 @@ describe('FlagRulesService', () => {
           requestId: 'req-test',
         }),
       );
+    });
+
+    it('does not invalidate when rule replacement fails', async () => {
+      transactionService.run.mockRejectedValue(new Error('transaction failed'));
+
+      await expect(
+        service.replace('demo-project', 'new-checkout', {
+          rules: [],
+        }),
+      ).rejects.toThrow('transaction failed');
+
+      expect(cacheInvalidator.invalidateFlag).not.toHaveBeenCalled();
     });
   });
 });

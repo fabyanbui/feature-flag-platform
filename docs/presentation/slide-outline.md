@@ -73,11 +73,15 @@ Data plane:
 
 Rule order:
 
-1. archived/disabled/kill switch,
-2. user allowlist,
-3. role targeting,
-4. percentage rollout,
-5. default off.
+1. archived flag,
+2. disabled flag configuration,
+3. group kill switch,
+4. flag kill switch,
+5. global on,
+6. user allowlist,
+7. role targeting,
+8. percentage rollout,
+9. default off.
 
 Emphasize:
 
@@ -197,19 +201,41 @@ System thinking:
 - safe defaults,
 - test coverage across layers.
 
-## Slide 14 — Future Work
+## Slide 14 — Recommended Enhancement: Safe Evaluation Caching
+
+Implementation proof:
+
+- caches reusable flag configuration, not user-specific decisions,
+- reuses one snapshot for different request contexts,
+- uses explicit post-commit invalidation to prevent stale configuration,
+- falls back to PostgreSQL when cache access fails,
+- keeps the mini-project simple with in-memory storage,
+- preserves Redis as a future multi-instance provider.
+
+Engineering tradeoff:
+
+- in-memory caching is simple and fast for one backend instance,
+- horizontal scaling requires a shared cache with equivalent TTL and
+  invalidation semantics.
+
+## Slide 15 — Future Work
 
 Only after MVP stability:
 
-- in-memory or Redis cache,
+- optional Redis cache provider,
 - JavaScript SDK,
 - RBAC,
 - evaluation analytics,
-- group kill switch,
 - Docker Compose,
 - flag cleanup workflow.
 
-## Slide 15 — Conclusion
+Completed recommended enhancements:
+
+- audit-backed configuration history,
+- group kill switch,
+- in-memory evaluation-snapshot cache.
+
+## Slide 16 — Conclusion
 
 Final message:
 
