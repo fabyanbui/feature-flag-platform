@@ -17,6 +17,7 @@ import {
 import { RequestContextService } from '../common/request-context/request-context.service';
 import { cleanAuditSnapshot } from '../common/utils/audit-snapshot.util';
 import { TransactionService } from '../database/transaction.service';
+import { EvaluationCacheInvalidator } from '../evaluation/cache/evaluation-cache-invalidator';
 import { FeatureFlagResponseDto } from '../feature-flags/dto/feature-flag-response.dto';
 import { EnvironmentsRepository } from '../repositories/environments.repository';
 import { FeatureFlagsRepository } from '../repositories/feature-flags.repository';
@@ -43,6 +44,7 @@ export class FlagGroupsService {
     private readonly transactionService: TransactionService,
     private readonly auditLogService: AuditLogService,
     private readonly requestContext: RequestContextService,
+    private readonly cacheInvalidator: EvaluationCacheInvalidator,
   ) {}
 
   async list(projectKey: string, query: FlagGroupQueryDto) {
@@ -357,7 +359,13 @@ export class FlagGroupsService {
       const existingConfig = this.findGroupConfig(group, environment.key);
 
       if (existingConfig?.killSwitch === killSwitch) {
-        return { project, group, environment };
+        return {
+          project,
+          group,
+          environment,
+          changed: false,
+          affectedFlagKeys: [] as string[],
+        };
       }
 
       await this.flagGroupConfigsRepository.upsertByGroupIdAndEnvironmentId(
@@ -386,6 +394,11 @@ export class FlagGroupsService {
         throw notFoundError(`Flag group "${groupKey}" was not found.`);
       }
 
+      const affectedFlags = await this.featureFlagsRepository.findKeysByGroupId(
+        group.id,
+        tx,
+      );
+
       await this.auditLogService.record(tx, {
         projectId: project.id,
         projectKey: project.key,
@@ -404,13 +417,27 @@ export class FlagGroupsService {
         after: this.groupConfigSnapshot(group.key, environment.key, killSwitch),
         metadata: {
           source: 'api',
-          affectedFlagCount: group._count.flags,
+          affectedFlagCount: affectedFlags.length,
         },
         requestId,
       });
 
-      return { project, group: updated, environment };
+      return {
+        project,
+        group: updated,
+        environment,
+        changed: true,
+        affectedFlagKeys: affectedFlags.map((flag) => flag.key),
+      };
     });
+
+    if (result.changed && result.affectedFlagKeys.length > 0) {
+      await this.cacheInvalidator.invalidateFlags(
+        result.project.key,
+        result.affectedFlagKeys,
+        result.environment.key,
+      );
+    }
 
     return this.toGroupResponse(
       result.project.key,
@@ -499,7 +526,7 @@ export class FlagGroupsService {
           throw notFoundError(`Feature flag "${flagKey}" was not found.`);
         }
 
-        return { project, flag: unchanged };
+        return { project, flag: unchanged, changed: false };
       }
 
       await this.featureFlagsRepository.updateGroupByProjectIdAndKey(
@@ -540,8 +567,15 @@ export class FlagGroupsService {
         requestId,
       });
 
-      return { project, flag: updated };
+      return { project, flag: updated, changed: true };
     });
+
+    if (result.changed) {
+      await this.cacheInvalidator.invalidateFlag(
+        result.project.key,
+        result.flag.key,
+      );
+    }
 
     return this.toFeatureFlagResponse(result.project.key, result.flag);
   }
