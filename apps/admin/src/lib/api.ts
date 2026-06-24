@@ -4,6 +4,7 @@ import type {
     EvaluationContext,
     EvaluationResult,
     FeatureFlag,
+    FlagGroup,
     FlagConfigStatus,
     FlagRule,
     PageResponse,
@@ -16,8 +17,7 @@ const API_BASE_URL = (
     import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1'
 ).replace(/\/+$/, '');
 
-const ADMIN_ACTOR =
-    import.meta.env.VITE_ADMIN_ACTOR ?? 'admin@example.local';
+const ADMIN_ACTOR = import.meta.env.VITE_ADMIN_ACTOR ?? 'admin@example.local';
 
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
@@ -183,6 +183,20 @@ export type ListFlagHistoryQuery = {
     order?: 'asc' | 'desc';
 };
 
+export type ListFlagGroupsQuery = {
+    search?: string;
+    environmentKey?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    order?: 'asc' | 'desc';
+};
+
+export type CreateFlagGroupInput = {
+    key: string;
+    name: string;
+};
+
 export const adminApi = {
     listProjects(query: ListProjectsQuery = {}) {
         return apiRequest<PageResponse<Project>>('/projects', { query });
@@ -232,24 +246,88 @@ export const adminApi = {
     },
 
     archiveFlag(projectKey: string, flagKey: string) {
-        return apiRequest<FeatureFlag>(`${flagPath(projectKey, flagKey)}/archive`, {
-            method: 'POST',
-            actor: true,
-        });
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/archive`,
+            {
+                method: 'POST',
+                actor: true,
+            },
+        );
     },
 
     restoreFlag(projectKey: string, flagKey: string) {
-        return apiRequest<FeatureFlag>(`${flagPath(projectKey, flagKey)}/restore`, {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/restore`,
+            {
+                method: 'POST',
+                actor: true,
+            },
+        );
+    },
+
+    listFlagGroups(projectKey: string, query: ListFlagGroupsQuery = {}) {
+        return apiRequest<PageResponse<FlagGroup>>(
+            `${projectPath(projectKey)}/groups`,
+            { query },
+        );
+    },
+
+    createFlagGroup(projectKey: string, body: CreateFlagGroupInput) {
+        return apiRequest<FlagGroup>(`${projectPath(projectKey)}/groups`, {
             method: 'POST',
+            body,
             actor: true,
         });
     },
 
-    listRules(
+    updateFlagGroup(projectKey: string, groupKey: string, name: string) {
+        return apiRequest<FlagGroup>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}`,
+            {
+                method: 'PATCH',
+                body: { name },
+                actor: true,
+            },
+        );
+    },
+
+    updateFlagGroupConfig(
         projectKey: string,
-        flagKey: string,
-        query: ListRulesQuery = {},
+        groupKey: string,
+        body: { environmentKey: string; killSwitch: boolean },
     ) {
+        return apiRequest<FlagGroup>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}/config`,
+            {
+                method: 'PUT',
+                body,
+                actor: true,
+            },
+        );
+    },
+
+    assignFlagGroup(projectKey: string, flagKey: string, groupKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/group`,
+            {
+                method: 'PUT',
+                body: { groupKey },
+                actor: true,
+            },
+        );
+    },
+
+    unassignFlagGroup(projectKey: string, flagKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/group`,
+            {
+                method: 'DELETE',
+                actor: true,
+            },
+        );
+    },
+
+    listRules(projectKey: string, flagKey: string, query: ListRulesQuery = {}) {
         return apiRequest<PageResponse<FlagRule>>(
             `${flagPath(projectKey, flagKey)}/rules`,
             { query },
@@ -268,11 +346,14 @@ export const adminApi = {
     },
 
     replaceRules(projectKey: string, flagKey: string, rules: RuleInput[]) {
-        return apiRequest<FlagRule[]>(`${flagPath(projectKey, flagKey)}/rules`, {
-            method: 'PUT',
-            body: { rules },
-            actor: true,
-        });
+        return apiRequest<FlagRule[]>(
+            `${flagPath(projectKey, flagKey)}/rules`,
+            {
+                method: 'PUT',
+                body: { rules },
+                actor: true,
+            },
+        );
     },
 
     listAuditLogs(projectKey: string, query: ListAuditLogsQuery = {}) {

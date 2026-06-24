@@ -56,6 +56,7 @@ export class EvaluationRepository {
       },
       select: {
         id: true,
+        groupId: true,
         lifecycleStatus: true,
       },
     });
@@ -94,10 +95,40 @@ export class EvaluationRepository {
       return null;
     }
 
+    const groupId = flag.groupId;
+    const groupStateRequired =
+      groupId !== null &&
+      flag.lifecycleStatus !== 'ARCHIVED' &&
+      config.status !== 'DISABLED';
+    const groupConfig = groupStateRequired
+      ? await this.prisma.flagGroupConfig.findUnique({
+          where: {
+            groupId_environmentId: {
+              groupId,
+              environmentId: environment.id,
+            },
+          },
+          select: {
+            killSwitch: true,
+          },
+        })
+      : null;
+
+    if (groupStateRequired && !groupConfig) {
+      throw new Error(
+        `Missing flag group config for group "${flag.groupId}" and environment "${environment.id}".`,
+      );
+    }
+
     return {
       flag: {
         lifecycleStatus: flag.lifecycleStatus,
       },
+      group: groupConfig
+        ? {
+            killSwitch: groupConfig.killSwitch,
+          }
+        : null,
       config: {
         status: config.status,
         servingMode: config.servingMode,

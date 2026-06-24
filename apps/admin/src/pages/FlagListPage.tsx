@@ -119,8 +119,8 @@ export function FlagListPage({
                     <p className="eyebrow">Project</p>
                     <h1>Feature flags</h1>
                     <p>
-                        Managing flags for <code>{projectKey}</code>. Status labels and
-                        runtime state are shown separately.
+                        Managing flags for <code>{projectKey}</code>. Status
+                        labels and runtime state are shown separately.
                     </p>
                 </div>
 
@@ -148,9 +148,10 @@ export function FlagListPage({
                     <div>
                         <h2>Flag list</h2>
                         <p>
-                            Filter by configuration status or lifecycle status. Runtime state
-                            is derived from status, serving mode, archive state, and kill
-                            switch.
+                            Filter by configuration status or lifecycle status.
+                            Runtime state is derived from lifecycle,
+                            configuration, group safety controls, flag safety
+                            controls, and serving mode.
                         </p>
                     </div>
                 </div>
@@ -170,7 +171,9 @@ export function FlagListPage({
                         <select
                             value={status}
                             onChange={(event) =>
-                                setStatus(event.target.value as FlagConfigStatus | '')
+                                setStatus(
+                                    event.target.value as FlagConfigStatus | '',
+                                )
                             }
                         >
                             <option value="">All statuses</option>
@@ -185,7 +188,9 @@ export function FlagListPage({
                             value={lifecycleStatus}
                             onChange={(event) =>
                                 setLifecycleStatus(
-                                    event.target.value as FeatureFlagLifecycleStatus | '',
+                                    event.target.value as
+                                        | FeatureFlagLifecycleStatus
+                                        | '',
                                 )
                             }
                         >
@@ -196,13 +201,18 @@ export function FlagListPage({
                     </label>
 
                     <div className="filter-actions">
-                        <button type="submit" className="button button-secondary">
+                        <button
+                            type="submit"
+                            className="button button-secondary"
+                        >
                             Apply filters
                         </button>
                     </div>
                 </form>
 
-                {loading ? <LoadingState title="Loading feature flags..." /> : null}
+                {loading ? (
+                    <LoadingState title="Loading feature flags..." />
+                ) : null}
 
                 {!loading && error ? (
                     <ErrorState
@@ -229,8 +239,9 @@ export function FlagListPage({
                                     <th scope="col">Flag</th>
                                     <th scope="col">Status label</th>
                                     <th scope="col">Runtime state</th>
+                                    <th scope="col">Group</th>
                                     <th scope="col">Serving</th>
-                                    <th scope="col">Kill switch</th>
+                                    <th scope="col">Flag switch</th>
                                     <th scope="col">Updated</th>
                                     <th scope="col">Actions</th>
                                 </tr>
@@ -258,18 +269,55 @@ export function FlagListPage({
                                             <RuntimeStateBadge flag={flag} />
                                         </td>
 
-                                        <td>{formatStatusForDisplay(flag.servingMode)}</td>
+                                        <td>
+                                            {flag.group ? (
+                                                <div className="group-cell">
+                                                    <strong>
+                                                        {flag.group.name}
+                                                    </strong>
+                                                    <code>
+                                                        {flag.group.key}
+                                                    </code>
+                                                    <span>
+                                                        Switch:{' '}
+                                                        {flag.group.killSwitch
+                                                            ? 'Active'
+                                                            : 'Inactive'}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="muted">
+                                                    No group
+                                                </span>
+                                            )}
+                                        </td>
 
-                                        <td>{flag.killSwitch ? 'Active' : 'Inactive'}</td>
+                                        <td>
+                                            {formatStatusForDisplay(
+                                                flag.servingMode,
+                                            )}
+                                        </td>
 
-                                        <td>{new Date(flag.updatedAt).toLocaleString()}</td>
+                                        <td>
+                                            {flag.killSwitch
+                                                ? 'Active'
+                                                : 'Inactive'}
+                                        </td>
+
+                                        <td>
+                                            {new Date(
+                                                flag.updatedAt,
+                                            ).toLocaleString()}
+                                        </td>
 
                                         <td>
                                             <div className="row-actions">
                                                 <button
                                                     type="button"
                                                     className="button button-secondary"
-                                                    onClick={() => onEditFlag(flag.key)}
+                                                    onClick={() =>
+                                                        onEditFlag(flag.key)
+                                                    }
                                                 >
                                                     Edit
                                                 </button>
@@ -277,17 +325,23 @@ export function FlagListPage({
                                                 <button
                                                     type="button"
                                                     className="button button-secondary"
-                                                    onClick={() => onEditRules(flag.key)}
+                                                    onClick={() =>
+                                                        onEditRules(flag.key)
+                                                    }
                                                 >
                                                     Rules
                                                 </button>
 
-                                                {flag.lifecycleStatus === 'ARCHIVED' ? (
+                                                {flag.lifecycleStatus ===
+                                                'ARCHIVED' ? (
                                                     <button
                                                         type="button"
                                                         className="button button-secondary"
                                                         onClick={() =>
-                                                            setPendingAction({ type: 'restore', flag })
+                                                            setPendingAction({
+                                                                type: 'restore',
+                                                                flag,
+                                                            })
                                                         }
                                                     >
                                                         Restore
@@ -297,7 +351,10 @@ export function FlagListPage({
                                                         type="button"
                                                         className="button button-danger"
                                                         onClick={() =>
-                                                            setPendingAction({ type: 'archive', flag })
+                                                            setPendingAction({
+                                                                type: 'archive',
+                                                                flag,
+                                                            })
                                                         }
                                                     >
                                                         Archive
@@ -327,7 +384,9 @@ export function FlagListPage({
                             : `Restore "${pendingAction.flag.key}" to active lifecycle status.`
                         : ''
                 }
-                confirmLabel={pendingAction?.type === 'archive' ? 'Archive' : 'Restore'}
+                confirmLabel={
+                    pendingAction?.type === 'archive' ? 'Archive' : 'Restore'
+                }
                 destructive={pendingAction?.type === 'archive'}
                 busy={actionBusy}
                 onCancel={() => setPendingAction(null)}

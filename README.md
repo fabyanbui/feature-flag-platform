@@ -152,7 +152,10 @@ Seed data creates:
 
 - project `demo-project`,
 - environments `production`, `staging`, and `development`,
+- group `customer-experience`, with its kill switch inactive in every seeded
+  environment,
 - flags `beta-dashboard` and `new-checkout`,
+- both flags assigned to `customer-experience`,
 - sample users for beta, regular, and admin scenarios,
 - audit entries for seeded setup.
 
@@ -215,13 +218,17 @@ Use the seeded data for a local presentation:
 1. Start PostgreSQL, backend, admin app, and demo app.
 2. Open the admin dashboard and inspect `demo-project`.
 3. Show flags `beta-dashboard` and `new-checkout`.
-4. Open the demo app and evaluate:
+4. Open **Groups**, activate the `customer-experience` production kill switch,
+   and confirm both assigned flags evaluate `Off` with
+   `reason=GROUP_KILL_SWITCH`.
+5. Deactivate the group switch to restore normal evaluation.
+6. Open the demo app and evaluate:
    - Global Toggle,
    - Role Targeting — Beta Tester,
    - Percentage Rollout — Included User,
    - Percentage Rollout — Excluded User,
    - Missing Project / Flag.
-5. Return to the admin dashboard and show audit log entries for configuration
+7. Return to the admin dashboard and show audit log entries for group and flag
    changes.
 
 Detailed presenter notes are in `docs/release/demo-script.md`.

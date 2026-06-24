@@ -20,6 +20,9 @@ describe('EvaluationRepository', () => {
     flagEnvironmentConfig: {
       findUnique: jest.fn(),
     },
+    flagGroupConfig: {
+      findUnique: jest.fn(),
+    },
   };
 
   let repository: EvaluationRepository;
@@ -43,6 +46,7 @@ describe('EvaluationRepository', () => {
     expect(prisma.environment.findFirst).not.toHaveBeenCalled();
     expect(prisma.featureFlag.findUnique).not.toHaveBeenCalled();
     expect(prisma.flagEnvironmentConfig.findUnique).not.toHaveBeenCalled();
+    expect(prisma.flagGroupConfig.findUnique).not.toHaveBeenCalled();
   });
 
   it('returns null when default environment is missing', async () => {
@@ -123,6 +127,7 @@ describe('EvaluationRepository', () => {
       },
       select: {
         id: true,
+        groupId: true,
         lifecycleStatus: true,
       },
     });
@@ -139,6 +144,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
+      groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
     });
     prisma.flagEnvironmentConfig.findUnique.mockResolvedValue(null);
@@ -175,6 +181,7 @@ describe('EvaluationRepository', () => {
         },
       },
     });
+    expect(prisma.flagGroupConfig.findUnique).not.toHaveBeenCalled();
   });
 
   it('returns complete evaluation snapshot', async () => {
@@ -198,6 +205,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
+      groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
     });
     prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
@@ -216,6 +224,7 @@ describe('EvaluationRepository', () => {
       flag: {
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
       },
+      group: null,
       config: {
         status: FlagConfigStatus.ENABLED,
         servingMode: ServingMode.TARGETED,
@@ -234,6 +243,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
+      groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
     });
     prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
@@ -259,5 +269,157 @@ describe('EvaluationRepository', () => {
         }),
       }),
     );
+  });
+
+  it('returns active group state for the evaluated environment', async () => {
+    prisma.project.findUnique.mockResolvedValue({
+      id: 'project-1',
+    });
+    prisma.environment.findFirst.mockResolvedValue({
+      id: 'environment-1',
+    });
+    prisma.featureFlag.findUnique.mockResolvedValue({
+      id: 'flag-1',
+      groupId: 'group-1',
+      lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+    });
+    prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
+      status: FlagConfigStatus.ENABLED,
+      servingMode: ServingMode.GLOBAL_ON,
+      killSwitch: false,
+      rules: [],
+    });
+    prisma.flagGroupConfig.findUnique.mockResolvedValue({
+      killSwitch: true,
+    });
+
+    await expect(
+      repository.findSnapshot({
+        projectKey: 'demo-project',
+        environmentKey: 'production',
+        flagKey: 'new-checkout',
+      }),
+    ).resolves.toEqual({
+      flag: {
+        lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+      },
+      group: {
+        killSwitch: true,
+      },
+      config: {
+        status: FlagConfigStatus.ENABLED,
+        servingMode: ServingMode.GLOBAL_ON,
+        killSwitch: false,
+      },
+      rules: [],
+    });
+
+    expect(prisma.flagGroupConfig.findUnique).toHaveBeenCalledWith({
+      where: {
+        groupId_environmentId: {
+          groupId: 'group-1',
+          environmentId: 'environment-1',
+        },
+      },
+      select: {
+        killSwitch: true,
+      },
+    });
+  });
+
+  it('throws when an assigned group is missing its environment config', async () => {
+    prisma.project.findUnique.mockResolvedValue({
+      id: 'project-1',
+    });
+    prisma.environment.findFirst.mockResolvedValue({
+      id: 'environment-1',
+    });
+    prisma.featureFlag.findUnique.mockResolvedValue({
+      id: 'flag-1',
+      groupId: 'group-1',
+      lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+    });
+    prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
+      status: FlagConfigStatus.ENABLED,
+      servingMode: ServingMode.GLOBAL_ON,
+      killSwitch: false,
+      rules: [],
+    });
+    prisma.flagGroupConfig.findUnique.mockResolvedValue(null);
+
+    await expect(
+      repository.findSnapshot({
+        projectKey: 'demo-project',
+        flagKey: 'new-checkout',
+      }),
+    ).rejects.toThrow('Missing flag group config');
+  });
+
+  it('does not require group state when the flag is archived', async () => {
+    prisma.project.findUnique.mockResolvedValue({
+      id: 'project-1',
+    });
+    prisma.environment.findFirst.mockResolvedValue({
+      id: 'environment-1',
+    });
+    prisma.featureFlag.findUnique.mockResolvedValue({
+      id: 'flag-1',
+      groupId: 'group-1',
+      lifecycleStatus: FeatureFlagLifecycleStatus.ARCHIVED,
+    });
+    prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
+      status: FlagConfigStatus.ENABLED,
+      servingMode: ServingMode.GLOBAL_ON,
+      killSwitch: false,
+      rules: [],
+    });
+
+    await expect(
+      repository.findSnapshot({
+        projectKey: 'demo-project',
+        flagKey: 'new-checkout',
+      }),
+    ).resolves.toMatchObject({
+      flag: {
+        lifecycleStatus: FeatureFlagLifecycleStatus.ARCHIVED,
+      },
+      group: null,
+    });
+
+    expect(prisma.flagGroupConfig.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('does not require group state when the flag config is disabled', async () => {
+    prisma.project.findUnique.mockResolvedValue({
+      id: 'project-1',
+    });
+    prisma.environment.findFirst.mockResolvedValue({
+      id: 'environment-1',
+    });
+    prisma.featureFlag.findUnique.mockResolvedValue({
+      id: 'flag-1',
+      groupId: 'group-1',
+      lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+    });
+    prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
+      status: FlagConfigStatus.DISABLED,
+      servingMode: ServingMode.GLOBAL_ON,
+      killSwitch: true,
+      rules: [],
+    });
+
+    await expect(
+      repository.findSnapshot({
+        projectKey: 'demo-project',
+        flagKey: 'new-checkout',
+      }),
+    ).resolves.toMatchObject({
+      group: null,
+      config: {
+        status: FlagConfigStatus.DISABLED,
+      },
+    });
+
+    expect(prisma.flagGroupConfig.findUnique).not.toHaveBeenCalled();
   });
 });

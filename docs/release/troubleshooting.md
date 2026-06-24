@@ -67,8 +67,14 @@ npm run db:seed --workspace=@ffp/backend
 Expected seed data:
 
 - project `demo-project`,
+- environments `production`, `staging`, and `development`,
+- group `customer-experience`, inactive in every seeded environment,
 - flags `beta-dashboard` and `new-checkout`,
+- both flags assigned to `customer-experience`,
 - sample users `demo-user-beta`, `demo-user-regular`, and `demo-user-admin`.
+
+The seed intentionally resets the demo group kill switch to inactive. This
+provides a safe, repeatable starting point before demonstrating activation.
 
 ## Demo app cannot call the backend
 

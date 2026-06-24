@@ -22,6 +22,32 @@ export class FeatureFlagsRepository {
     });
   }
 
+  findByProjectIdAndKeyWithGroup(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.findUnique({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      include: {
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   create(
     data: Prisma.FeatureFlagCreateInput,
     db: RepositoryClient = this.prisma,
@@ -46,6 +72,51 @@ export class FeatureFlagsRepository {
     });
   }
 
+  updateGroupByProjectIdAndKey(
+    projectId: string,
+    flagKey: string,
+    groupId: string | null,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.update({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      data: {
+        groupId,
+      },
+      include: {
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findKeysByGroupId(groupId: string, db: RepositoryClient = this.prisma) {
+    return db.featureFlag.findMany({
+      where: {
+        groupId,
+      },
+      select: {
+        id: true,
+        key: true,
+      },
+      orderBy: {
+        key: 'asc',
+      },
+    });
+  }
+
   findMany(
     where: Prisma.FeatureFlagWhereInput,
     orderBy: Prisma.FeatureFlagOrderByWithRelationInput,
@@ -62,6 +133,15 @@ export class FeatureFlagsRepository {
         environmentConfigs: {
           include: {
             environment: true,
+          },
+        },
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
           },
         },
       },
@@ -94,6 +174,15 @@ export class FeatureFlagsRepository {
             rules: {
               orderBy: {
                 priority: 'asc',
+              },
+            },
+          },
+        },
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
               },
             },
           },

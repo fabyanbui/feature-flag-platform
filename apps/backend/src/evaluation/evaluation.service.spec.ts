@@ -83,6 +83,7 @@ describe('EvaluationService', () => {
       flag: {
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
       },
+      group: null,
       config: {
         status: FlagConfigStatus.ENABLED,
         servingMode: ServingMode.GLOBAL_ON,
@@ -137,6 +138,7 @@ describe('EvaluationService', () => {
       flag: {
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
       },
+      group: null,
       config: {
         status: FlagConfigStatus.ENABLED,
         servingMode: ServingMode.TARGETED,
@@ -194,6 +196,7 @@ describe('EvaluationService', () => {
       flag: {
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
       },
+      group: null,
       config: {
         status: FlagConfigStatus.ENABLED,
         servingMode: ServingMode.GLOBAL_ON,
