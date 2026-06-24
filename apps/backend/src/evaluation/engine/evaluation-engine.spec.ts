@@ -368,6 +368,106 @@ describe('evaluateFlag', () => {
     expect(result.matchedRuleId).toBeNull();
   });
 
+  it('ignores a disabled percentage rule when targetingKey is missing', () => {
+    const result = evaluateFlag(
+      {
+        ...baseInput,
+        context: {
+          userId: 'demo-user-regular',
+          roles: ['user'],
+        },
+      },
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'disabled-percentage-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            enabled: false,
+            parameters: {
+              percentage: 100,
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.DEFAULT_OFF,
+      matchedRuleId: null,
+    });
+  });
+
+  it('does not require targetingKey when a user allowlist rule matches first', () => {
+    const result = evaluateFlag(
+      {
+        ...baseInput,
+        context: {
+          userId: 'demo-user-regular',
+          roles: ['user'],
+        },
+      },
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'percentage-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            priority: 1,
+            parameters: {
+              percentage: 100,
+            },
+          }),
+          createRule({
+            id: 'allowlist-rule',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 99,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      variant: 'on',
+      reason: EvaluationReason.USER_ALLOWLIST,
+      matchedRuleId: 'allowlist-rule',
+    });
+  });
+
+  it('returns INVALID_CONTEXT for a whitespace-only targetingKey', () => {
+    const result = evaluateFlag(
+      {
+        ...baseInput,
+        context: {
+          ...baseInput.context,
+          targetingKey: '   ',
+        },
+      },
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'percentage-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            parameters: {
+              percentage: 50,
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.INVALID_CONTEXT,
+      matchedRuleId: null,
+    });
+  });
+
   it.each([
     {
       percentage: 0,
