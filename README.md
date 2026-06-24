@@ -205,6 +205,24 @@ Optional Prisma schema validation:
 npm run prisma:validate --workspace=@ffp/backend
 ```
 
+### Continuous integration
+
+GitHub Actions runs `.github/workflows/ci.yml` for pull requests and pushes to
+`develop` or `main`, and it can also be started manually. The workflow uses
+Node.js 22 and an ephemeral PostgreSQL 16 service to run:
+
+1. dependency installation with `npm ci`,
+2. Prisma schema validation,
+3. lint checks, unit tests, and workspace builds,
+4. database migrations,
+5. backend integration and end-to-end tests,
+6. the whitespace diff check.
+
+No repository database secret is required for CI. The workflow creates a
+temporary database that exists only for the job.
+
+Use `npm run lint:fix` locally when you want ESLint to apply automatic fixes.
+
 For a targeted Phase 9 release-readiness check:
 
 ```bash

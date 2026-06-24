@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ffp
+          POSTGRES_PASSWORD: ffp_ci_password
+          POSTGRES_DB: ffp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ffp -d ffp_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://ffp:ffp_ci_password@localhost:5432/ffp_ci?schema=public
+      API_PORT: 3000
+      ADMIN_ORIGIN: http://localhost:5173
+      DEMO_ORIGIN: http://localhost:5174
+      VITE_API_BASE_URL: http://localhost:3000/v1
+      VITE_DEFAULT_PROJECT_KEY: demo-project
+      VITE_DEFAULT_FLAG_KEY: new-checkout
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npm run prisma:validate --workspace=@ffp/backend
+
+      - name: Run lint checks
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test --workspace=@ffp/backend -- --runInBand
+
+      - name: Build workspaces
+        run: npm run build
+
+      - name: Apply database migrations
+        run: npm run prisma:migrate:deploy --workspace=@ffp/backend
+
+      - name: Run backend integration tests
+        run: npm run test:integration --workspace=@ffp/backend
+
+      - name: Run backend end-to-end tests
+        run: npm run test:e2e --workspace=@ffp/backend -- --runInBand
+
+      - name: Check for whitespace errors
+        run: npm run diff:check
