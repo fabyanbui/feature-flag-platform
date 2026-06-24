@@ -4,10 +4,18 @@
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-05-30 | 1.0 | Initial vision draft | Principal Engineer (Copilot) |
+| 2026-06-03 | 1.1 | Align vision to initial requirement as active project goal | Codex |
+| 2026-06-03 | 1.2 | Add submission and mentor evaluation criteria | Codex |
+| 2026-06-10 | 1.3 | Align delivery dates and mentor thinking criteria | Codex |
 
 ## 1. Introduction
 ### 1.1 Purpose
-Define the product vision for the Feature Flag Platform mini project, aligning scope, stakeholders, and success criteria using the Rational Unified Process (RUP) Vision template.
+Define the product vision for the Feature Flag Platform mini project, aligning
+scope, stakeholders, and success criteria using the Rational Unified Process
+(RUP) Vision template. The active product goal is sourced from
+`docs/requirement/requirement-init.md` and
+`docs/requirement/info-init.md`, and summarized in
+`docs/plan/project-goal.md`.
 
 ### 1.2 Scope
 The system is a lightweight feature flag management platform for web applications. It includes:
@@ -27,16 +35,19 @@ The system is a lightweight feature flag management platform for web application
 
 ### 1.4 References
 1. `docs/requirement/requirement-init.md`
-2. `docs/requirement/backend/be-init.md`
-3. `docs/requirement/frontend/fe-init.md`
-4. `docs/requirement/demo/demo-app.md`
-5. `docs/requirement/feature-flag-research.md`
-6. `docs/research/feature-flags.md`
-7. `docs/research/rollout-strategies.md`
-8. `docs/research/kill-switch-fast-rollback.md`
-9. `docs/research/feature-flag-key-considerations.md`
-10. `docs/research/audit-log-configuration-changes.md`
-11. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
+2. `docs/requirement/info-init.md`
+3. `docs/plan/project-goal.md`
+4. `docs/requirement/backend/be-init.md`
+5. `docs/requirement/frontend/fe-init.md`
+6. `docs/requirement/demo/demo-app.md`
+7. `docs/requirement/demo/minimal-mvp.md`
+8. `docs/requirement/feature-flag-research.md`
+9. `docs/research/feature-flags.md`
+10. `docs/research/rollout-strategies.md`
+11. `docs/research/kill-switch-fast-rollback.md`
+12. `docs/research/feature-flag-key-considerations.md`
+13. `docs/research/audit-log-configuration-changes.md`
+14. Competitor research: ConfigCat, LaunchDarkly, Split.io, Flagsmith, Unleash
 
 ### 1.5 Overview
 This vision centers on a practical, demo-ready platform that emphasizes clear rule evaluation, safe rollouts, auditability, and explainability. It balances real-world engineering practices with an educational, minimal-scope implementation suitable for the VDT 2026 timeline.
@@ -113,6 +124,7 @@ The platform acts as a centralized feature management system for web apps, consi
 | Dashboard UI | Project list, flag list, edit screens, rules, audit log | Must |
 | Demo app | Shows global toggle and targeted/percentage scenarios | Must |
 | Seed data | Prebuilt demo project, flags, and user contexts | Must |
+| README/run docs | Setup and run instructions for backend, dashboard, demo, database, and seed data | Must |
 
 ## 6. Quality Attributes (Non-Functional Requirements)
 1. **Performance:** dashboard list screens <= 2s render; evaluation results <= 1s in demo.
@@ -123,9 +135,16 @@ The platform acts as a centralized feature management system for web apps, consi
 6. **Maintainability:** clear rule evaluation design and consistent API shapes.
 
 ## 7. Constraints
-1. Delivery timeline aligned to VDT deadlines (submission: 2026-07-01, presentation: 2026-07-02).
-2. MVP scope excludes complex experimentation and enterprise governance.
-3. Avoid over-engineering: single deployable platform with clear architecture.
+1. Delivery timeline aligned to VDT deadlines (submission: 2026-07-07,
+   presentation: 2026-07-09).
+2. Slides and the research report are required final artifacts.
+3. MVP scope excludes complex experimentation and enterprise governance.
+4. Avoid over-engineering: single deployable platform with clear architecture.
+5. The presentation must demonstrate clear understanding, practical value,
+   technology tradeoffs, comparison with existing feature flag solutions,
+   problem-solving, design thinking, and system thinking.
+6. Recommended-level requirements are a plus only after the required MVP is
+   stable and demonstrable.
 
 ## 8. External Interfaces
 ### 8.1 REST APIs
@@ -144,4 +163,8 @@ The platform acts as a centralized feature management system for web apps, consi
 2. **Rollout clarity:** deterministic bucketing and clear targeting rules.
 3. **Educational UX:** simple, readable screens that show the workflow end-to-end.
 4. **Lifecycle awareness:** encourage cleanup of stale flags and safe defaults.
-
+5. **Presentation readiness:** explain why the project is needed, why the chosen
+   stack is appropriate, and how the implementation compares with existing
+   tools.
+6. **Thinking visibility:** make problem-solving, design thinking, and system
+   thinking visible in the demo narrative, slides, and report.

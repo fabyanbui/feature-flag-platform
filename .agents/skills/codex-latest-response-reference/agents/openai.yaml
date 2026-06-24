@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Latest Response Reference"
+  short_description: "Create full docs from the latest response."
+  default_prompt: "Create a full reference document for the latest response in this session under docs/codex/reference."

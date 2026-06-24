@@ -1,0 +1,1003 @@
+# MVP API and Contracts
+
+## 1. Purpose
+
+This document freezes the Phase 0 MVP contracts for the Feature Flag Platform.
+It is the implementation reference for API conventions, evaluation behavior,
+rule types, deterministic rollout, error responses, pagination, audit logging,
+and seed/demo readiness.
+
+The contracts are derived from:
+
+1. `docs/requirement/requirement-init.md`
+2. `docs/requirement/info-init.md`
+3. `docs/plan/project-goal.md`
+4. `docs/plan/implementation-roadmap.md`
+5. `docs/requirement/demo/minimal-mvp.md`
+6. `docs/design/software-architecture-document.md`
+7. `AGENTS.md`
+
+Phase 0 does not implement the backend, frontend, database, or demo app. It
+defines stable contracts so later implementation can proceed without inventing
+behavior inside controllers, UI components, or tests.
+
+## 2. Requirement Traceability
+
+| MVP requirement | Contract section | Implementation module or artifact |
+| --- | --- | --- |
+| Research report | Project goal and requirement sources | `docs/requirement/feature-flag-research.md` |
+| Project management API | API conventions, errors, pagination, audit | Backend projects module, `/v1/projects` |
+| Feature flag CRUD API | API conventions, key validation, audit | Backend flags module, `/v1/projects/{projectKey}/flags` |
+| Rule configuration API | Rule types, evaluation order, audit | Backend rules module, `/v1/projects/{projectKey}/flags/{flagKey}/rules` |
+| Evaluation API | Evaluation contract, reason codes, hashing | Backend evaluation module, `POST /v1/evaluate` |
+| Audit log API | Audit log contract, pagination, filtering | Backend audit module, `/v1/projects/{projectKey}/audit-logs` |
+| Frontend dashboard | API conventions, status semantics, audit | Admin web app |
+| Demo application | Evaluation contract, seed/demo expectations | Demo web app |
+| Database | Audit contract, rule model, key validation | Prisma schema and PostgreSQL |
+| Input validation | Key validation, error contract | DTOs and validation pipe |
+| Basic error handling | Error contract, fail-safe evaluation behavior | Global exception filter and evaluation fallback handling |
+| README run instructions | Phase 0 acceptance, seed/demo expectations | `README.md` quickstart |
+| Seed data | Seed/demo data expectations | Prisma seed script |
+| Short design documentation | This document | `docs/design/mvp-api-and-contracts.md` |
+
+## 3. API Conventions
+
+- Base path: `/v1`
+- Request and response body format: JSON
+- JSON field naming: `camelCase`
+- Content type: `application/json`
+- Management APIs are control-plane APIs.
+- The evaluation API is the data-plane API.
+- Evaluation failures must prefer safe disabled responses.
+- Mutation requests must include an actor identity for audit logging.
+- Backend accepts `X-Request-Id` when provided; otherwise it generates one.
+- Error responses, audit entries, and server logs should include the same
+  request ID.
+
+### 3.1 Actor Identity
+
+MVP mutation requests use an actor header:
+
+```http
+X-Actor: admin@example.local
+```
+
+Normal management mutations must provide `X-Actor`. Missing `X-Actor` returns
+`VALIDATION_ERROR`. The backend may use `system` for seed scripts or internal
+setup operations. Future authentication/RBAC can replace this header with
+authenticated user identity, but audit entries must still capture an actor.
+
+### 3.2 Request ID
+
+Clients may provide a request ID:
+
+```http
+X-Request-Id: req_123
+```
+
+If `X-Request-Id` is missing, the backend generates a request ID. The same
+request ID must be used in request logs, error responses, and audit entries
+created by that request.
+
+### 3.3 Control Plane
+
+Control-plane APIs manage configuration:
+
+- `/v1/projects`
+- `/v1/projects/{projectKey}/flags`
+- `/v1/projects/{projectKey}/flags/{flagKey}/rules`
+- `/v1/projects/{projectKey}/sample-users`
+- `/v1/projects/{projectKey}/audit-logs`
+
+### 3.4 Data Plane
+
+Data-plane APIs answer runtime feature decisions:
+
+- `POST /v1/evaluate`
+
+The data plane must remain deterministic, fail-safe, and safe for repeated
+calls with the same input.
+
+## 4. Evaluation Contract
+
+### 4.1 Endpoint
+
+```http
+POST /v1/evaluate
+```
+
+Evaluation returns `200 OK` for normal decisions and safe fallback decisions,
+including `NOT_FOUND`, `INVALID_CONTEXT`, `DEFAULT_OFF`, and `ERROR`.
+Malformed JSON, missing top-level required fields, non-object `context`, or
+invalid `projectKey` / `flagKey` formats return `400 VALIDATION_ERROR`.
+
+### 4.2 Request Body
+
+```json
+{
+  "projectKey": "demo-project",
+  "flagKey": "new-checkout",
+  "context": {
+    "targetingKey": "user-123",
+    "userId": "user-123",
+    "roles": ["beta-tester"],
+    "attributes": {
+      "country": "VN",
+      "plan": "pro"
+    }
+  }
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `projectKey` | Yes | Stable project key. |
+| `flagKey` | Yes | Stable flag key within the project. |
+| `context` | Yes | Runtime context for evaluation. |
+| `context.targetingKey` | Required for percentage rollout | Stable non-PII key used for deterministic rollout. |
+| `context.userId` | Optional | Demo-friendly identifier for allowlist rules. |
+| `context.roles` | Optional | Roles used for role targeting. |
+| `context.attributes` | Optional | Additional non-PII attributes for future targeting. |
+
+The MVP uses `context`, not `user`, because the value may represent a user,
+tenant, account, service, or other stable target.
+
+### 4.3 Response Body
+
+```json
+{
+  "projectKey": "demo-project",
+  "flagKey": "new-checkout",
+  "enabled": true,
+  "variant": "on",
+  "reason": "ROLE_MATCH",
+  "matchedRuleId": "rule_123"
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `projectKey` | Yes | Echoes the requested project key. |
+| `flagKey` | Yes | Echoes the requested flag key. |
+| `enabled` | Yes | Runtime result. `true` means On, `false` means Off. |
+| `variant` | Yes | MVP boolean variant: `on` or `off`. |
+| `reason` | Yes | Canonical reason code. |
+| `matchedRuleId` | Yes, nullable | Opaque rule ID when a rule matched; otherwise `null`. |
+
+For MVP boolean flags:
+
+- `enabled=true` maps to `variant="on"`
+- `enabled=false` maps to `variant="off"`
+
+The MVP does not store variants. `variant` is derived from `enabled`.
+Multivariate flags are not in MVP scope.
+
+### 4.4 Not Found Behavior
+
+Missing project or missing flag must return a safe evaluation response:
+
+```json
+{
+  "projectKey": "demo-project",
+  "flagKey": "unknown-flag",
+  "enabled": false,
+  "variant": "off",
+  "reason": "NOT_FOUND",
+  "matchedRuleId": null
+}
+```
+
+Evaluation uses `NOT_FOUND` for both missing project and missing flag. The
+public data-plane response must not distinguish `PROJECT_NOT_FOUND` from
+`FLAG_NOT_FOUND`. The backend may log more specific internal diagnostics with
+the request ID.
+
+### 4.5 Invalid Context and Error Fallbacks
+
+`INVALID_CONTEXT` is returned when required evaluation context is missing or
+unusable. For example, percentage rollout requires a non-empty
+`context.targetingKey`; no random fallback is allowed.
+
+```json
+{
+  "projectKey": "demo-project",
+  "flagKey": "new-checkout",
+  "enabled": false,
+  "variant": "off",
+  "reason": "INVALID_CONTEXT",
+  "matchedRuleId": null
+}
+```
+
+`ERROR` is returned only when the evaluation path catches an unexpected
+recoverable error. The server must log the error with the request ID.
+
+```json
+{
+  "projectKey": "demo-project",
+  "flagKey": "new-checkout",
+  "enabled": false,
+  "variant": "off",
+  "reason": "ERROR",
+  "matchedRuleId": null
+}
+```
+
+Both fallback responses must fail closed with `enabled=false` and
+`variant="off"`.
+
+### 4.6 Evaluation Validation Order
+
+The evaluation endpoint must use this validation behavior:
+
+1. Malformed JSON, missing top-level `projectKey` / `flagKey` / `context`,
+   non-object `context`, or invalid key format returns management-style
+   `400 VALIDATION_ERROR`.
+2. Valid keys with a missing project or missing flag return evaluation-shaped
+   `200 OK` with `reason=NOT_FOUND`.
+3. Missing `context.userId` does not fail the request; user allowlist rules are
+   skipped.
+4. Missing or empty `context.roles` does not fail the request; role-targeting
+   rules are skipped.
+5. Missing or empty `context.targetingKey` fails only if a percentage rollout
+   rule is reached; return evaluation-shaped `200 OK` with
+   `reason=INVALID_CONTEXT`.
+6. `ERROR` is returned only by a top-level evaluation exception handler. It is
+   not a normal rule-order step.
+
+## 5. Reason Codes
+
+| Reason | `enabled` | `matchedRuleId` | Meaning |
+| --- | --- | --- | --- |
+| `GLOBAL_ON` | `true` | `null` | Flag serving mode enables the feature for everyone. |
+| `FLAG_DISABLED` | `false` | `null` | Flag status is disabled. |
+| `FLAG_ARCHIVED` | `false` | `null` | Flag status is archived and no longer served. |
+| `KILL_SWITCH` | `false` | `null` | Emergency kill switch forces Off. |
+| `USER_ALLOWLIST` | `true` | rule ID | User matched an explicit allowlist rule. |
+| `ROLE_MATCH` | `true` | rule ID | User matched a role-targeting rule. |
+| `PERCENTAGE_ROLLOUT` | `true` | rule ID | Target fell inside deterministic rollout percentage. |
+| `DEFAULT_OFF` | `false` | `null` | No enabling rule matched. |
+| `NOT_FOUND` | `false` | `null` | Project or flag was missing. |
+| `INVALID_CONTEXT` | `false` | `null` | Required evaluation context was missing or unusable. |
+| `ERROR` | `false` | `null` | Unexpected evaluation failure safely returned Off. |
+
+## 6. Flag Model, Rule Types, and Evaluation Order
+
+### 6.1 Flag-Level Runtime Fields
+
+Global behavior is modeled at the flag level, not as a rule:
+
+```text
+status: ENABLED | DISABLED | ARCHIVED
+servingMode: GLOBAL_ON | TARGETED
+killSwitch: boolean
+```
+
+`status` is a management lifecycle label. `enabled` in evaluation responses is
+runtime On/Off state. The dashboard must not confuse these concepts.
+
+Minimal flag object shape:
+
+```json
+{
+  "key": "new-checkout",
+  "name": "New Checkout",
+  "description": "Demo checkout rollout flag",
+  "status": "ENABLED",
+  "servingMode": "TARGETED",
+  "killSwitch": false
+}
+```
+
+### 6.2 MVP Rule Types
+
+MVP rule types are targeted enablement rules:
+
+```text
+USER_ALLOWLIST
+ROLE_TARGETING
+PERCENTAGE_ROLLOUT
+```
+
+Do not model `GLOBAL` as a rule in the MVP. Global on/off behavior belongs to
+flag-level fields.
+
+### 6.3 Rule Object and Parameter Shapes
+
+All rules share these common fields:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `id` | Response only | Opaque rule ID. |
+| `type` | Yes | One of the MVP rule types. |
+| `priority` | Yes | Integer ordering value unique within a flag. |
+| `enabled` | Yes | Disabled rules are skipped. |
+| `parameters` | Yes | Type-specific rule configuration. |
+
+Rule `priority` is used for UI ordering and for ordering rules of the same
+type. MVP evaluation type precedence cannot be overridden by priority.
+When multiple enabled rules of the same type exist, evaluate lower `priority`
+values first and return the first matching rule ID as `matchedRuleId`.
+Rule `priority` must be unique within a flag. Duplicate priorities in a rule
+replacement payload return `VALIDATION_ERROR`; conflicts with existing stored
+rules in single-rule create/update flows return `CONFLICT`.
+
+User allowlist rule:
+
+```json
+{
+  "type": "USER_ALLOWLIST",
+  "priority": 10,
+  "enabled": true,
+  "parameters": {
+    "userIds": ["demo-user-beta"]
+  }
+}
+```
+
+`parameters.userIds` must be a non-empty array of stable non-PII user
+identifiers. A missing `context.userId` means this rule cannot match.
+
+Role-targeting rule:
+
+```json
+{
+  "type": "ROLE_TARGETING",
+  "priority": 20,
+  "enabled": true,
+  "parameters": {
+    "roles": ["beta-tester"]
+  }
+}
+```
+
+`parameters.roles` must be a non-empty array of role keys. A missing or empty
+`context.roles` means this rule cannot match.
+
+Percentage rollout rule:
+
+```json
+{
+  "type": "PERCENTAGE_ROLLOUT",
+  "priority": 30,
+  "enabled": true,
+  "parameters": {
+    "percentage": 25
+  }
+}
+```
+
+`parameters.percentage` must follow the percentage validation rules in the
+stable hashing section. A missing or empty `context.targetingKey` returns
+`INVALID_CONTEXT` if this rule is reached.
+
+### 6.4 Evaluation Order
+
+Evaluation must be deterministic and use this order:
+
+1. If project or flag is missing, return `NOT_FOUND`.
+2. If flag status is `ARCHIVED`, return `FLAG_ARCHIVED`.
+3. If `killSwitch=true`, return `KILL_SWITCH`.
+4. If flag status is `DISABLED`, return `FLAG_DISABLED`.
+5. If `servingMode=GLOBAL_ON`, return `GLOBAL_ON`.
+6. Skip disabled rules.
+7. If a user allowlist rule matches, return `USER_ALLOWLIST`.
+8. If a role-targeting rule matches, return `ROLE_MATCH`.
+9. If an enabled percentage rollout rule is reached and `context.targetingKey`
+   is missing or empty, return `INVALID_CONTEXT`.
+10. If a percentage rollout rule matches, return `PERCENTAGE_ROLLOUT`.
+11. Otherwise, return `DEFAULT_OFF`.
+
+The same flag configuration and same evaluation request must always produce
+the same result.
+
+## 7. Stable Hashing for Percentage Rollout
+
+Percentage rollout must be deterministic. It must never use randomness.
+
+### 7.1 Required Targeting Key
+
+`context.targetingKey` is required when evaluating a percentage rollout rule.
+If the percentage rule is reached and `targetingKey` is missing or empty after
+trimming, return:
+
+```json
+{
+  "projectKey": "demo-project",
+  "flagKey": "new-checkout",
+  "enabled": false,
+  "variant": "off",
+  "reason": "INVALID_CONTEXT",
+  "matchedRuleId": null
+}
+```
+
+### 7.2 Hash Input
+
+```text
+${projectKey}:${flagKey}:${targetingKey}
+```
+
+Example:
+
+```text
+demo-project:new-checkout:user-123
+```
+
+### 7.3 Canonicalization
+
+- `projectKey`: validated lowercase kebab-case
+- `flagKey`: validated lowercase kebab-case
+- `targetingKey`: trim surrounding whitespace, reject if empty, preserve case
+
+Do not use raw PII such as email, phone number, national ID, or real names as
+the targeting key.
+
+### 7.4 SHA-256 Bucket Algorithm
+
+1. Encode the hash input as UTF-8.
+2. Compute SHA-256.
+3. Take the first 8 bytes as an unsigned big-endian integer.
+4. Compute `bucket = first64Bits % 10000`.
+5. Compute `bucketPercentage = bucket / 100`.
+6. Match when `bucketPercentage < percentage`.
+
+The bucket range is `[0.00, 99.99]`.
+
+### 7.5 Percentage Validation
+
+`percentage` must be:
+
+- a number
+- greater than or equal to `0`
+- less than or equal to `100`
+- no more than 2 decimal places
+
+Valid examples:
+
+```text
+0
+25
+50.5
+99.99
+100
+```
+
+Invalid examples:
+
+```text
+-1
+100.01
+25.123
+"25"
+```
+
+Edge cases:
+
+- `0` never matches.
+- `100` always matches, unless a higher-priority Off condition wins.
+
+## 8. Key Validation
+
+`projectKey` and `flagKey` must use lowercase kebab-case.
+
+Rules:
+
+- 3-64 characters
+- lowercase letters, numbers, and dashes only
+- must start with a lowercase letter or number
+- must end with a lowercase letter or number
+- no spaces
+- no uppercase
+- no underscores
+- no dots
+- immutable after creation
+
+Regex:
+
+```regex
+^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$
+```
+
+Valid examples:
+
+```text
+demo-project
+new-checkout
+project1
+pricing-page-v2
+```
+
+Invalid examples:
+
+```text
+DemoProject
+new_checkout
+new checkout
+-checkout
+checkout-
+ab
+checkout.v2
+```
+
+### 8.1 Key Uniqueness
+
+`projectKey` is globally unique and immutable. Creating a project with an
+existing `projectKey` returns `409 CONFLICT`.
+
+`flagKey` is unique within a project and immutable. Creating a feature flag
+with a duplicate `flagKey` in the same project returns `409 CONFLICT`. The same
+`flagKey` may exist in different projects.
+
+## 9. Error Contract
+
+Management/control-plane APIs use consistent error responses.
+
+### 9.1 Error Response Shape
+
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "Request validation failed.",
+  "details": [
+    {
+      "field": "projectKey",
+      "message": "projectKey must be 3-64 characters, lowercase, and may contain numbers or dashes."
+    }
+  ],
+  "requestId": "req_123"
+}
+```
+
+### 9.2 Error Codes
+
+| Code | HTTP status | Meaning |
+| --- | ---: | --- |
+| `VALIDATION_ERROR` | 400 | Invalid body, path parameter, or query parameter. |
+| `NOT_FOUND` | 404 | Resource not found on a management API. |
+| `CONFLICT` | 409 | Duplicate key or invalid state conflict. |
+| `INTERNAL_ERROR` | 500 | Unexpected server error. |
+
+`UNAUTHORIZED` and `FORBIDDEN` are reserved for future authentication/RBAC.
+
+### 9.3 Error Field Rules
+
+- `requestId` is required in every error response.
+- `details` is required for `VALIDATION_ERROR`.
+- `details` is optional for `NOT_FOUND`, `CONFLICT`, and `INTERNAL_ERROR`.
+- Internal error messages must not leak secrets, stack traces, or database
+  internals.
+
+### 9.4 Evaluation API Exception
+
+The evaluation API uses safe evaluation-shaped fallback responses for
+`NOT_FOUND`, `INVALID_CONTEXT`, and `ERROR` instead of management-style error
+bodies.
+
+## 10. Pagination, Filtering, and Sorting
+
+List endpoints use offset pagination.
+
+### 10.1 Pagination Query
+
+```http
+?limit=20&offset=0
+```
+
+Constraints:
+
+- `limit` default: `20`
+- `limit` minimum: `1`
+- `limit` maximum: `100`
+- `offset` default: `0`
+- `offset` minimum: `0`
+
+Invalid pagination values return `VALIDATION_ERROR`.
+
+### 10.2 List Response Shape
+
+```json
+{
+  "items": [],
+  "page": {
+    "limit": 20,
+    "offset": 0,
+    "total": 42,
+    "hasNext": true
+  }
+}
+```
+
+`hasNext` is calculated as:
+
+```text
+offset + limit < total
+```
+
+### 10.3 Sorting Query
+
+```http
+?sort=createdAt&order=desc
+```
+
+Allowed `order` values:
+
+```text
+asc
+desc
+```
+
+Unsupported `sort` or `order` values return `VALIDATION_ERROR`.
+
+### 10.4 Default Sorting
+
+| Endpoint | Default sort | Allowed sort fields |
+| --- | --- | --- |
+| `/v1/projects` | `createdAt desc` | `createdAt`, `updatedAt`, `key`, `name` |
+| `/v1/projects/{projectKey}/flags` | `createdAt desc` | `createdAt`, `updatedAt`, `key`, `name`, `status` |
+| `/v1/projects/{projectKey}/flags/{flagKey}/rules` | `priority asc` | `priority`, `createdAt`, `type` |
+| `/v1/projects/{projectKey}/sample-users` | `createdAt desc` | `createdAt`, `displayName`, `targetingKey` |
+| `/v1/projects/{projectKey}/audit-logs` | `createdAt desc` | `createdAt`, `actor`, `targetType`, `action` |
+
+Audit logs are newest-first by default because users usually inspect recent
+configuration changes first.
+
+### 10.5 Filtering
+
+Filters are endpoint-specific. Examples:
+
+```http
+GET /v1/projects?search=demo
+GET /v1/projects/demo-project/flags?status=ENABLED&search=checkout
+GET /v1/projects/demo-project/audit-logs?targetType=FEATURE_FLAG&actor=admin@example.local
+```
+
+Allowed filters:
+
+| Endpoint | Allowed filters |
+| --- | --- |
+| `/v1/projects` | `search` |
+| `/v1/projects/{projectKey}/flags` | `search`, `status` |
+| `/v1/projects/{projectKey}/flags/{flagKey}/rules` | `type` |
+| `/v1/projects/{projectKey}/sample-users` | `search`, `role` |
+| `/v1/projects/{projectKey}/audit-logs` | `targetType`, `targetKey`, `actor`, `action`, `from`, `to` |
+
+Audit log filters:
+
+- `targetType`
+- `targetKey`
+- `actor`
+- `action`
+- `from`
+- `to`
+
+`from` and `to` must be ISO 8601 timestamps.
+
+## 11. Sample User Context Contract
+
+Sample users are stored demo contexts used by the admin dashboard and demo app.
+They are not authentication users, production identities, or authorization
+subjects.
+
+Sample users must use stable non-PII identifiers.
+
+Minimal sample user shape:
+
+```json
+{
+  "displayName": "Beta User",
+  "targetingKey": "demo-user-beta",
+  "userId": "demo-user-beta",
+  "roles": ["beta-tester"],
+  "attributes": {
+    "plan": "pro"
+  }
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `displayName` | Yes | Human-readable demo label. |
+| `targetingKey` | Yes | Stable non-PII rollout key. |
+| `userId` | Optional | Demo identifier used by allowlist rules. |
+| `roles` | Optional | Demo roles used by role-targeting rules. |
+| `attributes` | Optional | Extra non-PII context attributes. |
+
+`targetingKey` must be unique within a project. Creating a sample user with a
+duplicate `targetingKey` in the same project returns `409 CONFLICT`.
+
+## 12. Audit Log Contract
+
+Audit logs are append-only records for configuration mutations.
+
+### 12.1 Audit Entry Shape
+
+```json
+{
+  "id": "audit_123",
+  "projectKey": "demo-project",
+  "targetType": "FEATURE_FLAG",
+  "targetId": "flag_123",
+  "targetKey": "new-checkout",
+  "action": "FEATURE_FLAG_UPDATED",
+  "actor": "admin@example.local",
+  "before": {
+    "key": "new-checkout",
+    "status": "DISABLED"
+  },
+  "after": {
+    "key": "new-checkout",
+    "status": "ENABLED"
+  },
+  "metadata": {
+    "ip": "127.0.0.1",
+    "userAgent": "Chrome",
+    "source": "dashboard"
+  },
+  "createdAt": "2026-06-04T10:30:00.000Z",
+  "requestId": "req_123"
+}
+```
+
+### 12.2 Fields
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `id` | Yes | Audit entry ID. |
+| `projectKey` | Yes | Project scope. |
+| `targetType` | Yes | Type of changed object. |
+| `targetId` | Yes | Internal target ID. |
+| `targetKey` | Optional | Human-readable key, when available. |
+| `action` | Yes | Mutation action. |
+| `actor` | Yes | Actor who caused the change. |
+| `before` | Yes, nullable | Minimal meaningful snapshot before the change; `null` for create. |
+| `after` | Yes, nullable | Minimal meaningful snapshot after the change; `null` for delete. |
+| `metadata` | Optional | Extra request/source context. |
+| `createdAt` | Yes | Server timestamp. |
+| `requestId` | Yes | Correlation ID. |
+
+### 12.3 Target Types
+
+```text
+PROJECT
+FEATURE_FLAG
+FLAG_RULE
+SAMPLE_USER
+```
+
+### 12.4 Actions
+
+```text
+PROJECT_CREATED
+PROJECT_UPDATED
+PROJECT_DELETED
+
+FEATURE_FLAG_CREATED
+FEATURE_FLAG_UPDATED
+FEATURE_FLAG_DELETED
+
+FLAG_RULE_CREATED
+FLAG_RULE_UPDATED
+FLAG_RULE_DELETED
+FLAG_RULES_REPLACED
+
+SAMPLE_USER_CREATED
+SAMPLE_USER_DELETED
+```
+
+For the MVP, if the rule API only supports replacing the ordered rule set, it
+may emit `FLAG_RULES_REPLACED`. Granular actions are reserved for single-rule
+mutation endpoints or richer future UI flows.
+
+For `FLAG_RULES_REPLACED`, the audit target should be the feature flag whose
+ordered rule set changed:
+
+```text
+targetType=FEATURE_FLAG
+targetId=<flagId>
+targetKey=<flagKey>
+action=FLAG_RULES_REPLACED
+```
+
+The `before` and `after` snapshots should contain minimal ordered rule
+summaries.
+
+### 12.5 Metadata
+
+`metadata` is optional. Recommended fields:
+
+```json
+{
+  "ip": "127.0.0.1",
+  "userAgent": "Chrome",
+  "source": "dashboard"
+}
+```
+
+Recommended `source` values:
+
+```text
+dashboard
+api
+seed
+system
+```
+
+Metadata must not store secrets, full request bodies, or unnecessary PII.
+For MVP, storing only `source` is acceptable. `ip` and `userAgent` are optional
+and may be omitted to reduce privacy and implementation overhead.
+
+### 12.6 Snapshot Rules
+
+Snapshots must be minimal and meaningful:
+
+- include changed fields
+- include stable identifiers such as `id` and `key`
+- avoid unrelated fields
+- exclude secrets
+- avoid raw PII
+- keep enough context to understand the change later
+
+For create operations:
+
+```json
+{
+  "before": null,
+  "after": {
+    "key": "new-checkout",
+    "name": "New checkout",
+    "status": "ENABLED",
+    "servingMode": "TARGETED",
+    "killSwitch": false
+  }
+}
+```
+
+For delete operations:
+
+```json
+{
+  "before": {
+    "key": "new-checkout",
+    "status": "ENABLED"
+  },
+  "after": null
+}
+```
+
+### 12.7 Append-Only and Transaction Rules
+
+Audit entries are append-only:
+
+- no update endpoint
+- no delete endpoint
+- no admin edit of audit entries
+
+Project, feature flag, and rule mutations must write the mutation and the audit
+entry in the same database transaction. This prevents configuration changes
+from succeeding without a corresponding audit trail.
+
+## 13. Bulk Evaluation
+
+Bulk evaluation is a future extension only and is not part of MVP scope.
+
+The MVP only implements:
+
+```http
+POST /v1/evaluate
+```
+
+Do not add the following to MVP scope:
+
+- `/v1/evaluate/bulk`
+- bulk validation
+- bulk tests
+- bulk response contracts
+
+The single evaluation result object is intentionally designed to be reusable in
+future bulk responses.
+
+Future bulk evaluation must:
+
+- preserve the exact per-flag result contract
+- support partial failures per result
+- return safe `enabled=false`, `variant="off"` for failed or missing flags
+- avoid random fallback behavior
+
+## 14. Seed and Demo Data Expectations
+
+Seed data must support implementation readiness and presentation demos.
+
+Minimum seed/demo expectations:
+
+- one demo project
+- at least one globally enabled flag
+- at least one targeted flag
+- at least one role-targeting rule
+- at least one percentage-rollout rule
+- sample users that produce different evaluation outcomes
+- audit entries for setup mutations if seeded through application services
+
+Suggested demo keys:
+
+```text
+projectKey: demo-project
+flagKey: new-checkout
+flagKey: beta-dashboard
+```
+
+Suggested sample users:
+
+| Display name | targetingKey | userId | roles | Expected purpose |
+| --- | --- | --- | --- | --- |
+| Beta User | `demo-user-beta` | `demo-user-beta` | `beta-tester` | Role-targeting match |
+| Regular User | `demo-user-regular` | `demo-user-regular` | `user` | Default-off or percentage contrast |
+| Admin User | `demo-user-admin` | `demo-user-admin` | `admin` | Dashboard/demo privileged role |
+
+The demo must be able to show at least:
+
+1. global feature enable/disable behavior
+2. role-based or percentage-based enablement
+3. missing project/flag returning `enabled=false`, `variant="off"`, and
+   `reason=NOT_FOUND`
+
+## 15. Out of MVP Scope
+
+The following are intentionally outside MVP scope unless all required
+deliverables are already complete:
+
+- bulk evaluation endpoint
+- client SDK
+- Redis cache
+- streaming or real-time flag updates
+- multivariate flags
+- experiment analytics or statistics dashboard
+- full authentication and RBAC
+- advanced targeting operators beyond allowlist, roles, and percentage rollout
+- rule versioning beyond append-only audit logs
+- group kill switch
+- Docker Compose one-command setup
+
+These items may be revisited only after the required backend API, admin
+dashboard, demo app, database, validation/error handling, seed data, README,
+research report, and short design docs are demo-ready.
+
+## 16. Phase 0 Acceptance Checklist
+
+- [x] Requirement traceability is documented.
+- [x] Requirement traceability maps MVP requirements to contract sections and
+  implementation modules.
+- [x] `/v1` API base path is confirmed.
+- [x] JSON conventions are confirmed.
+- [x] Control-plane and data-plane boundaries are documented.
+- [x] `X-Actor` and `X-Request-Id` conventions are documented.
+- [x] MVP evaluation request contract is documented.
+- [x] Evaluation HTTP status behavior is documented.
+- [x] MVP evaluation response includes `projectKey`, `flagKey`, `enabled`,
+  `variant`, `reason`, and `matchedRuleId`.
+- [x] Evaluation reason codes are documented.
+- [x] Missing project/flag evaluation behavior returns `enabled=false`,
+  `variant="off"`, and `reason=NOT_FOUND`.
+- [x] `INVALID_CONTEXT` and `ERROR` fail-safe evaluation behavior is
+  documented.
+- [x] MVP rule types are documented.
+- [x] MVP rule parameter shapes are documented.
+- [x] Rule priority uniqueness and conflict behavior are documented.
+- [x] Evaluation order is documented.
+- [x] Stable hashing contract for percentage rollout is documented.
+- [x] `projectKey` and `flagKey` validation rules are documented.
+- [x] `projectKey` and `flagKey` uniqueness rules are documented.
+- [x] Error response shape and error codes are documented.
+- [x] `details` and `requestId` requirements are documented.
+- [x] Pagination, filtering, and sorting conventions are documented.
+- [x] Allowed filters are documented per list endpoint.
+- [x] Default sorting conventions are documented per list endpoint.
+- [x] Audit log event shape, actions, metadata, and snapshot rules are
+  documented.
+- [x] `FLAG_RULES_REPLACED` audit target semantics are documented.
+- [x] Same-transaction audit requirement is documented.
+- [x] Append-only audit requirement is documented.
+- [x] Bulk evaluation is explicitly marked as future extension only.
+- [x] Sample-user semantics and uniqueness are documented.
+- [x] Seed/demo data expectations are documented for implementation readiness.
+- [x] Out-of-MVP-scope items are documented.

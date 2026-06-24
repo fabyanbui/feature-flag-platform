@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.playwright-browsers/
+.playwright-mcp/
+
+.env
+.env.*
+!.env.example
+
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
+
+.DS_Store

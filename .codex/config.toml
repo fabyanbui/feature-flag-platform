@@ -1,0 +1,99 @@
+# Project-scoped Codex defaults for feature-flag-platform.
+# Personal provider/auth settings should stay in ~/.codex/config.toml.
+# Project guardrails live in AGENTS.md.
+# The project goal is sourced from docs/requirement/requirement-init.md and
+# docs/requirement/info-init.md, then summarized in docs/plan/project-goal.md.
+
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+instructions = """
+Use AGENTS.md as the repository guide and active project guardrail source.
+Use docs/requirement/requirement-init.md as the product source for required and recommended deliverables.
+Use docs/requirement/info-init.md as the source for submission dates and mentor evaluation criteria.
+Use docs/plan/project-goal.md as the concise active project goal summary.
+Prioritize required MVP deliverables before recommended enhancements: research report, backend API, admin dashboard, demo app, database, validation/error handling, README run instructions, seed data, and short design docs.
+Keep work submission-ready for the July 7, 2026 deadline and presentation-ready for the July 9, 2026 presentation: slides and report are required; explain project need, practical value, novelty, chosen technologies, alternatives, comparison with existing solutions, problem-solving, design thinking, and system thinking. Treat recommended-level requirements as a plus only after the required MVP is stable.
+Preserve deterministic evaluation, append-only audit logging, safe defaults, stable non-PII rollout keys, and clear control-plane/data-plane separation.
+For frontend UI/UX changes, use the repo-scoped frontend-ui-ux-editor skill to reuse existing components/tokens, preserve accessibility and responsive states, and validate with browser/Playwright checks when available.
+Use docs/codex/mcp-tool-selection.md when deciding whether live database context is needed.
+Prefer repository files, Prisma schema, migrations, and tests for design/implementation work before using an MCP.
+Use the Prisma MCP for Prisma Postgres control-plane tasks: workspace/database discovery, creating databases, connection strings, backups/recovery, Prisma-managed database introspection, and explicitly approved schema/data operations against Prisma Postgres.
+Use the PostgreSQL readonly MCP for data-plane inspection only: schema/table descriptions, SELECT-only validation, migration/seed verification, EXPLAIN plans, locks, bloat/index checks, health checks, and audit-log verification against POSTGRES_MCP_DATABASE_URL.
+Never use the readonly PostgreSQL MCP for writes, schema changes, database creation, backups, or connection-string management.
+Before any MCP action that can mutate data, change schema, reveal secrets, or manage cloud resources, explain the intended action and get confirmation. Prefer least-privilege read-only queries and never print connection strings or secrets unless the user explicitly asks.
+"""
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "cached"
+
+[tui.keymap.editor]
+insert_newline = ["shift-enter", "alt-enter"]
+
+[agents]
+max_threads = 6
+max_depth = 1
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+# Set this environment variable to a least-privilege GitHub PAT before starting Codex.
+bearer_token_env_var = "GITHUB_PAT_TOKEN"
+
+# Official Prisma MCP server for Prisma Postgres database context and operations.
+# Keep tool calls approval-gated because the server can execute SQL and manage databases.
+# Source: https://www.prisma.io/docs/ai/tools/mcp-server
+[mcp_servers.prisma]
+url = "https://mcp.prisma.io/mcp"
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+
+# Read-only PostgreSQL MCP for inspecting the local/dev database after Prisma migrations.
+# Use a least-privilege database role in POSTGRES_MCP_DATABASE_URL; do not point this at
+# the application's write-capable DATABASE_URL.
+# Source: https://glama.ai/mcp/servers/YawLabs/postgres-mcp
+[mcp_servers.postgres_readonly]
+command = "bash"
+args = [
+  "-lc",
+  '''. ./.env \
+  && : "${POSTGRES_MCP_DATABASE_URL:?POSTGRES_MCP_DATABASE_URL must be set in .env to a least-privilege read-only PostgreSQL URL}" \
+  && exec env DATABASE_URL="$POSTGRES_MCP_DATABASE_URL" \
+  POSTGRES_MAX_ROWS="${POSTGRES_MAX_ROWS:-1000}" \
+  POSTGRES_STATEMENT_TIMEOUT_MS="${POSTGRES_STATEMENT_TIMEOUT_MS:-30000}" \
+  POSTGRES_CONNECTION_TIMEOUT_MS="${POSTGRES_CONNECTION_TIMEOUT_MS:-10000}" \
+  npx -y @yawlabs/postgres-mcp@latest
+  '''
+]
+default_tools_approval_mode = "prompt"
+disabled_tools = ["pg_query", "pg_kill"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.playwright]
+command = "bash"
+args = [
+  "-lc",
+  '''test ! -f ./.env || . ./.env \
+  && : "${CHROMIUM_BROWSER_PATH:=$PWD/.playwright-browsers/chromium-1228/chrome-linux64/chrome}" \
+  && test -x "$CHROMIUM_BROWSER_PATH" \
+  && exec npx @playwright/mcp@latest --executable-path "$CHROMIUM_BROWSER_PATH" \
+  --no-sandbox --isolated
+  '''
+]
+env_vars = ["DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"]
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+
+[mcp_servers.playwright.tools.browser_tabs]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_navigate]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_click]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_evaluate]
+approval_mode = "approve"
