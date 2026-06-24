@@ -44,6 +44,7 @@ bearer_token_env_var = "GITHUB_PAT_TOKEN"
 # Keep tool calls approval-gated because the server can execute SQL and manage databases.
 # Source: https://www.prisma.io/docs/ai/tools/mcp-server
 [mcp_servers.prisma]
+enabled = false
 url = "https://mcp.prisma.io/mcp"
 default_tools_approval_mode = "prompt"
 startup_timeout_sec = 20
@@ -54,6 +55,7 @@ tool_timeout_sec = 60
 # the application's write-capable DATABASE_URL.
 # Source: https://glama.ai/mcp/servers/YawLabs/postgres-mcp
 [mcp_servers.postgres_readonly]
+enabled = false
 command = "bash"
 args = [
   "-lc",
@@ -72,6 +74,7 @@ startup_timeout_sec = 30
 tool_timeout_sec = 60
 
 [mcp_servers.playwright]
+enabled = false
 command = "bash"
 args = [
   "-lc",
