@@ -31,6 +31,7 @@ behavior inside controllers, UI components, or tests.
 | Rule configuration API | Rule types, evaluation order, audit | Backend rules module, `/v1/projects/{projectKey}/flags/{flagKey}/rules` |
 | Evaluation API | Evaluation contract, reason codes, hashing | Backend evaluation module, `POST /v1/evaluate` |
 | Audit log API | Audit log contract, pagination, filtering | Backend audit module, `/v1/projects/{projectKey}/audit-logs` |
+| Flag configuration history | Audit-backed history contract and pagination | Backend audit module, `/v1/projects/{projectKey}/flags/{flagKey}/history` |
 | Frontend dashboard | API conventions, status semantics, audit | Admin web app |
 | Demo application | Evaluation contract, seed/demo expectations | Demo web app |
 | Database | Audit contract, rule model, key validation | Prisma schema and PostgreSQL |
@@ -88,6 +89,7 @@ Control-plane APIs manage configuration:
 - `/v1/projects/{projectKey}/flags/{flagKey}/rules`
 - `/v1/projects/{projectKey}/sample-users`
 - `/v1/projects/{projectKey}/audit-logs`
+- `/v1/projects/{projectKey}/flags/{flagKey}/history`
 
 ### 3.4 Data Plane
 
@@ -654,6 +656,7 @@ Unsupported `sort` or `order` values return `VALIDATION_ERROR`.
 | `/v1/projects/{projectKey}/flags/{flagKey}/rules` | `priority asc` | `priority`, `createdAt`, `type` |
 | `/v1/projects/{projectKey}/sample-users` | `createdAt desc` | `createdAt`, `displayName`, `targetingKey` |
 | `/v1/projects/{projectKey}/audit-logs` | `createdAt desc` | `createdAt`, `actor`, `targetType`, `action` |
+| `/v1/projects/{projectKey}/flags/{flagKey}/history` | `createdAt desc` | `createdAt` |
 
 Audit logs are newest-first by default because users usually inspect recent
 configuration changes first.
@@ -677,6 +680,7 @@ Allowed filters:
 | `/v1/projects/{projectKey}/flags/{flagKey}/rules` | `type` |
 | `/v1/projects/{projectKey}/sample-users` | `search`, `role` |
 | `/v1/projects/{projectKey}/audit-logs` | `targetType`, `targetKey`, `actor`, `action`, `from`, `to` |
+| `/v1/projects/{projectKey}/flags/{flagKey}/history` | None beyond pagination and ordering |
 
 Audit log filters:
 
@@ -893,7 +897,141 @@ Project, feature flag, and rule mutations must write the mutation and the audit
 entry in the same database transaction. This prevents configuration changes
 from succeeding without a corresponding audit trail.
 
-## 13. Bulk Evaluation
+## 13. Flag Configuration History Contract
+
+Flag configuration history is an audit-backed, read-only view of configuration
+changes associated with one feature flag. `AuditLogEntry` remains the source of
+truth; the platform does not maintain a separate configuration-version table.
+
+### 13.1 Endpoint
+
+```http
+GET /v1/projects/{projectKey}/flags/{flagKey}/history
+```
+
+This is a control-plane read endpoint. It does not modify configuration,
+participate in runtime evaluation, or require an actor header.
+
+### 13.2 Pagination and Ordering
+
+Supported query parameters:
+
+- `limit`, default `20`, minimum `1`, maximum `100`
+- `offset`, default `0`, minimum `0`
+- `sort`, default `createdAt`, only allowed value `createdAt`
+- `order`, default `desc`, allowed values `asc` and `desc`
+
+The only supported sort field is `createdAt`. Entries are ordered by
+`createdAt` and an internal stable ID tie-breaker in the same direction. The
+default order is newest first.
+
+Unsupported ordering values, invalid pagination values, or an unsupported sort
+field return `400 VALIDATION_ERROR`.
+
+Example:
+
+```http
+GET /v1/projects/demo-project/flags/new-checkout/history?limit=20&offset=0&order=desc
+```
+
+### 13.3 Response
+
+The response uses the standard paginated response and audit-entry shapes:
+
+```json
+{
+  "items": [
+    {
+      "id": "audit_123",
+      "projectKey": "demo-project",
+      "environmentKey": "production",
+      "targetType": "FEATURE_FLAG",
+      "targetId": "flag_123",
+      "targetKey": "new-checkout",
+      "action": "FLAG_RULES_REPLACED",
+      "actor": "admin@example.local",
+      "before": {
+        "rules": []
+      },
+      "after": {
+        "rules": [
+          {
+            "id": "rule_123",
+            "type": "ROLE_TARGETING",
+            "priority": 10,
+            "enabled": true,
+            "parameters": {
+              "roles": ["beta-tester"]
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "source": "api",
+        "replacedRuleCount": 1
+      },
+      "requestId": "req_123",
+      "createdAt": "2026-06-24T10:00:00.000Z"
+    }
+  ],
+  "page": {
+    "limit": 20,
+    "offset": 0,
+    "total": 1,
+    "hasNext": false
+  }
+}
+```
+
+Each item includes the actor, action, target type, target ID, target key,
+environment key, before and after snapshots, metadata, request ID, and creation
+timestamp. Entries are configuration change events and must not be presented
+as independently stored configuration versions.
+
+### 13.4 History Scope
+
+History includes audit entries associated with:
+
+- the selected `FeatureFlag`
+- its related `FlagEnvironmentConfig` records
+- related rule configuration mutations
+
+The current rule replacement contract records `FLAG_RULES_REPLACED` against
+the owning feature flag, using `targetType=FEATURE_FLAG`,
+`targetId=<flagId>`, and `targetKey=<flagKey>`. Future granular flag-config or
+flag-rule audit events must retain an immutable association with the owning
+feature flag so they can be included reliably.
+
+The backend must resolve the project and feature flag before querying history.
+History association must use immutable resource IDs rather than relying only on
+human-readable keys.
+
+The endpoint excludes:
+
+- project-level changes
+- sample-user changes
+- changes associated with other feature flags
+- runtime evaluation requests, because evaluations are not configuration
+  mutations
+
+### 13.5 Errors
+
+- A missing project returns `404 NOT_FOUND`.
+- A missing flag within an existing project returns `404 NOT_FOUND`.
+- Invalid project keys, flag keys, pagination, sorting, or ordering return
+  `400 VALIDATION_ERROR`.
+
+This management endpoint uses the standard error contract. It must not return
+an evaluation-shaped `enabled=false` response.
+
+### 13.6 Initial Implementation Boundary
+
+The initial implementation must not add a separate `FlagConfigVersion` table.
+A numeric revision on `FlagEnvironmentConfig` is also deferred until a concrete
+cache-invalidation or concurrency requirement justifies the schema and
+transactional complexity.
+
+## 14. Bulk Evaluation
 
 Bulk evaluation is a future extension only and is not part of MVP scope.
 
@@ -920,7 +1058,7 @@ Future bulk evaluation must:
 - return safe `enabled=false`, `variant="off"` for failed or missing flags
 - avoid random fallback behavior
 
-## 14. Seed and Demo Data Expectations
+## 15. Seed and Demo Data Expectations
 
 Seed data must support implementation readiness and presentation demos.
 
@@ -957,7 +1095,7 @@ The demo must be able to show at least:
 3. missing project/flag returning `enabled=false`, `variant="off"`, and
    `reason=NOT_FOUND`
 
-## 15. Out of MVP Scope
+## 16. Out of MVP Scope
 
 The following are intentionally outside MVP scope unless all required
 deliverables are already complete:
@@ -978,7 +1116,7 @@ These items may be revisited only after the required backend API, admin
 dashboard, demo app, database, validation/error handling, seed data, README,
 research report, and short design docs are demo-ready.
 
-## 16. Phase 0 Acceptance Checklist
+## 17. Phase 0 Acceptance Checklist
 
 - [x] Requirement traceability is documented.
 - [x] Requirement traceability maps MVP requirements to contract sections and
