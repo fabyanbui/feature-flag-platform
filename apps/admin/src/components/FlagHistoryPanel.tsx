@@ -254,15 +254,22 @@ function summarizeHistoryEntry(entry: AuditLog): string {
             const beforeCount = getRuleCount(entry.before);
             const afterCount = getRuleCount(entry.after);
 
+            if (beforeCount === afterCount) {
+                return `Targeting rules updated (${afterCount} ${pluralizeRule(afterCount)}).`;
+            }
+
             return `Targeting rules replaced: ${beforeCount} → ${afterCount}.`;
         }
 
-        case 'FEATURE_FLAG_UPDATED': {
+        case 'FEATURE_FLAG_UPDATED':
+        case 'FLAG_CONFIG_UPDATED': {
             const changes = describeChangedFields(entry.before, entry.after);
 
             return changes.length > 0
                 ? changes.join(' · ')
-                : 'Feature flag configuration was updated.';
+                : entry.action === 'FEATURE_FLAG_UPDATED'
+                  ? 'Feature flag configuration was updated.'
+                  : 'Flag environment configuration was updated.';
         }
 
         default:
@@ -304,6 +311,10 @@ function getRuleCount(value: unknown): number {
     const rules = record?.rules;
 
     return Array.isArray(rules) ? rules.length : 0;
+}
+
+function pluralizeRule(count: number): string {
+    return count === 1 ? 'rule' : 'rules';
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
