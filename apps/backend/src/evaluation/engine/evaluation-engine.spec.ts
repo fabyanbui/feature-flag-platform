@@ -52,6 +52,32 @@ function createSnapshot(
   };
 }
 
+function evaluatePercentageRule(
+  percentage: number,
+  targetingKey: string,
+): ReturnType<typeof evaluateFlag> {
+  return evaluateFlag(
+    {
+      ...baseInput,
+      context: {
+        ...baseInput.context,
+        targetingKey,
+      },
+    },
+    createSnapshot({
+      rules: [
+        createRule({
+          id: 'percentage-rule',
+          type: RuleType.PERCENTAGE_ROLLOUT,
+          parameters: {
+            percentage,
+          },
+        }),
+      ],
+    }),
+  );
+}
+
 describe('evaluation engine result helpers', () => {
   it('builds NOT_FOUND result', () => {
     expect(notFoundResult(baseInput)).toEqual({
@@ -342,46 +368,68 @@ describe('evaluateFlag', () => {
     expect(result.matchedRuleId).toBeNull();
   });
 
-  it('returns DEFAULT_OFF when percentage is 0', () => {
-    const result = evaluateFlag(
-      baseInput,
-      createSnapshot({
-        rules: [
-          createRule({
-            id: 'percentage-rule',
-            type: RuleType.PERCENTAGE_ROLLOUT,
-            parameters: {
-              percentage: 0,
-            },
-          }),
-        ],
-      }),
-    );
+  it.each([
+    {
+      percentage: 0,
+      targetingKey: 'phase-10-user-141',
+      expectedEnabled: false,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+    {
+      percentage: 1,
+      targetingKey: 'phase-10-user-141',
+      expectedEnabled: true,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+    {
+      percentage: 1,
+      targetingKey: 'phase-10-user-230',
+      expectedEnabled: false,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+    {
+      percentage: 50,
+      targetingKey: 'phase-10-user-232',
+      expectedEnabled: true,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+    {
+      percentage: 50,
+      targetingKey: 'phase-10-user-402',
+      expectedEnabled: false,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+    {
+      percentage: 100,
+      targetingKey: 'phase-10-user-798',
+      expectedEnabled: true,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+  ])(
+    'evaluates $targetingKey correctly at $percentage percent',
+    ({
+      percentage,
+      targetingKey,
+      expectedEnabled,
+      expectedReason,
+      expectedRuleId,
+    }) => {
+      const result = evaluatePercentageRule(percentage, targetingKey);
 
-    expect(result.enabled).toBe(false);
-    expect(result.reason).toBe(EvaluationReason.DEFAULT_OFF);
-  });
-
-  it('returns PERCENTAGE_ROLLOUT when percentage is 100', () => {
-    const result = evaluateFlag(
-      baseInput,
-      createSnapshot({
-        rules: [
-          createRule({
-            id: 'percentage-rule',
-            type: RuleType.PERCENTAGE_ROLLOUT,
-            parameters: {
-              percentage: 100,
-            },
-          }),
-        ],
-      }),
-    );
-
-    expect(result.enabled).toBe(true);
-    expect(result.reason).toBe(EvaluationReason.PERCENTAGE_ROLLOUT);
-    expect(result.matchedRuleId).toBe('percentage-rule');
-  });
+      expect(result).toMatchObject({
+        enabled: expectedEnabled,
+        variant: expectedEnabled ? 'on' : 'off',
+        reason: expectedReason,
+        matchedRuleId: expectedRuleId,
+      });
+    },
+  );
 
   it('returns deterministic percentage rollout result for same input', () => {
     const snapshot = createSnapshot({
