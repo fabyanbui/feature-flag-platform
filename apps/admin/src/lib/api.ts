@@ -176,6 +176,13 @@ export type ListAuditLogsQuery = {
     order?: 'asc' | 'desc';
 };
 
+export type ListFlagHistoryQuery = {
+    limit?: number;
+    offset?: number;
+    sort?: 'createdAt';
+    order?: 'asc' | 'desc';
+};
+
 export const adminApi = {
     listProjects(query: ListProjectsQuery = {}) {
         return apiRequest<PageResponse<Project>>('/projects', { query });
@@ -245,6 +252,17 @@ export const adminApi = {
     ) {
         return apiRequest<PageResponse<FlagRule>>(
             `${flagPath(projectKey, flagKey)}/rules`,
+            { query },
+        );
+    },
+
+    listFlagHistory(
+        projectKey: string,
+        flagKey: string,
+        query: ListFlagHistoryQuery = {},
+    ) {
+        return apiRequest<PageResponse<AuditLog>>(
+            `${flagPath(projectKey, flagKey)}/history`,
             { query },
         );
     },

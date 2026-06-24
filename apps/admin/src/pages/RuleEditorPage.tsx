@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
+import { FlagHistoryPanel } from '../components/FlagHistoryPanel';
 import { adminApi } from '../lib/api';
 import type {
     EvaluationResult,
@@ -15,6 +16,7 @@ type RuleEditorPageProps = {
     projectKey: string;
     flagKey: string;
     onBackToFlags: () => void;
+    onOpenAuditLogs: () => void;
 };
 
 type DraftRule = {
@@ -41,6 +43,7 @@ export function RuleEditorPage({
     projectKey,
     flagKey,
     onBackToFlags,
+    onOpenAuditLogs,
 }: RuleEditorPageProps) {
     const [rules, setRules] = useState<DraftRule[]>([]);
     const [loading, setLoading] = useState(true);
@@ -49,6 +52,7 @@ export function RuleEditorPage({
     const [error, setError] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [confirmBackOpen, setConfirmBackOpen] = useState(false);
+    const [historyRefreshToken, setHistoryRefreshToken] = useState(0);
 
     const [evaluationForm, setEvaluationForm] = useState<EvaluationForm>(
         initialEvaluationForm,
@@ -176,6 +180,7 @@ export function RuleEditorPage({
 
             setDirty(false);
             await loadRules();
+            setHistoryRefreshToken((current) => current + 1);
         } catch (requestError) {
             setFormError(
                 requestError instanceof Error
@@ -404,6 +409,13 @@ export function RuleEditorPage({
                     </p>
                 ) : null}
             </section>
+
+            <FlagHistoryPanel
+                projectKey={projectKey}
+                flagKey={flagKey}
+                refreshToken={historyRefreshToken}
+                onOpenAuditLogs={onOpenAuditLogs}
+            />
 
             <section className="panel">
                 <div>

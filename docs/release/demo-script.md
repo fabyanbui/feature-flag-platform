@@ -184,7 +184,29 @@ Presenter point:
 > The evaluation API fails closed. Missing configuration does not accidentally
 > expose a feature.
 
-### 6. Show Audit Logs
+### 6. Show Flag Configuration History
+
+Return to the admin dashboard and open the rule editor for `new-checkout`.
+
+Show the **Configuration history** panel and point out:
+
+- the actor who made the change,
+- the action and timestamp,
+- the environment,
+- the request ID,
+- the concise change summary,
+- the expandable before and after snapshots.
+
+Optionally change a targeting rule and select **Save rules**. The history panel
+should refresh and show a new `FLAG_RULES_REPLACED` entry.
+
+Presenter point:
+
+> Configuration history is built from the same append-only audit records used
+> for accountability. We avoid duplicating configuration versions in a second
+> table, which keeps one source of truth and reduces consistency risk.
+
+### 7. Show Audit Logs
 
 Return to the admin dashboard audit log screen.
 
@@ -197,8 +219,9 @@ Show entries for:
 
 Presenter point:
 
-> Configuration changes affect runtime behavior, so they must be accountable.
-> Audit logs capture actor, target, action, and before/after snapshots.
+> The focused history panel answers what changed for one flag, while the
+> project-wide audit screen supports broader operational investigation. Both
+> views use the same immutable audit records.
 
 ## Required Talking Points
 

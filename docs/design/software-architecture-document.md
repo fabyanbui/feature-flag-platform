@@ -105,7 +105,8 @@ graph TD
 ```
 
 ### 5.2 Component Responsibilities
-1. **Admin Dashboard**: UI for project/flag/rule CRUD and audit log viewing.
+1. **Admin Dashboard**: UI for project/flag/rule management, focused per-flag
+   configuration history, and project-wide audit log viewing.
 2. **Management API**: CRUD endpoints, validation, rule persistence, audit logging.
 3. **Evaluation API**: Stateless evaluation endpoint for runtime decisions.
 4. **Rule Evaluation Engine**: Deterministic evaluation with ordered rules.
@@ -148,7 +149,31 @@ sequenceDiagram
   API-->>UI: Updated resource
 ```
 
-### 6.3 Determinism and Safety
+### 6.3 Audit-Backed Flag Configuration History
+```mermaid
+sequenceDiagram
+  participant UI as Admin Dashboard
+  participant API as Flag History API
+  participant DB as PostgreSQL
+
+  UI->>API: GET /v1/projects/{projectKey}/flags/{flagKey}/history
+  API->>DB: Resolve project and feature flag
+  API->>DB: Query related append-only audit entries
+  DB-->>API: Flag, config, and rule change events
+  API-->>UI: Paginated history with before/after snapshots
+```
+
+Flag configuration history is a read-only control-plane projection over
+`AuditLogEntry`. The implementation deliberately avoids a second configuration
+version table, preventing duplicated history state and conflicting sources of
+truth.
+
+History association uses immutable feature-flag and configuration IDs.
+Human-readable keys remain available for display but are not the primary
+ownership relationship. The history endpoint does not participate in runtime
+evaluation and cannot alter feature availability.
+
+### 6.4 Determinism and Safety
 1. Percentage rollout uses stable hashing over `(flagKey, userId)` or equivalent stable key.
 2. Evaluation is idempotent and safe for repeated calls.
 3. Missing project/flag returns `enabled=false` with reason `NOT_FOUND`.
@@ -182,6 +207,8 @@ graph LR
 2. Deterministic hashing for stable percentage rollout.
 3. Append-only audit log with before/after snapshots.
 4. Ordered rule evaluation to avoid ambiguity.
+5. Audit-backed configuration history reuses immutable audit records instead
+   of maintaining a second flag-version store.
 
 ### 8.3 Technology Stack (MVP)
 1. **Database**: PostgreSQL
@@ -219,7 +246,7 @@ graph LR
 |---|---|
 | Reliability | Safe defaults (off), deterministic evaluation, idempotent APIs |
 | Security | TLS, auth on all endpoints, least-privilege roles, avoid exposing sensitive flags |
-| Auditability | Append-only logs, before/after snapshots, immutable records |
+| Auditability | Append-only logs, before/after snapshots, immutable records, and per-flag history projections |
 | Maintainability | Modular rule engine, consistent API shapes, clear reason codes |
 | Observability | Structured logs, metrics for latency/error rate, audit log traceability |
 | Accessibility | WCAG 2.1 AA dashboard and demo UI |
