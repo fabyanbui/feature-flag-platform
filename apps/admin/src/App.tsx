@@ -113,6 +113,7 @@ function App() {
           projectKey={selectedProjectKey}
           flagKey={selectedFlagKey}
           onBackToFlags={() => setView('flags')}
+          onOpenAuditLogs={() => setView('audit')}
         />
       ) : null}
 
