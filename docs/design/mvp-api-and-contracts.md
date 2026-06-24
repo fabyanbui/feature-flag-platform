@@ -1172,21 +1172,36 @@ Assignment snapshots contain the stable flag key and nullable group key.
 Switch snapshots contain the stable group key, environment key, and
 `killSwitch` value. All snapshots exclude secrets and unnecessary user data.
 
-### 14.5 Future Cache Invalidation
+### 14.5 Phase 13 Evaluation Cache Contract
 
-Phase 12 documents, but does not implement, this Phase 13 invalidation
-contract:
+The evaluation cache stores reusable configuration snapshots rather than
+context-specific final decisions. Its conceptual key is:
 
-| Mutation | Future cache invalidation |
+```text
+evaluation-snapshot:{projectKey}:{environmentScope}:{flagKey}
+```
+
+When `environmentKey` is omitted, the private `__default__` environment scope
+is used. Neither keys nor values contain user IDs, targeting keys, roles,
+attributes, final decisions, validation failures, `NOT_FOUND` results, or
+evaluation errors.
+
+The initial provider is a process-local in-memory cache with a configurable
+`EVALUATION_CACHE_TTL_MS` value and a 30-second default. Cache failures fall
+back to repository access and do not alter the public evaluation response.
+
+| Mutation | Cache invalidation |
 | --- | --- |
-| Create group | None |
-| Rename group | None for evaluation |
-| Assign flag | Assigned flag in every environment |
-| Reassign flag | Reassigned flag in every environment |
-| Unassign flag | Unassigned flag in every environment |
+| Create flag or group | None required |
+| Rename flag or group | None for evaluation |
+| Change flag lifecycle or config | Flag in every cached environment scope |
+| Replace flag rules | Flag in every cached environment scope |
+| Assign, reassign, or unassign group | Flag in every cached environment scope |
 | Toggle group switch | Every assigned flag in the affected environment |
 
-Invalidation must happen only after the database transaction commits.
+Invalidation happens only after the database transaction and append-only audit
+entry commit. Initial flag-level invalidation may conservatively remove every
+environment scope for that flag to prevent stale default-environment aliases.
 
 ## 15. Bulk Evaluation
 
