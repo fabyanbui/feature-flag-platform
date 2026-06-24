@@ -31,6 +31,7 @@ enum AuditTargetType {
   PROJECT
   ENVIRONMENT
   FEATURE_FLAG
+  FLAG_GROUP
   FLAG_CONFIG
   FLAG_RULE
   SAMPLE_USER
@@ -50,6 +51,12 @@ enum AuditAction {
   FEATURE_FLAG_ARCHIVED
   FEATURE_FLAG_RESTORED
   FEATURE_FLAG_DELETED
+  FEATURE_FLAG_GROUP_ASSIGNED
+  FEATURE_FLAG_GROUP_UNASSIGNED
+
+  FLAG_GROUP_CREATED
+  FLAG_GROUP_UPDATED
+  FLAG_GROUP_KILL_SWITCH_UPDATED
 
   FLAG_CONFIG_CREATED
   FLAG_CONFIG_UPDATED
@@ -74,6 +81,8 @@ model Project {
 
   environments       Environment[]
   flags              FeatureFlag[]
+  flagGroups         FlagGroup[]
+  flagGroupConfigs   FlagGroupConfig[]
   flagConfigs        FlagEnvironmentConfig[] @relation("ProjectFlagConfigs")
   sampleUserContexts SampleUserContext[]
   auditLogEntries    AuditLogEntry[]
@@ -92,9 +101,10 @@ model Environment {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  project         Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  flagConfigs     FlagEnvironmentConfig[]
-  auditLogEntries AuditLogEntry[]
+  project          Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  flagConfigs      FlagEnvironmentConfig[]
+  flagGroupConfigs FlagGroupConfig[]
+  auditLogEntries  AuditLogEntry[]
 
   @@unique([projectId, key])
   @@unique([projectId, id])
@@ -106,6 +116,7 @@ model Environment {
 model FeatureFlag {
   id              String                     @id @default(cuid())
   projectId       String                     @map("project_id")
+  groupId         String?                    @map("group_id")
   key             String                     @db.VarChar(64)
   name            String                     @db.VarChar(120)
   description     String?                    @db.Text
@@ -115,13 +126,52 @@ model FeatureFlag {
   updatedAt       DateTime                   @updatedAt @map("updated_at")
 
   project            Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  group              FlagGroup?              @relation(fields: [projectId, groupId], references: [projectId, id], onDelete: Restrict)
   environmentConfigs FlagEnvironmentConfig[]
 
   @@unique([projectId, key])
   @@unique([projectId, id])
   @@index([projectId])
   @@index([projectId, lifecycleStatus])
+  @@index([groupId])
   @@map("feature_flags")
+}
+
+model FlagGroup {
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  key       String   @db.VarChar(64)
+  name      String   @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  flags   FeatureFlag[]
+  configs FlagGroupConfig[]
+
+  @@unique([projectId, key])
+  @@unique([projectId, id])
+  @@index([projectId])
+  @@map("flag_groups")
+}
+
+model FlagGroupConfig {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  groupId       String   @map("group_id")
+  environmentId String   @map("environment_id")
+  killSwitch    Boolean  @default(false) @map("kill_switch")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  group       FlagGroup   @relation(fields: [projectId, groupId], references: [projectId, id], onDelete: Cascade)
+  environment Environment @relation(fields: [projectId, environmentId], references: [projectId, id], onDelete: Restrict)
+
+  @@unique([groupId, environmentId])
+  @@index([projectId, environmentId])
+  @@index([groupId])
+  @@map("flag_group_configs")
 }
 
 model FlagEnvironmentConfig {
