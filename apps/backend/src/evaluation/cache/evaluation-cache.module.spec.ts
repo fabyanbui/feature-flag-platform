@@ -1,5 +1,6 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { EvaluationCacheInvalidator } from './evaluation-cache-invalidator';
 import { EvaluationCacheModule } from './evaluation-cache.module';
 import {
   EVALUATION_SNAPSHOT_CACHE,
@@ -24,6 +25,10 @@ describe('EvaluationCacheModule', () => {
       );
 
       expect(cache).toBeInstanceOf(InMemoryEvaluationSnapshotCache);
+
+      const invalidator = testingModule.get(EvaluationCacheInvalidator);
+
+      expect(invalidator).toBeInstanceOf(EvaluationCacheInvalidator);
     } finally {
       await testingModule.close();
     }
