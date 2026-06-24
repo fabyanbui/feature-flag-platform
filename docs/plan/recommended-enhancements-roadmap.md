@@ -468,8 +468,11 @@ request
 Recommended cache key:
 
 ```text
-evaluation-snapshot:{projectKey}:{environmentKey}:{flagKey}
+evaluation-snapshot:{projectKey}:{environmentScope}:{flagKey}
 ```
+
+An explicit environment uses its environment key. A request that omits
+`environmentKey` uses the private `__default__` scope.
 
 Cached value contains only configuration required by the engine:
 
@@ -478,7 +481,7 @@ Cached value contains only configuration required by the engine:
 - `FlagEnvironmentConfig.servingMode`,
 - `FlagEnvironmentConfig.killSwitch`,
 - optional `FlagGroupConfig.killSwitch` state,
-- ordered enabled `FlagRule` rows and parameters,
+- ordered `FlagRule` rows, including enabled state and parameters,
 - revision/version metadata if available.
 
 Do not include raw `userId`, `targetingKey`, roles, attributes, or final
@@ -518,6 +521,27 @@ Do not include raw `userId`, `targetingKey`, roles, attributes, or final
 - Mutations invalidate affected snapshots.
 - Cache failures do not change safe evaluation behavior.
 - Gate A evidence remains valid after cache integration.
+
+### Completion evidence
+
+Phase 13 is complete:
+
+- evaluation caches reusable configuration snapshots rather than
+  context-specific final decisions,
+- the process-local in-memory provider supports configurable TTL expiry,
+- cache hits continue to evaluate each current request context independently,
+- cache misses load PostgreSQL snapshots and store successful results,
+- `NOT_FOUND`, validation failures, and evaluation errors are not cached,
+- cache read and write failures preserve safe repository fallback behavior,
+- lifecycle, configuration, rule, group membership, and group-switch mutations
+  invalidate affected snapshots only after transaction commit,
+- group switch changes invalidate every assigned flag in the affected
+  environment,
+- unit tests cover keys, TTL, isolation, invalidation, provider wiring,
+  context-specific evaluation, and cache failure,
+- Phase 12 and Phase 13 E2E tests prove warmed snapshots refresh immediately
+  after relevant mutations,
+- no Prisma migration or public evaluation response change was introduced.
 
 ### Likely changed files
 

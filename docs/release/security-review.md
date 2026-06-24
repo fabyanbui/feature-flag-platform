@@ -1,4 +1,4 @@
-# Security Review — Phase 9 Release Readiness
+# Security Review — Release Readiness
 
 ## Purpose
 
@@ -17,6 +17,7 @@ Reviewed surfaces:
 - Admin dashboard control-plane behavior.
 - Demo app data-plane behavior.
 - Evaluation engine defaults and reason codes.
+- Evaluation snapshot cache behavior and invalidation.
 - Audit logging behavior for configuration mutations.
 - Local environment configuration examples.
 
@@ -169,6 +170,53 @@ Evidence:
 - `apps/backend/test/integration/phase-5-management.integration-spec.ts`
 - `apps/backend/test/phase-9-api-hardening.e2e-spec.ts`
 
+## Phase 13 Evaluation Snapshot Cache
+
+Phase 13 adds a process-local in-memory cache for reusable evaluation
+configuration snapshots.
+
+Cached data is limited to:
+
+- feature flag lifecycle status,
+- environment configuration status, serving mode, and kill-switch state,
+- optional group kill-switch state,
+- ordered rules and their parameters.
+
+The cache does not store:
+
+- user IDs,
+- targeting keys,
+- roles,
+- attributes,
+- final evaluation decisions,
+- validation failures,
+- `NOT_FOUND` responses,
+- evaluation errors.
+
+Cache keys contain only stable project, environment, and flag keys. Cache logs
+also exclude evaluation context and user-provided targeting data.
+
+Cache reads and writes are optional optimizations. Read failures fall back to
+PostgreSQL, while write failures continue without caching. Repository or
+evaluation-engine failures retain fail-closed behavior.
+
+Configuration mutations commit their database and append-only audit changes
+before invalidating affected snapshots. An invalidation failure is logged but
+does not incorrectly report an already committed mutation as failed.
+
+The initial cache is process-local. It is suitable for the current single
+backend instance but does not provide cross-instance consistency. A shared
+provider such as Redis would be required before horizontally scaling the
+backend.
+
+Test evidence:
+
+- `apps/backend/src/evaluation/cache/in-memory-evaluation-snapshot-cache.spec.ts`
+- `apps/backend/src/evaluation/cache/evaluation-cache-invalidator.spec.ts`
+- `apps/backend/src/evaluation/evaluation.service.spec.ts`
+- `apps/backend/test/phase-12-group-kill-switch.e2e-spec.ts`
+- `apps/backend/test/phase-13-evaluation-cache.e2e-spec.ts`
+
 ## Known MVP Limitations and Mitigations
 
 | Limitation | MVP mitigation |
@@ -178,6 +226,7 @@ Evidence:
 | No production rate limiting | Keep deployment local/demo scoped; add rate limiting before production use. |
 | No server-side SDK | REST evaluation API is enough for the MVP demo; SDK is a recommended enhancement only after MVP stability. |
 | Vite environment variables are browser-visible | Only browser-safe values are allowed in demo `.env` files. |
+| In-memory cache is process-local | Keep the current deployment single-instance; use a shared Redis provider before horizontal scaling. |
 
 ## Release Decision
 

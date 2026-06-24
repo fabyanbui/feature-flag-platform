@@ -183,11 +183,15 @@ evaluations stable for the same context.
 
 The default MVP rule order is:
 
-1. archived flag or global disable / kill switch,
-2. user allowlist,
-3. role targeting,
-4. percentage rollout,
-5. default off.
+1. archived flag,
+2. disabled flag configuration,
+3. group kill switch,
+4. flag kill switch,
+5. global on,
+6. user allowlist,
+7. role targeting,
+8. percentage rollout,
+9. default off.
 
 Safe defaults matter. If no rule matches, the feature remains off:
 
@@ -227,6 +231,8 @@ Core tables:
 - `projects`,
 - `environments`,
 - `feature_flags`,
+- `flag_groups`,
+- `flag_group_configs`,
 - `flag_environment_configs`,
 - `flag_rules`,
 - `sample_user_contexts`,
@@ -256,6 +262,8 @@ This project writes audit entries for:
 
 - project creation/update,
 - feature flag creation/update/archive/restore,
+- group creation/update and environment-specific kill-switch changes,
+- flag group assignment and unassignment,
 - rule replacement,
 - sample user changes.
 
@@ -270,15 +278,27 @@ evidence for this behavior.
 
 ### 10.1 Caching
 
-The MVP prioritizes correctness and explainability. In-memory caching is listed
-as a recommended enhancement after MVP stability. A production system would use
-cache invalidation or polling/streaming to reduce evaluation latency.
+The implementation caches reusable evaluation configuration snapshots rather
+than final user-specific decisions. A snapshot contains flag lifecycle state,
+environment configuration, optional group kill-switch state, and ordered rules.
+It does not contain user IDs, targeting keys, roles, attributes, or final
+`enabled` decisions.
+
+This design improves repeated evaluation performance while preserving
+deterministic targeting for each request context. Cache misses load the
+snapshot from PostgreSQL, while cache hits still run the evaluation engine with
+the current request context.
 
 ### 10.2 Consistency
 
-Feature flag systems often choose fast local evaluation with eventually
-consistent config propagation. This project uses direct backend evaluation for
-simplicity, which is easier to demonstrate and test.
+Configuration mutations explicitly invalidate affected snapshots only after
+their database and append-only audit transaction commits. A configurable
+30-second TTL provides a secondary stale-data bound. Cache failures fall back
+to PostgreSQL and do not change fail-closed evaluation behavior.
+
+The process-local provider is intentionally appropriate for this
+single-instance mini project. A horizontally scaled deployment would require a
+shared provider such as Redis with equivalent TTL and invalidation semantics.
 
 ### 10.3 Defaults
 
@@ -354,7 +374,7 @@ The novelty for this mini project is the combination of:
 
 Recommended enhancements after MVP stability:
 
-- Redis or in-memory evaluation cache,
+- optional Redis provider for multi-instance cache consistency,
 - simple JavaScript SDK,
 - role-based access control,
 - evaluation statistics dashboard,
