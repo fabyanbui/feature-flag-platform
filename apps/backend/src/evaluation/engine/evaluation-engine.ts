@@ -45,12 +45,12 @@ export function evaluateFlag(
     return buildResult(input, false, EvaluationReason.FLAG_ARCHIVED);
   }
 
-  if (config.killSwitch) {
-    return buildResult(input, false, EvaluationReason.KILL_SWITCH);
-  }
-
   if (config.status === 'DISABLED') {
     return buildResult(input, false, EvaluationReason.FLAG_DISABLED);
+  }
+
+  if (config.killSwitch) {
+    return buildResult(input, false, EvaluationReason.KILL_SWITCH);
   }
 
   if (config.servingMode === 'GLOBAL_ON') {
