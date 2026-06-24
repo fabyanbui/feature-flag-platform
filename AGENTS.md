@@ -45,6 +45,7 @@ Use the root npm workspace commands documented in `README.md`:
 - `npm run build` to build all workspaces that define a build script.
 - `npm run test` to run workspace tests.
 - `npm run lint` to run workspace lint checks.
+- `npm run lint:fix` to apply workspace ESLint fixes locally.
 - `npm run diff:check` or `git diff --check` to catch whitespace errors.
 
 For documentation-only changes, also run `markdownlint docs/**/*.md README.md
@@ -74,6 +75,7 @@ Pull requests should include a brief summary, affected paths, validation perform
 Treat this file as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
 
 Project guardrails:
+
 - `docs/requirement/requirement-init.md` is the product source for required and
   recommended deliverables.
 - `docs/requirement/info-init.md` is the source for submission dates, required
@@ -95,6 +97,7 @@ Project guardrails:
   when feature-flag domain behavior is part of the UI change.
 
 MCP usage guardrails:
+
 - Prefer repository files and deterministic tests before live database MCP calls.
 - Use the Prisma MCP for Prisma Postgres control-plane operations, such as
   database discovery, database creation, connection strings, backups/recovery,

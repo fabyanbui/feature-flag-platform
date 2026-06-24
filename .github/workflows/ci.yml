@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate workspace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ffp
+          POSTGRES_PASSWORD: ffp_ci_password
+          POSTGRES_DB: ffp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ffp -d ffp_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://ffp:ffp_ci_password@localhost:5432/ffp_ci?schema=public
+      DO_NOT_TRACK: "1"
+      API_PORT: 3000
+      ADMIN_ORIGIN: http://localhost:5173
+      DEMO_ORIGIN: http://localhost:5174
+      VITE_API_BASE_URL: http://localhost:3000/v1
+      VITE_DEFAULT_PROJECT_KEY: demo-project
+      VITE_DEFAULT_FLAG_KEY: new-checkout
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check committed changes for whitespace errors
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            base_sha="$PR_BASE_SHA"
+          elif [ "$EVENT_NAME" = "push" ] &&
+            [ -n "$PUSH_BASE_SHA" ] &&
+            [ "$PUSH_BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            base_sha="$PUSH_BASE_SHA"
+          else
+            base_sha="$(git rev-parse "${GITHUB_SHA}^")"
+          fi
+
+          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+            base_sha="$(git rev-parse "${GITHUB_SHA}^")"
+          fi
+
+          git diff --check "$base_sha" "$GITHUB_SHA"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate Prisma schema
+        run: npm run prisma:validate --workspace=@ffp/backend
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace=@ffp/backend
+
+      - name: Run lint checks
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test --workspace=@ffp/backend -- --runInBand
+
+      - name: Build workspaces
+        run: npm run build
+
+      - name: Apply database migrations
+        run: npm run prisma:migrate:deploy --workspace=@ffp/backend
+
+      - name: Validate seed data and idempotency
+        run: |
+          npm run db:seed --workspace=@ffp/backend
+          npm run db:seed --workspace=@ffp/backend
+
+      - name: Run backend integration tests
+        run: npm run test:integration --workspace=@ffp/backend
+
+      - name: Run backend end-to-end tests
+        run: npm run test:e2e --workspace=@ffp/backend -- --runInBand
