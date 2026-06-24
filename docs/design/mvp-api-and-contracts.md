@@ -377,8 +377,8 @@ Evaluation must be deterministic and use this order:
 
 1. If project or flag is missing, return `NOT_FOUND`.
 2. If flag status is `ARCHIVED`, return `FLAG_ARCHIVED`.
-3. If `killSwitch=true`, return `KILL_SWITCH`.
-4. If flag status is `DISABLED`, return `FLAG_DISABLED`.
+3. If flag status is `DISABLED`, return `FLAG_DISABLED`.
+4. If `killSwitch=true`, return `KILL_SWITCH`.
 5. If `servingMode=GLOBAL_ON`, return `GLOBAL_ON`.
 6. Skip disabled rules.
 7. If a user allowlist rule matches, return `USER_ALLOWLIST`.
@@ -387,6 +387,22 @@ Evaluation must be deterministic and use this order:
    is missing or empty, return `INVALID_CONTEXT`.
 10. If a percentage rollout rule matches, return `PERCENTAGE_ROLLOUT`.
 11. Otherwise, return `DEFAULT_OFF`.
+
+The terminal-condition precedence is deliberate:
+
+```text
+FLAG_ARCHIVED
+-> FLAG_DISABLED
+-> KILL_SWITCH
+-> GLOBAL_ON
+```
+
+When multiple terminal conditions are simultaneously true, the first condition
+in this sequence determines both the result and reason.
+
+A later recommended enhancement may insert `GROUP_KILL_SWITCH` between
+`FLAG_DISABLED` and `KILL_SWITCH`. It must not be added to the public
+`EvaluationReason` contract until group kill-switch behavior is implemented.
 
 The same flag configuration and same evaluation request must always produce
 the same result.
