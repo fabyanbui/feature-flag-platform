@@ -12,6 +12,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { FlagRulesModule } from './flag-rules/flag-rules.module';
 import { SampleUsersModule } from './sample-users/sample-users.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { FlagGroupsModule } from './flag-groups/flag-groups.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     FlagRulesModule,
     SampleUsersModule,
     AuditLogsModule,
+    FlagGroupsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

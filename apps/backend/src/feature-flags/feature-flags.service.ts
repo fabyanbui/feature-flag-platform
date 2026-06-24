@@ -556,6 +556,14 @@ export class FeatureFlagsService {
         killSwitch: boolean;
         environment?: { key: string; isDefault: boolean };
       }>;
+      group?: {
+        key: string;
+        name: string;
+        configs: Array<{
+          killSwitch: boolean;
+          environment: { key: string };
+        }>;
+      } | null;
     },
   ): FeatureFlagResponseDto {
     const config =
@@ -573,6 +581,18 @@ export class FeatureFlagsService {
       servingMode: config?.servingMode ?? ServingMode.TARGETED,
       killSwitch: config?.killSwitch ?? false,
       environmentKey: config?.environment?.key ?? 'production',
+      group: flag.group
+        ? {
+            key: flag.group.key,
+            name: flag.group.name,
+            killSwitch:
+              flag.group.configs.find(
+                (groupConfig) =>
+                  groupConfig.environment.key ===
+                  (config?.environment?.key ?? 'production'),
+              )?.killSwitch ?? false,
+          }
+        : null,
       archivedAt: flag.archivedAt,
       createdAt: flag.createdAt,
       updatedAt: flag.updatedAt,

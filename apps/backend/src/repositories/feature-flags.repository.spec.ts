@@ -32,7 +32,15 @@ describe('FeatureFlagsRepository group membership', () => {
         },
       },
       include: {
-        group: true,
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
       },
     });
   });
@@ -57,7 +65,15 @@ describe('FeatureFlagsRepository group membership', () => {
         groupId: 'group-1',
       },
       include: {
-        group: true,
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
       },
     });
   });

@@ -35,7 +35,15 @@ export class FeatureFlagsRepository {
         },
       },
       include: {
-        group: true,
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -81,7 +89,15 @@ export class FeatureFlagsRepository {
         groupId,
       },
       include: {
-        group: true,
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -119,6 +135,15 @@ export class FeatureFlagsRepository {
             environment: true,
           },
         },
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -149,6 +174,15 @@ export class FeatureFlagsRepository {
             rules: {
               orderBy: {
                 priority: 'asc',
+              },
+            },
+          },
+        },
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
               },
             },
           },

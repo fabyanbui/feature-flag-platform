@@ -5,6 +5,23 @@ import {
   ServingMode,
 } from '@prisma/client';
 
+export class FeatureFlagGroupSummaryDto {
+  @ApiProperty({
+    example: 'checkout',
+  })
+  key!: string;
+
+  @ApiProperty({
+    example: 'Checkout flags',
+  })
+  name!: string;
+
+  @ApiProperty({
+    example: false,
+  })
+  killSwitch!: boolean;
+}
+
 export class FeatureFlagResponseDto {
   @ApiProperty()
   id!: string;
@@ -53,6 +70,12 @@ export class FeatureFlagResponseDto {
     example: 'production',
   })
   environmentKey!: string;
+
+  @ApiPropertyOptional({
+    type: FeatureFlagGroupSummaryDto,
+    nullable: true,
+  })
+  group!: FeatureFlagGroupSummaryDto | null;
 
   @ApiPropertyOptional({
     nullable: true,
