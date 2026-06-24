@@ -22,6 +22,24 @@ export class FeatureFlagsRepository {
     });
   }
 
+  findByProjectIdAndKeyWithGroup(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.findUnique({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      include: {
+        group: true,
+      },
+    });
+  }
+
   create(
     data: Prisma.FeatureFlagCreateInput,
     db: RepositoryClient = this.prisma,
@@ -43,6 +61,43 @@ export class FeatureFlagsRepository {
         },
       },
       data,
+    });
+  }
+
+  updateGroupByProjectIdAndKey(
+    projectId: string,
+    flagKey: string,
+    groupId: string | null,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.update({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      data: {
+        groupId,
+      },
+      include: {
+        group: true,
+      },
+    });
+  }
+
+  findKeysByGroupId(groupId: string, db: RepositoryClient = this.prisma) {
+    return db.featureFlag.findMany({
+      where: {
+        groupId,
+      },
+      select: {
+        id: true,
+        key: true,
+      },
+      orderBy: {
+        key: 'asc',
+      },
     });
   }
 
