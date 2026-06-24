@@ -436,10 +436,7 @@ describe('AuditLogsService', () => {
       projectsRepository.findByKey.mockResolvedValue(createProject());
       featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
         createFlagWithConfigs({
-          environmentConfigs: [
-            { id: 'config-1' },
-            { id: 'config-2' },
-          ],
+          environmentConfigs: [{ id: 'config-1' }, { id: 'config-2' }],
         }),
       );
       auditLogsRepository.findMany.mockResolvedValue([entry]);
@@ -594,11 +591,7 @@ describe('AuditLogsService', () => {
         sort: 'createdAt',
       } as FlagHistoryQueryDto;
 
-      await service.listFlagHistory(
-        'demo-project',
-        'new-checkout',
-        query,
-      );
+      await service.listFlagHistory('demo-project', 'new-checkout', query);
 
       expect(auditLogsRepository.findMany).toHaveBeenCalledWith(
         {

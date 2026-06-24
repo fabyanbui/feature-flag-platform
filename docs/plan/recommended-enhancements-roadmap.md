@@ -276,6 +276,17 @@ a later need appears.
 - Audit logs remain the source of accountability.
 - Any optional revision field does not replace audit history.
 
+### Completion evidence
+
+- Added the paginated audit-backed flag history endpoint.
+- History resolves immutable feature-flag and configuration IDs.
+- Unit and E2E coverage verifies filtering, ordering, pagination, validation,
+  flag creation, configuration updates, and rule replacement.
+- Added a responsive flag history panel near the rule editor.
+- Successful rule replacement refreshes history without affecting mutation
+  success if the secondary history read fails.
+- No separate configuration-version table or revision field was introduced.
+
 ### Likely changed files
 
 - `apps/backend/src/audit-logs/*`
