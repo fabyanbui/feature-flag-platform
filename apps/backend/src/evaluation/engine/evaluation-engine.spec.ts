@@ -423,6 +423,104 @@ describe('evaluateFlag', () => {
     expect(result.reason).toBe(EvaluationReason.DEFAULT_OFF);
   });
 
+  it('continues to the next user allowlist rule when an earlier rule does not match', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'non-matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 10,
+            parameters: {
+              userIds: ['another-user'],
+            },
+          }),
+          createRule({
+            id: 'matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 20,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      reason: EvaluationReason.USER_ALLOWLIST,
+      matchedRuleId: 'matching-allowlist',
+    });
+  });
+
+  it('ignores a disabled matching rule and uses the next enabled rule', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'disabled-matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 10,
+            enabled: false,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+          createRule({
+            id: 'enabled-matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 20,
+            enabled: true,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      reason: EvaluationReason.USER_ALLOWLIST,
+      matchedRuleId: 'enabled-matching-allowlist',
+    });
+  });
+
+  it('continues to a later percentage rule when an earlier rule does not match', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'zero-percent-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            priority: 10,
+            parameters: {
+              percentage: 0,
+            },
+          }),
+          createRule({
+            id: 'full-rollout-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            priority: 20,
+            parameters: {
+              percentage: 100,
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      reason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      matchedRuleId: 'full-rollout-rule',
+    });
+  });
+
   it('uses type precedence before priority across different rule types', () => {
     const result = evaluateFlag(
       {
