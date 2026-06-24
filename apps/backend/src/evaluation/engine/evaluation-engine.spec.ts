@@ -77,6 +77,71 @@ describe('evaluation engine result helpers', () => {
 });
 
 describe('evaluateFlag', () => {
+  describe('terminal-condition precedence', () => {
+    it('returns FLAG_ARCHIVED before FLAG_DISABLED', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          flag: {
+            lifecycleStatus: FeatureFlagLifecycleStatus.ARCHIVED,
+          },
+          config: {
+            status: FlagConfigStatus.DISABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.FLAG_ARCHIVED,
+        matchedRuleId: null,
+      });
+    });
+
+    it('returns FLAG_DISABLED before KILL_SWITCH', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          config: {
+            status: FlagConfigStatus.DISABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.FLAG_DISABLED,
+        matchedRuleId: null,
+      });
+    });
+
+    it('returns KILL_SWITCH before GLOBAL_ON', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          config: {
+            status: FlagConfigStatus.ENABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.KILL_SWITCH,
+        matchedRuleId: null,
+      });
+    });
+  });
+
   it('returns FLAG_ARCHIVED when flag is archived', () => {
     const result = evaluateFlag(
       baseInput,
