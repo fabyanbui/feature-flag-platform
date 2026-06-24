@@ -23,17 +23,24 @@ export function getRuntimeState(flag: FeatureFlag): RuntimeState {
         };
     }
 
-    if (flag.killSwitch) {
-        return {
-            label: 'Off',
-            reason: 'Kill switch is active.',
-        };
-    }
-
     if (flag.status === 'DISABLED') {
         return {
             label: 'Off',
             reason: 'Flag configuration is disabled.',
+        };
+    }
+
+    if (flag.group?.killSwitch) {
+        return {
+            label: 'Off',
+            reason: `Group kill switch "${flag.group.name}" is active.`,
+        };
+    }
+
+    if (flag.killSwitch) {
+        return {
+            label: 'Off',
+            reason: 'Flag kill switch is active.',
         };
     }
 

@@ -3,10 +3,17 @@ import './App.css';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { FlagForm } from './pages/FlagForm';
 import { FlagListPage } from './pages/FlagListPage';
+import { FlagGroupPage } from './pages/FlagGroupPage';
 import { ProjectListPage } from './pages/ProjectListPage';
 import { RuleEditorPage } from './pages/RuleEditorPage';
 
-type AdminView = 'projects' | 'flags' | 'flag-form' | 'rules' | 'audit';
+type AdminView =
+  | 'projects'
+  | 'flags'
+  | 'groups'
+  | 'flag-form'
+  | 'rules'
+  | 'audit';
 
 function App() {
   const [view, setView] = useState<AdminView>('projects');
@@ -68,6 +75,14 @@ function App() {
               <button
                 type="button"
                 className="button button-secondary"
+                onClick={() => setView('groups')}
+              >
+                Groups
+              </button>
+
+              <button
+                type="button"
+                className="button button-secondary"
                 onClick={() => setView('flags')}
               >
                 Flags
@@ -105,6 +120,13 @@ function App() {
           flagKey={selectedFlagKey}
           onCancel={() => setView('flags')}
           onSaved={() => setView('flags')}
+        />
+      ) : null}
+
+      {view === 'groups' && selectedProjectKey ? (
+        <FlagGroupPage
+          projectKey={selectedProjectKey}
+          onBackToFlags={() => setView('flags')}
         />
       ) : null}
 

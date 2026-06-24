@@ -5,7 +5,12 @@ import { ErrorState, LoadingState } from '../components/DataState';
 import { RuntimeStateBadge } from '../components/RuntimeStateBadge';
 import { StatusBadge } from '../components/StatusBadge';
 import { adminApi } from '../lib/api';
-import type { FeatureFlag, FlagConfigStatus, ServingMode } from '../lib/types';
+import type {
+    FeatureFlag,
+    FlagConfigStatus,
+    FlagGroup,
+    ServingMode,
+} from '../lib/types';
 import { validateKey, validateRequired } from '../lib/validation';
 
 type FlagFormProps = {
@@ -22,6 +27,7 @@ type FlagFormState = {
     status: FlagConfigStatus;
     servingMode: ServingMode;
     killSwitch: boolean;
+    groupKey: string;
 };
 
 const initialForm: FlagFormState = {
@@ -31,6 +37,7 @@ const initialForm: FlagFormState = {
     status: 'DISABLED',
     servingMode: 'TARGETED',
     killSwitch: false,
+    groupKey: '',
 };
 
 export function FlagForm({
@@ -43,37 +50,51 @@ export function FlagForm({
 
     const [form, setForm] = useState<FlagFormState>(initialForm);
     const [loadedFlag, setLoadedFlag] = useState<FeatureFlag | null>(null);
-    const [loading, setLoading] = useState(isEditing);
+    const [groups, setGroups] = useState<FlagGroup[]>([]);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
-    const loadFlag = useCallback(async () => {
-        if (!flagKey) {
-            setLoading(false);
-            return;
-        }
-
+    const loadData = useCallback(async () => {
         try {
-            const flag = await adminApi.getFlag(projectKey, flagKey);
+            const [groupResponse, flag] = await Promise.all([
+                adminApi.listFlagGroups(projectKey, {
+                    environmentKey: 'production',
+                    sort: 'name',
+                    order: 'asc',
+                    limit: 100,
+                }),
+                flagKey ? adminApi.getFlag(projectKey, flagKey) : null,
+            ]);
 
-            setLoadedFlag(flag);
-            setForm({
-                key: flag.key,
-                name: flag.name,
-                description: flag.description ?? '',
-                status: flag.status,
-                servingMode: flag.servingMode,
-                killSwitch: flag.killSwitch,
-            });
+            setGroups(groupResponse.items);
+
+            if (flag) {
+                setLoadedFlag(flag);
+                setForm({
+                    key: flag.key,
+                    name: flag.name,
+                    description: flag.description ?? '',
+                    status: flag.status,
+                    servingMode: flag.servingMode,
+                    killSwitch: flag.killSwitch,
+                    groupKey: flag.group?.key ?? '',
+                });
+            } else {
+                setLoadedFlag(null);
+                setForm(initialForm);
+            }
+
             setDirty(false);
+            setError(null);
         } catch (requestError) {
             setError(
                 requestError instanceof Error
                     ? requestError.message
-                    : 'Failed to load feature flag.',
+                    : 'Failed to load feature flag configuration.',
             );
         } finally {
             setLoading(false);
@@ -82,16 +103,20 @@ export function FlagForm({
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
-            void loadFlag();
+            void loadData();
         }, 0);
 
         return () => window.clearTimeout(timeoutId);
-    }, [loadFlag]);
+    }, [loadData]);
 
     const previewFlag = useMemo<FeatureFlag | null>(() => {
         if (!loadedFlag) {
             return null;
         }
+
+        const selectedGroup = groups.find(
+            (group) => group.key === form.groupKey,
+        );
 
         return {
             ...loadedFlag,
@@ -100,8 +125,15 @@ export function FlagForm({
             status: form.status,
             servingMode: form.servingMode,
             killSwitch: form.killSwitch,
+            group: selectedGroup
+                ? {
+                      key: selectedGroup.key,
+                      name: selectedGroup.name,
+                      killSwitch: selectedGroup.killSwitch,
+                  }
+                : null,
         };
-    }, [form, loadedFlag]);
+    }, [form, groups, loadedFlag]);
 
     function updateForm<Value extends keyof FlagFormState>(
         key: Value,
@@ -140,6 +172,8 @@ export function FlagForm({
         setFormError(null);
 
         try {
+            let savedFlagKey: string;
+
             if (isEditing && flagKey) {
                 await adminApi.updateFlag(projectKey, flagKey, {
                     name: form.name.trim(),
@@ -148,6 +182,7 @@ export function FlagForm({
                     servingMode: form.servingMode,
                     killSwitch: form.killSwitch,
                 });
+                savedFlagKey = flagKey;
             } else {
                 const created = await adminApi.createFlag(projectKey, {
                     key: form.key.trim(),
@@ -160,6 +195,21 @@ export function FlagForm({
                     servingMode: form.servingMode,
                     killSwitch: form.killSwitch,
                 });
+                savedFlagKey = created.key;
+            }
+
+            const previousGroupKey = loadedFlag?.group?.key ?? '';
+
+            if (form.groupKey !== previousGroupKey) {
+                if (form.groupKey) {
+                    await adminApi.assignFlagGroup(
+                        projectKey,
+                        savedFlagKey,
+                        form.groupKey,
+                    );
+                } else {
+                    await adminApi.unassignFlagGroup(projectKey, savedFlagKey);
+                }
             }
 
             setDirty(false);
@@ -198,7 +248,7 @@ export function FlagForm({
                 <ErrorState
                     title="Could not load feature flag"
                     description={error}
-                    onAction={loadFlag}
+                    onAction={loadData}
                 />
             </section>
         );
@@ -211,8 +261,8 @@ export function FlagForm({
                     <p className="eyebrow">Feature flag</p>
                     <h1>{isEditing ? 'Edit flag' : 'Create flag'}</h1>
                     <p>
-                        Project: <code>{projectKey}</code>. Status label and runtime state
-                        are handled separately.
+                        Project: <code>{projectKey}</code>. Status label and
+                        runtime state are handled separately.
                     </p>
                 </div>
 
@@ -234,7 +284,9 @@ export function FlagForm({
                         Flag key
                         <input
                             value={form.key}
-                            onChange={(event) => updateForm('key', event.target.value)}
+                            onChange={(event) =>
+                                updateForm('key', event.target.value)
+                            }
                             placeholder="new-checkout"
                             disabled={isEditing || saving}
                         />
@@ -244,7 +296,9 @@ export function FlagForm({
                         Flag name
                         <input
                             value={form.name}
-                            onChange={(event) => updateForm('name', event.target.value)}
+                            onChange={(event) =>
+                                updateForm('name', event.target.value)
+                            }
                             placeholder="New Checkout"
                             disabled={saving}
                         />
@@ -268,7 +322,10 @@ export function FlagForm({
                         <select
                             value={form.status}
                             onChange={(event) =>
-                                updateForm('status', event.target.value as FlagConfigStatus)
+                                updateForm(
+                                    'status',
+                                    event.target.value as FlagConfigStatus,
+                                )
                             }
                             disabled={saving}
                         >
@@ -282,13 +339,41 @@ export function FlagForm({
                         <select
                             value={form.servingMode}
                             onChange={(event) =>
-                                updateForm('servingMode', event.target.value as ServingMode)
+                                updateForm(
+                                    'servingMode',
+                                    event.target.value as ServingMode,
+                                )
                             }
                             disabled={saving}
                         >
-                            <option value="TARGETED">Targeted / conditional</option>
+                            <option value="TARGETED">
+                                Targeted / conditional
+                            </option>
                             <option value="GLOBAL_ON">Global on</option>
                         </select>
+                    </label>
+
+                    <label className="form-grid-full">
+                        Flag group
+                        <select
+                            value={form.groupKey}
+                            onChange={(event) =>
+                                updateForm('groupKey', event.target.value)
+                            }
+                            disabled={saving}
+                        >
+                            <option value="">No group</option>
+                            {groups.map((group) => (
+                                <option key={group.id} value={group.key}>
+                                    {group.name} ({group.key})
+                                    {group.killSwitch ? ' — switch active' : ''}
+                                </option>
+                            ))}
+                        </select>
+                        <span className="field-help">
+                            Membership applies across environments. The group
+                            switch state shown here is for production.
+                        </span>
                     </label>
 
                     <label className="checkbox-field form-grid-full">
@@ -301,8 +386,8 @@ export function FlagForm({
                             disabled={saving}
                         />
                         <span>
-                            Kill switch active — force runtime Off even when status is
-                            Enabled.
+                            Kill switch active — force runtime Off even when
+                            status is Enabled.
                         </span>
                     </label>
 
@@ -310,8 +395,8 @@ export function FlagForm({
                         <div className="status-preview form-grid-full">
                             <h2>Preview</h2>
                             <p>
-                                This preview shows how the flag will be labeled in the flag
-                                list.
+                                This preview shows how the flag will be labeled
+                                in the flag list.
                             </p>
                             <div className="badge-row">
                                 <StatusBadge flag={previewFlag} />
@@ -324,8 +409,9 @@ export function FlagForm({
                         <div className="status-preview form-grid-full">
                             <h2>Create default behavior</h2>
                             <p>
-                                New flags are created as safe-by-default. The form then saves
-                                the selected status, serving mode, and kill switch settings.
+                                New flags are created as safe-by-default. The
+                                form then saves the selected status, serving
+                                mode, and kill switch settings.
                             </p>
                         </div>
                     ) : null}
@@ -351,7 +437,11 @@ export function FlagForm({
                             className="button button-primary"
                             disabled={saving}
                         >
-                            {saving ? 'Saving...' : isEditing ? 'Save changes' : 'Create flag'}
+                            {saving
+                                ? 'Saving...'
+                                : isEditing
+                                  ? 'Save changes'
+                                  : 'Create flag'}
                         </button>
                     </div>
                 </form>

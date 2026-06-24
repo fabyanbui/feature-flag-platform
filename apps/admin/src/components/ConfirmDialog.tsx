@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 type ConfirmDialogProps = {
     open: boolean;
     title: string;
@@ -21,6 +23,14 @@ export function ConfirmDialog({
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
+    const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (open) {
+            cancelButtonRef.current?.focus();
+        }
+    }, [open]);
+
     if (!open) {
         return null;
     }
@@ -33,6 +43,11 @@ export function ConfirmDialog({
                 aria-modal="true"
                 aria-labelledby="confirm-dialog-title"
                 aria-describedby="confirm-dialog-description"
+                onKeyDown={(event) => {
+                    if (event.key === 'Escape' && !busy) {
+                        onCancel();
+                    }
+                }}
             >
                 <h2 id="confirm-dialog-title">{title}</h2>
                 <p id="confirm-dialog-description">{description}</p>
@@ -40,6 +55,7 @@ export function ConfirmDialog({
                 <div className="dialog-actions">
                     <button
                         type="button"
+                        ref={cancelButtonRef}
                         className="button button-secondary"
                         onClick={onCancel}
                         disabled={busy}

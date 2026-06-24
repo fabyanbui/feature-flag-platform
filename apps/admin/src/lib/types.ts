@@ -17,6 +17,18 @@ export type Project = {
   updatedAt: string;
 };
 
+export type FlagGroup = {
+  id: string;
+  projectKey: string;
+  key: string;
+  name: string;
+  environmentKey: string;
+  killSwitch: boolean;
+  assignedFlagCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type FeatureFlagLifecycleStatus = "ACTIVE" | "ARCHIVED";
 
 export type FlagConfigStatus = "ENABLED" | "DISABLED";
