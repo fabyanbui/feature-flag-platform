@@ -1,8 +1,6 @@
 import type { EvaluationSnapshot } from '../engine/evaluation.types';
 
-export const EVALUATION_SNAPSHOT_CACHE = Symbol(
-  'EVALUATION_SNAPSHOT_CACHE',
-);
+export const EVALUATION_SNAPSHOT_CACHE = Symbol('EVALUATION_SNAPSHOT_CACHE');
 
 export const DEFAULT_ENVIRONMENT_CACHE_SCOPE = '__default__';
 
@@ -39,9 +37,7 @@ export interface EvaluationSnapshotCache {
    * When environmentKey is omitted, invalidate every environment scope for
    * all listed flags.
    */
-  invalidateFlags(
-    target: EvaluationSnapshotInvalidationTarget,
-  ): Promise<void>;
+  invalidateFlags(target: EvaluationSnapshotInvalidationTarget): Promise<void>;
 
   clear(): Promise<void>;
 }
