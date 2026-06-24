@@ -17,6 +17,7 @@
     "dev:demo": "npm run dev --workspace=@ffp/demo -- --host 0.0.0.0 --port 5174",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "diff:check": "git diff --check"
   }
