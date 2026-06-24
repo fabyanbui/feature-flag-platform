@@ -295,6 +295,7 @@ export class FlagGroupsService {
   ): Promise<FlagGroupResponseDto> {
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
+    const killSwitch = body.killSwitch as boolean;
 
     const result = await this.transactionService.run(async (tx) => {
       const project = await this.projectsRepository.findByKey(projectKey, tx);
@@ -331,7 +332,7 @@ export class FlagGroupsService {
 
       const existingConfig = this.findGroupConfig(group, environment.key);
 
-      if (existingConfig?.killSwitch === body.killSwitch) {
+      if (existingConfig?.killSwitch === killSwitch) {
         return { project, group, environment };
       }
 
@@ -342,10 +343,10 @@ export class FlagGroupsService {
           projectId: project.id,
           groupId: group.id,
           environmentId: environment.id,
-          killSwitch: body.killSwitch,
+          killSwitch,
         },
         {
-          killSwitch: body.killSwitch,
+          killSwitch,
         },
         tx,
       );
@@ -376,11 +377,7 @@ export class FlagGroupsService {
           environment.key,
           existingConfig?.killSwitch ?? false,
         ),
-        after: this.groupConfigSnapshot(
-          group.key,
-          environment.key,
-          body.killSwitch,
-        ),
+        after: this.groupConfigSnapshot(group.key, environment.key, killSwitch),
         metadata: {
           source: 'api',
           affectedFlagCount: group._count.flags,

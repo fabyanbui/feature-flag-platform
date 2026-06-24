@@ -17,7 +17,8 @@ export class UpdateFlagGroupConfigDto {
 
   @ApiProperty({
     example: true,
+    type: Boolean,
   })
   @IsBoolean()
-  killSwitch!: boolean;
+  killSwitch!: boolean | string;
 }
