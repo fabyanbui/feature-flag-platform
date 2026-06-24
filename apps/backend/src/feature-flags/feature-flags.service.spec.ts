@@ -109,6 +109,11 @@ describe('FeatureFlagsService', () => {
     getRequestId: jest.fn(),
   };
 
+  const cacheInvalidator = {
+    invalidateFlag: jest.fn(),
+    invalidateFlags: jest.fn(),
+  };
+
   let service: FeatureFlagsService;
 
   beforeEach(() => {
@@ -117,6 +122,7 @@ describe('FeatureFlagsService', () => {
     transactionService.run.mockImplementation(async (callback) => callback(tx));
     requestContext.getActor.mockReturnValue('mentor@example.local');
     requestContext.getRequestId.mockReturnValue('req-test');
+    cacheInvalidator.invalidateFlag.mockResolvedValue(undefined);
 
     service = new FeatureFlagsService(
       projectsRepository as never,
@@ -126,6 +132,7 @@ describe('FeatureFlagsService', () => {
       transactionService as never,
       auditLogService,
       requestContext as never,
+      cacheInvalidator as never,
     );
   });
 
@@ -495,6 +502,49 @@ describe('FeatureFlagsService', () => {
 
       expect(result.lifecycleStatus).toBe(FeatureFlagLifecycleStatus.ACTIVE);
       expect(result.status).toBe(FlagConfigStatus.ENABLED);
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
+      expect(transactionService.run.mock.invocationCallOrder[0]).toBeLessThan(
+        cacheInvalidator.invalidateFlag.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('does not invalidate evaluation cache for metadata-only updates', async () => {
+      const existingFlag = createFlag();
+      const afterFlag = createFlag({
+        name: 'Renamed Checkout',
+      });
+
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs
+        .mockResolvedValueOnce(existingFlag)
+        .mockResolvedValueOnce(afterFlag);
+      featureFlagsRepository.updateByProjectIdAndKey.mockResolvedValue(
+        afterFlag,
+      );
+      flagConfigsRepository.updateById.mockResolvedValue(
+        afterFlag.environmentConfigs[0],
+      );
+
+      await service.update('demo-project', 'new-checkout', {
+        name: 'Renamed Checkout',
+      });
+
+      expect(cacheInvalidator.invalidateFlag).not.toHaveBeenCalled();
+    });
+
+    it('does not invalidate when the update transaction fails', async () => {
+      transactionService.run.mockRejectedValue(new Error('transaction failed'));
+
+      await expect(
+        service.update('demo-project', 'new-checkout', {
+          status: FlagConfigStatus.ENABLED,
+        }),
+      ).rejects.toThrow('transaction failed');
+
+      expect(cacheInvalidator.invalidateFlag).not.toHaveBeenCalled();
     });
   });
 
@@ -547,6 +597,10 @@ describe('FeatureFlagsService', () => {
 
       expect(result.lifecycleStatus).toBe(FeatureFlagLifecycleStatus.ARCHIVED);
       expect(result.archivedAt).toBe(fixedDate);
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
     });
 
     it('restores flag and writes FEATURE_FLAG_RESTORED audit log', async () => {
@@ -601,6 +655,10 @@ describe('FeatureFlagsService', () => {
 
       expect(result.lifecycleStatus).toBe(FeatureFlagLifecycleStatus.ACTIVE);
       expect(result.archivedAt).toBeNull();
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
     });
   });
 });
