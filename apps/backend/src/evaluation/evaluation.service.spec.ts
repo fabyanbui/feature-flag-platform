@@ -132,6 +132,42 @@ describe('EvaluationService', () => {
     });
   });
 
+  it('returns safe ERROR result when evaluation engine processing throws', async () => {
+    evaluationRepository.findSnapshot.mockResolvedValue({
+      flag: {
+        lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+      },
+      config: {
+        status: FlagConfigStatus.ENABLED,
+        servingMode: ServingMode.TARGETED,
+        killSwitch: false,
+      },
+      rules: null,
+    });
+
+    await expect(
+      service.evaluate({
+        projectKey: 'demo-project',
+        flagKey: 'new-checkout',
+        context: {
+          targetingKey: 'demo-user-beta',
+        },
+      }),
+    ).resolves.toEqual({
+      projectKey: 'demo-project',
+      flagKey: 'new-checkout',
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.ERROR,
+      matchedRuleId: null,
+    });
+
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('requestId=req-test'),
+      expect.any(String),
+    );
+  });
+
   it('uses request ID from request context on error path', async () => {
     evaluationRepository.findSnapshot.mockRejectedValue(
       new Error('database unavailable'),

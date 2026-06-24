@@ -49,6 +49,22 @@ describe('stable rollout hash', () => {
     expect(trimmedBucket).toBe(lowercaseBucket);
     expect(uppercaseBucket).not.toBe(lowercaseBucket);
   });
+
+  it.each([
+    ['phase-10-user-141', 0.17],
+    ['phase-10-user-230', 1.5],
+    ['phase-10-user-232', 49.71],
+    ['phase-10-user-402', 50.08],
+    ['phase-10-user-798', 99.99],
+  ])('returns the expected bucket for %s', (targetingKey, expectedBucket) => {
+    expect(
+      getStableRolloutBucketPercentage({
+        projectKey: 'demo-project',
+        flagKey: 'new-checkout',
+        targetingKey,
+      }),
+    ).toBe(expectedBucket);
+  });
 });
 
 describe('rollout percentage validation', () => {
