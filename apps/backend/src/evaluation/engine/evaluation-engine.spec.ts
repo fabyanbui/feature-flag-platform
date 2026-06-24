@@ -531,24 +531,44 @@ describe('evaluateFlag', () => {
     },
   );
 
-  it('returns deterministic percentage rollout result for same input', () => {
-    const snapshot = createSnapshot({
-      rules: [
-        createRule({
-          id: 'percentage-rule',
-          type: RuleType.PERCENTAGE_ROLLOUT,
-          parameters: {
-            percentage: 50,
-          },
-        }),
-      ],
-    });
+  it.each([
+    {
+      targetingKey: 'phase-10-user-232',
+      expectedEnabled: true,
+      expectedVariant: 'on' as const,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+    {
+      targetingKey: 'phase-10-user-402',
+      expectedEnabled: false,
+      expectedVariant: 'off' as const,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+  ])(
+    'returns the same complete result for repeated evaluations of $targetingKey',
+    ({
+      targetingKey,
+      expectedEnabled,
+      expectedVariant,
+      expectedReason,
+      expectedRuleId,
+    }) => {
+      const firstResult = evaluatePercentageRule(50, targetingKey);
 
-    const first = evaluateFlag(baseInput, snapshot);
-    const second = evaluateFlag(baseInput, snapshot);
+      expect(firstResult).toMatchObject({
+        enabled: expectedEnabled,
+        variant: expectedVariant,
+        reason: expectedReason,
+        matchedRuleId: expectedRuleId,
+      });
 
-    expect(second).toEqual(first);
-  });
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        expect(evaluatePercentageRule(50, targetingKey)).toEqual(firstResult);
+      }
+    },
+  );
 
   it('skips disabled rules', () => {
     const result = evaluateFlag(
