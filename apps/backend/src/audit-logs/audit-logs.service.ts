@@ -6,9 +6,11 @@ import {
   validationError,
 } from '../common/errors/api-exception.helpers';
 import { AuditLogsRepository } from '../repositories/audit-logs.repository';
+import { FeatureFlagsRepository } from '../repositories/feature-flags.repository';
 import { ProjectsRepository } from '../repositories/projects.repository';
 import { AuditLogQueryDto } from './dto/audit-log-query.dto';
 import { AuditLogResponseDto } from './dto/audit-log-response.dto';
+import { FlagHistoryQueryDto } from './dto/flag-history-query.dto';
 
 const AUDIT_LOG_SORT_FIELDS = [
   'createdAt',
@@ -21,6 +23,7 @@ const AUDIT_LOG_SORT_FIELDS = [
 export class AuditLogsService {
   constructor(
     private readonly projectsRepository: ProjectsRepository,
+    private readonly featureFlagsRepository: FeatureFlagsRepository,
     private readonly auditLogsRepository: AuditLogsRepository,
   ) {}
 
@@ -55,6 +58,70 @@ export class AuditLogsService {
       this.auditLogsRepository.findMany(
         where,
         orderBy,
+        query.limit,
+        query.offset,
+      ),
+      this.auditLogsRepository.count(where),
+    ]);
+
+    return createPageResponse(
+      items.map((entry) => this.toResponse(entry)),
+      query.limit,
+      query.offset,
+      total,
+    );
+  }
+
+  async listFlagHistory(
+    projectKey: string,
+    flagKey: string,
+    query: FlagHistoryQueryDto,
+  ) {
+    const project = await this.projectsRepository.findByKey(projectKey);
+
+    if (!project) {
+      throw notFoundError(`Project "${projectKey}" was not found.`);
+    }
+
+    const flag =
+      await this.featureFlagsRepository.findByProjectIdAndKeyWithConfigs(
+        project.id,
+        flagKey,
+      );
+
+    if (!flag) {
+      throw notFoundError(
+        `Feature flag "${flagKey}" was not found in project "${projectKey}".`,
+      );
+    }
+
+    const historyTargets: Prisma.AuditLogEntryWhereInput[] = [
+      {
+        targetType: AuditTargetType.FEATURE_FLAG,
+        targetId: flag.id,
+      },
+    ];
+    const configIds = flag.environmentConfigs.map((config) => config.id);
+
+    if (configIds.length > 0) {
+      historyTargets.push({
+        targetType: AuditTargetType.FLAG_CONFIG,
+        targetId: {
+          in: configIds,
+        },
+      });
+    }
+
+    const where: Prisma.AuditLogEntryWhereInput = {
+      projectId: project.id,
+      OR: historyTargets,
+    };
+    const order = query.order ?? 'desc';
+
+    const [items, total] = await Promise.all([
+      this.auditLogsRepository.findMany(
+        where,
+        [{ createdAt: order }, { id: order }],
         query.limit,
         query.offset,
       ),

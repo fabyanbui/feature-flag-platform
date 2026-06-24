@@ -43,9 +43,53 @@ function createAuditLogEntry(overrides = {}) {
   };
 }
 
+function createFlagWithConfigs(overrides = {}) {
+  return {
+    id: 'flag-1',
+    projectId: 'project-1',
+    key: 'new-checkout',
+    name: 'New Checkout',
+    description: null,
+    lifecycleStatus: 'ACTIVE',
+    archivedAt: null,
+    createdAt: fixedDate,
+    updatedAt: fixedDate,
+    environmentConfigs: [
+      {
+        id: 'config-1',
+        projectId: 'project-1',
+        flagId: 'flag-1',
+        environmentId: 'environment-1',
+        status: 'ENABLED',
+        servingMode: 'TARGETED',
+        killSwitch: false,
+        createdAt: fixedDate,
+        updatedAt: fixedDate,
+        environment: {
+          id: 'environment-1',
+          projectId: 'project-1',
+          key: 'production',
+          name: 'Production',
+          description: null,
+          isDefault: true,
+          sortOrder: 0,
+          createdAt: fixedDate,
+          updatedAt: fixedDate,
+        },
+        rules: [],
+      },
+    ],
+    ...overrides,
+  };
+}
+
 describe('AuditLogsService', () => {
   const projectsRepository = {
     findByKey: jest.fn(),
+  };
+
+  const featureFlagsRepository = {
+    findByProjectIdAndKeyWithConfigs: jest.fn(),
   };
 
   const auditLogsRepository = {
@@ -60,6 +104,7 @@ describe('AuditLogsService', () => {
 
     service = new AuditLogsService(
       projectsRepository as never,
+      featureFlagsRepository as never,
       auditLogsRepository as never,
     );
   });
@@ -331,6 +376,178 @@ describe('AuditLogsService', () => {
           requestId: 'req-preserved',
         }),
       );
+    });
+  });
+
+  describe('listFlagHistory', () => {
+    it('throws NOT_FOUND when project is missing', async () => {
+      projectsRepository.findByKey.mockResolvedValue(null);
+
+      await expect(
+        service.listFlagHistory('missing-project', 'new-checkout', {
+          limit: 20,
+          offset: 0,
+          sort: 'createdAt',
+          order: 'desc',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ApiErrorCode.NOT_FOUND,
+        }),
+      });
+
+      expect(
+        featureFlagsRepository.findByProjectIdAndKeyWithConfigs,
+      ).not.toHaveBeenCalled();
+      expect(auditLogsRepository.findMany).not.toHaveBeenCalled();
+      expect(auditLogsRepository.count).not.toHaveBeenCalled();
+    });
+
+    it('throws NOT_FOUND when flag is missing from the project', async () => {
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        service.listFlagHistory('demo-project', 'missing-flag', {
+          limit: 20,
+          offset: 0,
+          sort: 'createdAt',
+          order: 'desc',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ApiErrorCode.NOT_FOUND,
+        }),
+      });
+
+      expect(
+        featureFlagsRepository.findByProjectIdAndKeyWithConfigs,
+      ).toHaveBeenCalledWith('project-1', 'missing-flag');
+      expect(auditLogsRepository.findMany).not.toHaveBeenCalled();
+      expect(auditLogsRepository.count).not.toHaveBeenCalled();
+    });
+
+    it('returns paginated history for the flag and related configs with stable ordering', async () => {
+      const entry = createAuditLogEntry();
+
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        createFlagWithConfigs({
+          environmentConfigs: [
+            { id: 'config-1' },
+            { id: 'config-2' },
+          ],
+        }),
+      );
+      auditLogsRepository.findMany.mockResolvedValue([entry]);
+      auditLogsRepository.count.mockResolvedValue(21);
+
+      const result = await service.listFlagHistory(
+        'demo-project',
+        'new-checkout',
+        {
+          limit: 20,
+          offset: 0,
+          sort: 'createdAt',
+          order: 'desc',
+        },
+      );
+
+      const expectedWhere = {
+        projectId: 'project-1',
+        OR: [
+          {
+            targetType: AuditTargetType.FEATURE_FLAG,
+            targetId: 'flag-1',
+          },
+          {
+            targetType: AuditTargetType.FLAG_CONFIG,
+            targetId: {
+              in: ['config-1', 'config-2'],
+            },
+          },
+        ],
+      };
+
+      expect(
+        featureFlagsRepository.findByProjectIdAndKeyWithConfigs,
+      ).toHaveBeenCalledWith('project-1', 'new-checkout');
+      expect(auditLogsRepository.findMany).toHaveBeenCalledWith(
+        expectedWhere,
+        [{ createdAt: 'desc' }, { id: 'desc' }],
+        20,
+        0,
+      );
+      expect(auditLogsRepository.count).toHaveBeenCalledWith(expectedWhere);
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'audit-1',
+            projectKey: 'demo-project',
+            environmentKey: 'production',
+            targetType: AuditTargetType.FEATURE_FLAG,
+            targetId: 'flag-1',
+            targetKey: 'new-checkout',
+            action: AuditAction.FEATURE_FLAG_UPDATED,
+            actor: 'mentor@example.local',
+            before: {
+              status: 'DISABLED',
+            },
+            after: {
+              status: 'ENABLED',
+            },
+            metadata: {
+              source: 'api',
+            },
+            requestId: 'req-test',
+            createdAt: fixedDate,
+          },
+        ],
+        page: {
+          limit: 20,
+          offset: 0,
+          total: 21,
+          hasNext: true,
+        },
+      });
+    });
+
+    it('omits the config target condition when the flag has no configs', async () => {
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        createFlagWithConfigs({
+          environmentConfigs: [],
+        }),
+      );
+      auditLogsRepository.findMany.mockResolvedValue([]);
+      auditLogsRepository.count.mockResolvedValue(0);
+
+      await service.listFlagHistory('demo-project', 'new-checkout', {
+        limit: 10,
+        offset: 10,
+        sort: 'createdAt',
+        order: 'asc',
+      });
+
+      const expectedWhere = {
+        projectId: 'project-1',
+        OR: [
+          {
+            targetType: AuditTargetType.FEATURE_FLAG,
+            targetId: 'flag-1',
+          },
+        ],
+      };
+
+      expect(auditLogsRepository.findMany).toHaveBeenCalledWith(
+        expectedWhere,
+        [{ createdAt: 'asc' }, { id: 'asc' }],
+        10,
+        10,
+      );
+      expect(auditLogsRepository.count).toHaveBeenCalledWith(expectedWhere);
     });
   });
 });
