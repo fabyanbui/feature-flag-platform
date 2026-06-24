@@ -397,6 +397,9 @@ Phase 12 is complete:
 
 - project-wide, optional one-group-per-flag membership is persisted separately
   from environment-specific `FlagGroupConfig.killSwitch` state,
+- group creation initializes an inactive configuration for every existing
+  project environment, preventing project-wide assignment from introducing
+  missing runtime state,
 - management APIs and the admin dashboard support group creation, update,
   assignment, unassignment, and confirmed switch activation,
 - evaluation returns `GROUP_KILL_SWITCH` using the documented precedence,

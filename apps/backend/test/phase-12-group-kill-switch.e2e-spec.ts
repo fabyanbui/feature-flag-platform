@@ -330,6 +330,108 @@ describe('Phase 12 group kill switch (e2e)', () => {
       code: 'NOT_FOUND',
     });
   });
+
+  it('initializes safe inactive group configs for every existing environment', async () => {
+    await createProject(app, actor, projectKey);
+    await createGlobalFlag(app, actor, projectKey, firstFlagKey);
+
+    const project = await prisma.project.findUniqueOrThrow({
+      where: { key: projectKey },
+    });
+    const flag = await prisma.featureFlag.findUniqueOrThrow({
+      where: {
+        projectId_key: {
+          projectId: project.id,
+          key: firstFlagKey,
+        },
+      },
+    });
+    const staging = await prisma.environment.create({
+      data: {
+        projectId: project.id,
+        key: 'staging',
+        name: 'Staging',
+        isDefault: false,
+        sortOrder: 1,
+      },
+    });
+
+    await prisma.flagEnvironmentConfig.create({
+      data: {
+        projectId: project.id,
+        flagId: flag.id,
+        environmentId: staging.id,
+        status: 'ENABLED',
+        servingMode: 'GLOBAL_ON',
+        killSwitch: false,
+      },
+    });
+
+    await request(app.getHttpServer())
+      .post(`/v1/projects/${projectKey}/groups`)
+      .set('X-Actor', actor)
+      .set('X-Request-Id', 'req-phase12-multi-environment-create')
+      .send({
+        key: groupKey,
+        name: 'Checkout flags',
+      })
+      .expect(201);
+
+    const group = await prisma.flagGroup.findUniqueOrThrow({
+      where: {
+        projectId_key: {
+          projectId: project.id,
+          key: groupKey,
+        },
+      },
+      include: {
+        configs: {
+          include: {
+            environment: true,
+          },
+          orderBy: {
+            environment: {
+              sortOrder: 'asc',
+            },
+          },
+        },
+      },
+    });
+
+    expect(group.configs).toHaveLength(2);
+    expect(
+      group.configs.map((config) => ({
+        environmentKey: config.environment.key,
+        killSwitch: config.killSwitch,
+      })),
+    ).toEqual([
+      { environmentKey: 'production', killSwitch: false },
+      { environmentKey: 'staging', killSwitch: false },
+    ]);
+
+    await assignFlag(app, actor, projectKey, firstFlagKey, groupKey);
+    await expectEvaluation(app, projectKey, firstFlagKey, {
+      enabled: true,
+      reason: 'GLOBAL_ON',
+      environmentKey: 'staging',
+    });
+
+    await updateGroupSwitch(
+      app,
+      actor,
+      projectKey,
+      groupKey,
+      true,
+      'req-phase12-staging-activate',
+      'staging',
+    );
+
+    await expectEvaluation(app, projectKey, firstFlagKey, {
+      enabled: false,
+      reason: 'GROUP_KILL_SWITCH',
+      environmentKey: 'staging',
+    });
+  });
 });
 
 async function createProject(
@@ -407,13 +509,14 @@ async function updateGroupSwitch(
   groupKey: string,
   killSwitch: boolean,
   requestId: string,
+  environmentKey = 'production',
 ) {
   return request(app.getHttpServer())
     .put(`/v1/projects/${projectKey}/groups/${groupKey}/config`)
     .set('X-Actor', actor)
     .set('X-Request-Id', requestId)
     .send({
-      environmentKey: 'production',
+      environmentKey,
       killSwitch,
     })
     .expect(200);
@@ -426,6 +529,7 @@ async function expectEvaluation(
   expected: {
     enabled: boolean;
     reason: string;
+    environmentKey?: string;
   },
 ) {
   return request(app.getHttpServer())
@@ -433,7 +537,7 @@ async function expectEvaluation(
     .send({
       projectKey,
       flagKey,
-      environmentKey: 'production',
+      environmentKey: expected.environmentKey ?? 'production',
       context: {
         targetingKey: `phase12-${flagKey}`,
         userId: `phase12-${flagKey}`,

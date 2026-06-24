@@ -21,7 +21,7 @@ function createProject() {
   };
 }
 
-function createEnvironment() {
+function createEnvironment(overrides = {}) {
   return {
     id: 'environment-1',
     projectId: 'project-1',
@@ -32,6 +32,7 @@ function createEnvironment() {
     sortOrder: 0,
     createdAt: fixedDate,
     updatedAt: fixedDate,
+    ...overrides,
   };
 }
 
@@ -102,6 +103,7 @@ describe('FlagGroupsService', () => {
   const environmentsRepository = {
     findDefaultByProjectId: jest.fn(),
     findByProjectIdAndKey: jest.fn(),
+    findManyByProjectId: jest.fn(),
   };
   const flagGroupsRepository = {
     findByProjectIdAndKey: jest.fn(),
@@ -217,19 +219,34 @@ describe('FlagGroupsService', () => {
     });
   });
 
-  it('creates a group and safe default config with one audit entry', async () => {
+  it('creates inactive configs for every environment with one audit entry', async () => {
     const project = createProject();
     const environment = createEnvironment();
+    const staging = createEnvironment({
+      id: 'environment-2',
+      key: 'staging',
+      name: 'Staging',
+      isDefault: false,
+      sortOrder: 1,
+    });
     const group = createGroup({ configs: [], _count: undefined });
     const config = createGroup().configs[0];
+    const stagingConfig = {
+      ...config,
+      id: 'group-config-2',
+      environmentId: staging.id,
+    };
 
     projectsRepository.findByKey.mockResolvedValue(project);
     flagGroupsRepository.findByProjectIdAndKey.mockResolvedValue(null);
-    environmentsRepository.findDefaultByProjectId.mockResolvedValue(
+    environmentsRepository.findManyByProjectId.mockResolvedValue([
       environment,
-    );
+      staging,
+    ]);
     flagGroupsRepository.create.mockResolvedValue(group);
-    flagGroupConfigsRepository.create.mockResolvedValue(config);
+    flagGroupConfigsRepository.create
+      .mockResolvedValueOnce(config)
+      .mockResolvedValueOnce(stagingConfig);
 
     const result = await service.create('demo-project', {
       key: 'checkout',
@@ -244,11 +261,22 @@ describe('FlagGroupsService', () => {
       },
       tx,
     );
-    expect(flagGroupConfigsRepository.create).toHaveBeenCalledWith(
+    expect(flagGroupConfigsRepository.create).toHaveBeenNthCalledWith(
+      1,
       {
         projectId: 'project-1',
         groupId: 'group-1',
         environmentId: 'environment-1',
+        killSwitch: false,
+      },
+      tx,
+    );
+    expect(flagGroupConfigsRepository.create).toHaveBeenNthCalledWith(
+      2,
+      {
+        projectId: 'project-1',
+        groupId: 'group-1',
+        environmentId: 'environment-2',
         killSwitch: false,
       },
       tx,
@@ -265,6 +293,10 @@ describe('FlagGroupsService', () => {
           environmentKey: 'production',
           killSwitch: false,
         }),
+        metadata: {
+          source: 'api',
+          initializedEnvironmentCount: 2,
+        },
         requestId: 'req-phase-12',
       }),
     );

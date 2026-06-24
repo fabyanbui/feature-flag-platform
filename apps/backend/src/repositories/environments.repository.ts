@@ -34,6 +34,15 @@ export class EnvironmentsRepository {
     });
   }
 
+  findManyByProjectId(projectId: string, db: RepositoryClient = this.prisma) {
+    return db.environment.findMany({
+      where: {
+        projectId,
+      },
+      orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+    });
+  }
+
   create(
     data: Prisma.EnvironmentUncheckedCreateInput,
     db: RepositoryClient = this.prisma,

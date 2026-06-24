@@ -196,7 +196,10 @@ unassignment and historical-reference behavior.
 
 Group runtime state is environment-specific and stored separately in
 `FlagGroupConfig`. Each group has at most one configuration per environment,
-and `killSwitch` defaults to `false`.
+and `killSwitch` defaults to `false`. Group creation initializes an inactive
+configuration for every environment already owned by the project so
+project-wide assignment cannot introduce missing group state in another
+environment.
 
 Evaluation resolves group state through:
 

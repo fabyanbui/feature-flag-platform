@@ -1069,10 +1069,12 @@ The following invariants are authoritative:
 5. Group membership does not vary by environment.
 6. A group has at most one `FlagGroupConfig` per environment.
 7. `FlagGroupConfig.killSwitch` defaults to `false`.
-8. A missing expected group configuration is invalid persisted state and
+8. Creating a group initializes an inactive configuration for every existing
+   project environment.
+9. A missing expected group configuration is invalid persisted state and
    evaluation fails closed with `reason=ERROR`.
-9. Group deletion is deferred from Phase 12.
-10. Repeating the same flag assignment is idempotent and must not create a
+10. Group deletion is deferred from Phase 12.
+11. Repeating the same flag assignment is idempotent and must not create a
     misleading duplicate audit entry.
 
 Evaluation resolves group state through:
@@ -1135,6 +1137,10 @@ Group responses expose the project key, immutable group key, name, selected
 environment key, kill-switch state, assigned-flag count, and timestamps.
 Feature-flag responses expose a nullable group summary containing the group
 key, name, and selected environment's kill-switch state.
+
+Creating a group writes inactive configurations for every environment that
+already belongs to the project. The creation audit metadata records the number
+of initialized environments.
 
 ### 14.3 Validation and Error Behavior
 

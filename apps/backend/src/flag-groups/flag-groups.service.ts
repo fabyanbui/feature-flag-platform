@@ -123,11 +123,9 @@ export class FlagGroupsService {
     }
 
     const result = await this.transactionService.run(async (tx) => {
-      const environment =
-        await this.environmentsRepository.findDefaultByProjectId(
-          project.id,
-          tx,
-        );
+      const environments =
+        await this.environmentsRepository.findManyByProjectId(project.id, tx);
+      const environment = environments.find((item) => item.isDefault);
 
       if (!environment) {
         throw notFoundError(
@@ -144,15 +142,34 @@ export class FlagGroupsService {
         tx,
       );
 
-      const config = await this.flagGroupConfigsRepository.create(
-        {
-          projectId: project.id,
-          groupId: group.id,
-          environmentId: environment.id,
-          killSwitch: false,
-        },
-        tx,
+      const configs = [];
+
+      for (const projectEnvironment of environments) {
+        const config = await this.flagGroupConfigsRepository.create(
+          {
+            projectId: project.id,
+            groupId: group.id,
+            environmentId: projectEnvironment.id,
+            killSwitch: false,
+          },
+          tx,
+        );
+
+        configs.push({
+          ...config,
+          environment: projectEnvironment,
+        });
+      }
+
+      const defaultConfig = configs.find(
+        (config) => config.environmentId === environment.id,
       );
+
+      if (!defaultConfig) {
+        throw new Error(
+          `Flag group configuration was not created for default environment "${environment.key}".`,
+        );
+      }
 
       await this.auditLogService.record(tx, {
         projectId: project.id,
@@ -165,15 +182,22 @@ export class FlagGroupsService {
         action: AuditAction.FLAG_GROUP_CREATED,
         actor,
         before: null,
-        after: this.groupSnapshot(group, environment.key, config.killSwitch),
-        metadata: { source: 'api' },
+        after: this.groupSnapshot(
+          group,
+          environment.key,
+          defaultConfig.killSwitch,
+        ),
+        metadata: {
+          source: 'api',
+          initializedEnvironmentCount: configs.length,
+        },
         requestId,
       });
 
       return {
         group: {
           ...group,
-          configs: [{ ...config, environment }],
+          configs,
           _count: { flags: 0 },
         },
         environment,
