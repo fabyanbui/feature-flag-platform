@@ -115,6 +115,44 @@ async function main() {
         },
     });
 
+    const customerExperienceGroup = await prisma.flagGroup.upsert({
+        where: {
+            projectId_key: {
+                projectId: project.id,
+                key: 'customer-experience',
+            },
+        },
+        update: {
+            name: 'Customer Experience',
+        },
+        create: {
+            projectId: project.id,
+            key: 'customer-experience',
+            name: 'Customer Experience',
+        },
+    });
+
+    for (const environment of [production, staging, development]) {
+        await prisma.flagGroupConfig.upsert({
+            where: {
+                groupId_environmentId: {
+                    groupId: customerExperienceGroup.id,
+                    environmentId: environment.id,
+                },
+            },
+            update: {
+                projectId: project.id,
+                killSwitch: false,
+            },
+            create: {
+                projectId: project.id,
+                groupId: customerExperienceGroup.id,
+                environmentId: environment.id,
+                killSwitch: false,
+            },
+        });
+    }
+
     const betaDashboard = await prisma.featureFlag.upsert({
         where: {
             projectId_key: {
@@ -123,6 +161,7 @@ async function main() {
             },
         },
         update: {
+            groupId: customerExperienceGroup.id,
             name: 'Beta Dashboard',
             description: 'Globally enabled demo flag.',
             lifecycleStatus: 'ACTIVE',
@@ -130,6 +169,7 @@ async function main() {
         },
         create: {
             projectId: project.id,
+            groupId: customerExperienceGroup.id,
             key: 'beta-dashboard',
             name: 'Beta Dashboard',
             description: 'Globally enabled demo flag.',
@@ -145,6 +185,7 @@ async function main() {
             },
         },
         update: {
+            groupId: customerExperienceGroup.id,
             name: 'New Checkout',
             description: 'Targeted checkout rollout demo flag.',
             lifecycleStatus: 'ACTIVE',
@@ -152,6 +193,7 @@ async function main() {
         },
         create: {
             projectId: project.id,
+            groupId: customerExperienceGroup.id,
             key: 'new-checkout',
             name: 'New Checkout',
             description: 'Targeted checkout rollout demo flag.',
@@ -478,6 +520,30 @@ async function main() {
         requestId: 'seed_init',
     });
 
+    await createAuditIfMissing('audit_seed_customer_experience_group_created', {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: production.id,
+        environmentKey: production.key,
+        targetType: 'FLAG_GROUP',
+        targetId: customerExperienceGroup.id,
+        targetKey: customerExperienceGroup.key,
+        action: 'FLAG_GROUP_CREATED',
+        actor: 'system',
+        before: Prisma.DbNull,
+        after: {
+            id: customerExperienceGroup.id,
+            key: customerExperienceGroup.key,
+            name: customerExperienceGroup.name,
+            environmentKey: production.key,
+            killSwitch: false,
+        },
+        metadata: {
+            source: 'seed',
+        },
+        requestId: 'seed_phase12',
+    });
+
     await createAuditIfMissing('audit_seed_beta_dashboard_created', {
         projectId: project.id,
         projectKey: project.key,
@@ -498,6 +564,30 @@ async function main() {
         requestId: 'seed_init',
     });
 
+    await createAuditIfMissing('audit_seed_beta_dashboard_group_assigned', {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: production.id,
+        environmentKey: production.key,
+        targetType: 'FEATURE_FLAG',
+        targetId: betaDashboard.id,
+        targetKey: betaDashboard.key,
+        action: 'FEATURE_FLAG_GROUP_ASSIGNED',
+        actor: 'system',
+        before: {
+            flagKey: betaDashboard.key,
+            groupKey: null,
+        },
+        after: {
+            flagKey: betaDashboard.key,
+            groupKey: customerExperienceGroup.key,
+        },
+        metadata: {
+            source: 'seed',
+        },
+        requestId: 'seed_phase12',
+    });
+
     await createAuditIfMissing('audit_seed_new_checkout_created', {
         projectId: project.id,
         projectKey: project.key,
@@ -516,6 +606,30 @@ async function main() {
             source: 'seed',
         },
         requestId: 'seed_init',
+    });
+
+    await createAuditIfMissing('audit_seed_new_checkout_group_assigned', {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: production.id,
+        environmentKey: production.key,
+        targetType: 'FEATURE_FLAG',
+        targetId: newCheckout.id,
+        targetKey: newCheckout.key,
+        action: 'FEATURE_FLAG_GROUP_ASSIGNED',
+        actor: 'system',
+        before: {
+            flagKey: newCheckout.key,
+            groupKey: null,
+        },
+        after: {
+            flagKey: newCheckout.key,
+            groupKey: customerExperienceGroup.key,
+        },
+        metadata: {
+            source: 'seed',
+        },
+        requestId: 'seed_phase12',
     });
 
     await createAuditIfMissing('audit_seed_new_checkout_production_configured', {
@@ -607,6 +721,7 @@ async function main() {
         projectKey: project.key,
         environments: [production.key, staging.key, development.key],
         flags: [betaDashboard.key, newCheckout.key],
+        flagGroups: [customerExperienceGroup.key],
         sampleUsers: [
             'demo-user-beta',
             'demo-user-regular',

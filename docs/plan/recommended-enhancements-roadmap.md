@@ -391,6 +391,23 @@ FlagEnvironmentConfig
 - Cache invalidation requirements for group mutations are documented before Gate
   A is passed.
 
+### Completion evidence
+
+Phase 12 is complete:
+
+- project-wide, optional one-group-per-flag membership is persisted separately
+  from environment-specific `FlagGroupConfig.killSwitch` state,
+- management APIs and the admin dashboard support group creation, update,
+  assignment, unassignment, and confirmed switch activation,
+- evaluation returns `GROUP_KILL_SWITCH` using the documented precedence,
+- all group and membership mutations write append-only audit records in the
+  mutation transaction,
+- the seeded `customer-experience` group provides a repeatable presentation
+  scenario with both demo flags assigned and every group switch initially
+  inactive,
+- cache invalidation requirements for group changes are documented in the
+  architecture and API contract documents.
+
 ### Likely changed files
 
 - `apps/backend/prisma/schema.prisma`
@@ -413,12 +430,17 @@ Pass this gate before Phase 13 begins.
 
 Required evidence:
 
-- group kill-switch schema is stable,
-- evaluation precedence is documented,
-- group evaluation tests pass,
-- group mutations are audited,
-- group feature works through API and admin UI,
-- no pending reason-code or evaluation-contract changes are known.
+- [x] Group kill-switch schema is stable.
+- [x] Evaluation precedence is documented.
+- [x] Group evaluation tests pass.
+- [x] Group mutations are audited.
+- [x] Group feature works through API and admin UI.
+- [x] No pending reason-code or evaluation-contract changes are known.
+
+Gate A passed on June 24, 2026. Evidence includes the Phase 12 evaluation-engine
+unit tests, service/repository tests, `phase-12-group-kill-switch.e2e-spec.ts`,
+admin build and lint checks, idempotent seed verification, and the documented
+API, evaluation, audit, and cache-invalidation contracts.
 
 ## Phase 13 — In-Memory Evaluation-Snapshot Cache
 

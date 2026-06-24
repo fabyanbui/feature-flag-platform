@@ -53,11 +53,13 @@ Open the admin dashboard.
 Show:
 
 - project `demo-project`,
+- group `customer-experience`,
 - flag `beta-dashboard`,
 - flag `new-checkout`.
 
 Explain:
 
+- both demo flags belong to one operational rollback group,
 - `beta-dashboard` demonstrates global serving.
 - `new-checkout` demonstrates role targeting and percentage rollout.
 
@@ -102,10 +104,54 @@ runtime state: Off
 
 Presenter point:
 
-> This is the fast rollback story. We can turn off risky behavior without a
-> redeploy.
+> This is the single-flag rollback story. We can turn off risky behavior
+> without a redeploy.
 
-### 3. Show Role Targeting
+### 3. Show Group Kill Switch
+
+Return to the admin dashboard and open **Groups**.
+
+For group `customer-experience` in `production`, show:
+
+- two assigned flags,
+- lifecycle status remains `Enabled` for both flags,
+- group kill switch starts `Inactive`.
+
+Activate the group kill switch and accept the confirmation. Evaluate
+`beta-dashboard` and `new-checkout` again.
+
+Expected result for both assigned flags:
+
+```text
+enabled: false
+reason: GROUP_KILL_SWITCH
+runtime state: Off
+```
+
+Explain:
+
+- the group switch has higher precedence than per-flag serving and rules,
+- lifecycle status is unchanged because runtime state and flag status are
+  separate concepts,
+- one group audit entry records the group mutation; the system does not claim
+  that every member flag was individually edited.
+
+Deactivate the group switch before continuing. Re-evaluate `beta-dashboard` and
+confirm normal evaluation returns:
+
+```text
+enabled: true
+reason: GLOBAL_ON
+runtime state: On
+```
+
+Presenter point:
+
+> This is the operational rollback story. One confirmed control-plane change
+> safely disables a related set of features, while preserving each flag's
+> configuration for fast restoration.
+
+### 4. Show Role Targeting
 
 Select:
 
@@ -128,7 +174,7 @@ Presenter point:
 > Only users with the beta-tester role see this feature. This supports internal
 > testing or limited beta release.
 
-### 4. Show Percentage Rollout
+### 5. Show Percentage Rollout
 
 Select:
 
@@ -161,7 +207,7 @@ Presenter point:
 > Percentage rollout uses stable hashing. The same user context gets the same
 > result on repeated evaluations, so the user experience is stable.
 
-### 5. Show Safe Fallback
+### 6. Show Safe Fallback
 
 Select:
 
@@ -184,7 +230,7 @@ Presenter point:
 > The evaluation API fails closed. Missing configuration does not accidentally
 > expose a feature.
 
-### 6. Show Flag Configuration History
+### 7. Show Flag Configuration History
 
 Return to the admin dashboard and open the rule editor for `new-checkout`.
 
@@ -206,7 +252,7 @@ Presenter point:
 > for accountability. We avoid duplicating configuration versions in a second
 > table, which keeps one source of truth and reduces consistency risk.
 
-### 7. Show Audit Logs
+### 8. Show Audit Logs
 
 Return to the admin dashboard audit log screen.
 
@@ -214,6 +260,8 @@ Show entries for:
 
 - project creation,
 - flag creation,
+- group creation and assignment,
+- group kill-switch activation and deactivation,
 - flag update,
 - rule replacement.
 
@@ -238,7 +286,7 @@ The platform demonstrates common production release-management practices:
 - global enable/disable,
 - role-based targeting,
 - percentage rollout,
-- kill switch,
+- per-flag and group kill switches,
 - safe default off behavior,
 - audit logs.
 
