@@ -42,6 +42,7 @@ function createSnapshot(
     flag: {
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
     },
+    group: null,
     config: {
       status: FlagConfigStatus.ENABLED,
       servingMode: ServingMode.TARGETED,
@@ -111,6 +112,9 @@ describe('evaluateFlag', () => {
           flag: {
             lifecycleStatus: FeatureFlagLifecycleStatus.ARCHIVED,
           },
+          group: {
+            killSwitch: true,
+          },
           config: {
             status: FlagConfigStatus.DISABLED,
             servingMode: ServingMode.GLOBAL_ON,
@@ -127,10 +131,13 @@ describe('evaluateFlag', () => {
       });
     });
 
-    it('returns FLAG_DISABLED before KILL_SWITCH', () => {
+    it('returns FLAG_DISABLED before GROUP_KILL_SWITCH', () => {
       const result = evaluateFlag(
         baseInput,
         createSnapshot({
+          group: {
+            killSwitch: true,
+          },
           config: {
             status: FlagConfigStatus.DISABLED,
             servingMode: ServingMode.GLOBAL_ON,
@@ -143,6 +150,29 @@ describe('evaluateFlag', () => {
         enabled: false,
         variant: 'off',
         reason: EvaluationReason.FLAG_DISABLED,
+        matchedRuleId: null,
+      });
+    });
+
+    it('returns GROUP_KILL_SWITCH before KILL_SWITCH', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          group: {
+            killSwitch: true,
+          },
+          config: {
+            status: FlagConfigStatus.ENABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.GROUP_KILL_SWITCH,
         matchedRuleId: null,
       });
     });
@@ -197,6 +227,55 @@ describe('evaluateFlag', () => {
 
     expect(result.enabled).toBe(false);
     expect(result.reason).toBe(EvaluationReason.KILL_SWITCH);
+  });
+
+  it('returns GROUP_KILL_SWITCH before evaluating matching targeting rules', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        group: {
+          killSwitch: true,
+        },
+        rules: [
+          createRule({
+            id: 'allowlist-rule',
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.GROUP_KILL_SWITCH,
+      matchedRuleId: null,
+    });
+  });
+
+  it('continues normal evaluation when the group switch is inactive', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        group: {
+          killSwitch: false,
+        },
+        config: {
+          status: FlagConfigStatus.ENABLED,
+          servingMode: ServingMode.GLOBAL_ON,
+          killSwitch: false,
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      variant: 'on',
+      reason: EvaluationReason.GLOBAL_ON,
+      matchedRuleId: null,
+    });
   });
 
   it('returns KILL_SWITCH before evaluating matching targeting rules', () => {
