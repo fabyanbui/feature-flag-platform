@@ -32,6 +32,7 @@ behavior inside controllers, UI components, or tests.
 | Evaluation API | Evaluation contract, reason codes, hashing | Backend evaluation module, `POST /v1/evaluate` |
 | Audit log API | Audit log contract, pagination, filtering | Backend audit module, `/v1/projects/{projectKey}/audit-logs` |
 | Flag configuration history | Audit-backed history contract and pagination | Backend audit module, `/v1/projects/{projectKey}/flags/{flagKey}/history` |
+| Group kill switch | Group identity, membership, environment config, audit, and evaluation precedence | Backend flag-groups and evaluation modules |
 | Frontend dashboard | API conventions, status semantics, audit | Admin web app |
 | Demo application | Evaluation contract, seed/demo expectations | Demo web app |
 | Database | Audit contract, rule model, key validation | Prisma schema and PostgreSQL |
@@ -90,6 +91,10 @@ Control-plane APIs manage configuration:
 - `/v1/projects/{projectKey}/sample-users`
 - `/v1/projects/{projectKey}/audit-logs`
 - `/v1/projects/{projectKey}/flags/{flagKey}/history`
+- `/v1/projects/{projectKey}/groups`
+- `/v1/projects/{projectKey}/groups/{groupKey}`
+- `/v1/projects/{projectKey}/groups/{groupKey}/config`
+- `/v1/projects/{projectKey}/flags/{flagKey}/group`
 
 ### 3.4 Data Plane
 
@@ -254,6 +259,7 @@ The evaluation endpoint must use this validation behavior:
 | `GLOBAL_ON` | `true` | `null` | Flag serving mode enables the feature for everyone. |
 | `FLAG_DISABLED` | `false` | `null` | Flag status is disabled. |
 | `FLAG_ARCHIVED` | `false` | `null` | Flag status is archived and no longer served. |
+| `GROUP_KILL_SWITCH` | `false` | `null` | The flag's group kill switch is active in the evaluated environment. |
 | `KILL_SWITCH` | `false` | `null` | Emergency kill switch forces Off. |
 | `USER_ALLOWLIST` | `true` | rule ID | User matched an explicit allowlist rule. |
 | `ROLE_MATCH` | `true` | rule ID | User matched a role-targeting rule. |
@@ -380,31 +386,30 @@ Evaluation must be deterministic and use this order:
 1. If project or flag is missing, return `NOT_FOUND`.
 2. If flag status is `ARCHIVED`, return `FLAG_ARCHIVED`.
 3. If flag status is `DISABLED`, return `FLAG_DISABLED`.
-4. If `killSwitch=true`, return `KILL_SWITCH`.
-5. If `servingMode=GLOBAL_ON`, return `GLOBAL_ON`.
-6. Skip disabled rules.
-7. If a user allowlist rule matches, return `USER_ALLOWLIST`.
-8. If a role-targeting rule matches, return `ROLE_MATCH`.
-9. If an enabled percentage rollout rule is reached and `context.targetingKey`
+4. If the environment-specific group kill switch is active, return
+   `GROUP_KILL_SWITCH`.
+5. If the flag-level `killSwitch=true`, return `KILL_SWITCH`.
+6. If `servingMode=GLOBAL_ON`, return `GLOBAL_ON`.
+7. Skip disabled rules.
+8. If a user allowlist rule matches, return `USER_ALLOWLIST`.
+9. If a role-targeting rule matches, return `ROLE_MATCH`.
+10. If an enabled percentage rollout rule is reached and `context.targetingKey`
    is missing or empty, return `INVALID_CONTEXT`.
-10. If a percentage rollout rule matches, return `PERCENTAGE_ROLLOUT`.
-11. Otherwise, return `DEFAULT_OFF`.
+11. If a percentage rollout rule matches, return `PERCENTAGE_ROLLOUT`.
+12. Otherwise, return `DEFAULT_OFF`.
 
 The terminal-condition precedence is deliberate:
 
 ```text
 FLAG_ARCHIVED
 -> FLAG_DISABLED
+-> GROUP_KILL_SWITCH
 -> KILL_SWITCH
 -> GLOBAL_ON
 ```
 
 When multiple terminal conditions are simultaneously true, the first condition
 in this sequence determines both the result and reason.
-
-A later recommended enhancement may insert `GROUP_KILL_SWITCH` between
-`FLAG_DISABLED` and `KILL_SWITCH`. It must not be added to the public
-`EvaluationReason` contract until group kill-switch behavior is implemented.
 
 The same flag configuration and same evaluation request must always produce
 the same result.
@@ -781,6 +786,7 @@ Audit logs are append-only records for configuration mutations.
 ```text
 PROJECT
 FEATURE_FLAG
+FLAG_GROUP
 FLAG_RULE
 SAMPLE_USER
 ```
@@ -795,6 +801,12 @@ PROJECT_DELETED
 FEATURE_FLAG_CREATED
 FEATURE_FLAG_UPDATED
 FEATURE_FLAG_DELETED
+FEATURE_FLAG_GROUP_ASSIGNED
+FEATURE_FLAG_GROUP_UNASSIGNED
+
+FLAG_GROUP_CREATED
+FLAG_GROUP_UPDATED
+FLAG_GROUP_KILL_SWITCH_UPDATED
 
 FLAG_RULE_CREATED
 FLAG_RULE_UPDATED
@@ -896,6 +908,9 @@ Audit entries are append-only:
 Project, feature flag, and rule mutations must write the mutation and the audit
 entry in the same database transaction. This prevents configuration changes
 from succeeding without a corresponding audit trail.
+
+Flag-group creation, updates, environment configuration changes, and flag-group
+assignment changes follow the same transaction rule.
 
 ## 13. Flag Configuration History Contract
 
@@ -1031,7 +1046,143 @@ A numeric revision on `FlagEnvironmentConfig` is also deferred until a concrete
 cache-invalidation or concurrency requirement justifies the schema and
 transactional complexity.
 
-## 14. Bulk Evaluation
+## 14. Group Kill-Switch Contract
+
+### 14.1 Domain Model and Invariants
+
+Group membership is project-wide:
+
+```text
+Project
+├── FlagGroup
+│   └── FlagGroupConfig per Environment
+└── FeatureFlag
+    └── optional FlagGroup
+```
+
+The following invariants are authoritative:
+
+1. `FlagGroup.key` is unique within one project.
+2. Group keys are immutable after creation.
+3. A feature flag belongs to zero or one group.
+4. A feature flag and its group must belong to the same project.
+5. Group membership does not vary by environment.
+6. A group has at most one `FlagGroupConfig` per environment.
+7. `FlagGroupConfig.killSwitch` defaults to `false`.
+8. A missing expected group configuration is invalid persisted state and
+   evaluation fails closed with `reason=ERROR`.
+9. Group deletion is deferred from Phase 12.
+10. Repeating the same flag assignment is idempotent and must not create a
+    misleading duplicate audit entry.
+
+Evaluation resolves group state through:
+
+```text
+FlagEnvironmentConfig
+-> FeatureFlag
+-> optional FlagGroup
+-> FlagGroupConfig for the evaluated Environment
+```
+
+### 14.2 Management Endpoints
+
+```http
+GET /v1/projects/{projectKey}/groups
+POST /v1/projects/{projectKey}/groups
+PATCH /v1/projects/{projectKey}/groups/{groupKey}
+PUT /v1/projects/{projectKey}/groups/{groupKey}/config
+PUT /v1/projects/{projectKey}/flags/{flagKey}/group
+DELETE /v1/projects/{projectKey}/flags/{flagKey}/group
+```
+
+Group deletion is intentionally not exposed in Phase 12.
+
+Create group:
+
+```json
+{
+  "key": "checkout",
+  "name": "Checkout flags"
+}
+```
+
+Update group:
+
+```json
+{
+  "name": "Checkout experience"
+}
+```
+
+Update environment-specific configuration:
+
+```json
+{
+  "environmentKey": "production",
+  "killSwitch": true
+}
+```
+
+Assign a flag:
+
+```json
+{
+  "groupKey": "checkout"
+}
+```
+
+Group responses expose the project key, immutable group key, name, selected
+environment key, kill-switch state, assigned-flag count, and timestamps.
+Feature-flag responses expose a nullable group summary containing the group
+key, name, and selected environment's kill-switch state.
+
+### 14.3 Validation and Error Behavior
+
+- Group and environment keys use the common key validation contract.
+- Group names are required and have a maximum length of 120 characters.
+- Duplicate group keys within one project return `409 CONFLICT`.
+- Missing projects, groups, flags, or environments return `404 NOT_FOUND`.
+- Cross-project assignment is rejected and structurally prevented by
+  persistence constraints.
+- Mutations require `X-Actor`.
+- Assigning a flag to its current group returns success without another audit
+  mutation event.
+
+### 14.4 Audit Semantics
+
+| Mutation | Target type | Action |
+| --- | --- | --- |
+| Create group | `FLAG_GROUP` | `FLAG_GROUP_CREATED` |
+| Rename group | `FLAG_GROUP` | `FLAG_GROUP_UPDATED` |
+| Toggle group switch | `FLAG_GROUP` | `FLAG_GROUP_KILL_SWITCH_UPDATED` |
+| Assign or reassign flag | `FEATURE_FLAG` | `FEATURE_FLAG_GROUP_ASSIGNED` |
+| Unassign flag | `FEATURE_FLAG` | `FEATURE_FLAG_GROUP_UNASSIGNED` |
+
+Activating or deactivating a group switch creates one audit entry for the group
+configuration mutation. It must not pretend every assigned flag was
+individually mutated.
+
+Assignment snapshots contain the stable flag key and nullable group key.
+Switch snapshots contain the stable group key, environment key, and
+`killSwitch` value. All snapshots exclude secrets and unnecessary user data.
+
+### 14.5 Future Cache Invalidation
+
+Phase 12 documents, but does not implement, this Phase 13 invalidation
+contract:
+
+| Mutation | Future cache invalidation |
+| --- | --- |
+| Create group | None |
+| Rename group | None for evaluation |
+| Assign flag | Assigned flag in every environment |
+| Reassign flag | Reassigned flag in every environment |
+| Unassign flag | Unassigned flag in every environment |
+| Toggle group switch | Every assigned flag in the affected environment |
+
+Invalidation must happen only after the database transaction commits.
+
+## 15. Bulk Evaluation
 
 Bulk evaluation is a future extension only and is not part of MVP scope.
 
@@ -1058,7 +1209,7 @@ Future bulk evaluation must:
 - return safe `enabled=false`, `variant="off"` for failed or missing flags
 - avoid random fallback behavior
 
-## 15. Seed and Demo Data Expectations
+## 16. Seed and Demo Data Expectations
 
 Seed data must support implementation readiness and presentation demos.
 
@@ -1095,7 +1246,7 @@ The demo must be able to show at least:
 3. missing project/flag returning `enabled=false`, `variant="off"`, and
    `reason=NOT_FOUND`
 
-## 16. Out of MVP Scope
+## 17. Out of MVP Scope
 
 The following are intentionally outside MVP scope unless all required
 deliverables are already complete:
@@ -1109,14 +1260,13 @@ deliverables are already complete:
 - full authentication and RBAC
 - advanced targeting operators beyond allowlist, roles, and percentage rollout
 - rule versioning beyond append-only audit logs
-- group kill switch
 - Docker Compose one-command setup
 
 These items may be revisited only after the required backend API, admin
 dashboard, demo app, database, validation/error handling, seed data, README,
 research report, and short design docs are demo-ready.
 
-## 17. Phase 0 Acceptance Checklist
+## 18. Phase 0 Acceptance Checklist
 
 - [x] Requirement traceability is documented.
 - [x] Requirement traceability maps MVP requirements to contract sections and
@@ -1155,3 +1305,15 @@ research report, and short design docs are demo-ready.
 - [x] Sample-user semantics and uniqueness are documented.
 - [x] Seed/demo data expectations are documented for implementation readiness.
 - [x] Out-of-MVP-scope items are documented.
+
+## 19. Phase 12 Step 1 Design Checklist
+
+- [x] Project-wide optional group membership is selected.
+- [x] Environment-specific group configuration is selected.
+- [x] Group keys are immutable.
+- [x] Group deletion is deferred.
+- [x] Evaluation precedence includes `GROUP_KILL_SWITCH`.
+- [x] Audit targets, actions, snapshots, and transaction semantics are defined.
+- [x] Group management and flag-assignment endpoints are defined.
+- [x] Missing expected group configuration fails closed.
+- [x] Future cache invalidation requirements are documented.
