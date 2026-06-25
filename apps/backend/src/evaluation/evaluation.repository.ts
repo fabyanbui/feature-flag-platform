@@ -40,6 +40,7 @@ export class EvaluationRepository {
           },
       select: {
         id: true,
+        key: true,
       },
     });
 
@@ -121,6 +122,12 @@ export class EvaluationRepository {
     }
 
     return {
+      resolution: {
+        projectId: project.id,
+        environmentId: environment.id,
+        flagId: flag.id,
+        environmentKey: environment.key,
+      },
       flag: {
         lifecycleStatus: flag.lifecycleStatus,
       },

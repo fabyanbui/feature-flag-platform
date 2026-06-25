@@ -43,7 +43,15 @@ export interface EvaluationRule {
   parameters: unknown;
 }
 
+export interface EvaluationSnapshotResolution {
+  projectId: string;
+  environmentId: string;
+  flagId: string;
+  environmentKey: string;
+}
+
 export interface EvaluationSnapshot {
+  resolution?: EvaluationSnapshotResolution;
   flag: {
     lifecycleStatus: FeatureFlagLifecycleStatus;
   };

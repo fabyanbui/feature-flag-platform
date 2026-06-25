@@ -268,6 +268,37 @@ describe('EvaluationService', () => {
     });
   });
 
+  it('records resolved database identities and the actual default environment', async () => {
+    evaluationRepository.findSnapshot.mockResolvedValue({
+      ...globalOnSnapshot,
+      resolution: {
+        projectId: 'project-1',
+        environmentId: 'environment-1',
+        flagId: 'flag-1',
+        environmentKey: 'production',
+      },
+    });
+
+    await service.evaluate({
+      projectKey: 'demo-project',
+      flagKey: 'new-checkout',
+      context: {
+        targetingKey: 'stable-user',
+      },
+    });
+
+    expect(evaluationMetricsService.record).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      environmentId: 'environment-1',
+      flagId: 'flag-1',
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'new-checkout',
+      enabled: true,
+      reason: EvaluationReason.GLOBAL_ON,
+    });
+  });
+
   it('records NOT_FOUND without storing evaluation context', async () => {
     snapshotCache.get.mockResolvedValue(null);
     evaluationRepository.findSnapshot.mockResolvedValue(null);
@@ -454,6 +485,34 @@ describe('EvaluationService', () => {
       reason: EvaluationReason.ERROR,
       matchedRuleId: null,
     });
+  });
+
+  it('preserves the evaluation result when metric recording throws synchronously', async () => {
+    snapshotCache.get.mockResolvedValue(globalOnSnapshot);
+    evaluationMetricsService.record.mockImplementation(() => {
+      throw new Error('unexpected metric failure');
+    });
+
+    await expect(
+      service.evaluate({
+        projectKey: 'demo-project',
+        environmentKey: 'production',
+        flagKey: 'new-checkout',
+        context: {
+          targetingKey: 'stable-user',
+        },
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        enabled: true,
+        reason: EvaluationReason.GLOBAL_ON,
+      }),
+    );
+
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('evaluation response was preserved'),
+      expect.any(String),
+    );
   });
 
   it('returns safe ERROR result when evaluation engine processing throws', async () => {
