@@ -92,7 +92,7 @@ describe('EvaluationService', () => {
       evaluationRepository as never,
       requestContext as never,
       snapshotCache,
-      evaluationMetricsService as never,
+      evaluationMetricsService,
     );
   });
 
