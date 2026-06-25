@@ -1,21 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  createFeatureFlagClient,
+  isClientEvaluationError,
+  type EvaluationContext,
+  type SdkEvaluationResult,
+} from '@ffp/js-sdk';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
-
-type EvaluationResponse = {
-  projectKey: string;
-  flagKey: string;
-  enabled: boolean;
-  variant: 'on' | 'off';
-  reason: string;
-  matchedRuleId: string | null;
-};
-
-type EvaluationContext = {
-  targetingKey?: string;
-  userId?: string;
-  roles?: string[];
-  attributes?: Record<string, unknown>;
-};
 
 type DemoScenario = {
   id: string;
@@ -103,15 +93,19 @@ const demoScenarios: DemoScenario[] = [
 ];
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
+const environmentKey =
+  import.meta.env.VITE_ENVIRONMENT_KEY ?? 'production';
+const sdkTimeoutMs = 1500;
 
 function App() {
   const [selectedScenarioId, setSelectedScenarioId] = useState(
     demoScenarios[0].id,
   );
 
-  const [result, setResult] = useState<EvaluationResponse | null>(null);
+  const [result, setResult] = useState<SdkEvaluationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
   const selectedScenario = useMemo(
     () =>
@@ -121,43 +115,62 @@ function App() {
   );
 
   const handleScenarioChange = useCallback((scenarioId: string) => {
+    requestSequence.current += 1;
     setSelectedScenarioId(scenarioId);
     setResult(null);
     setErrorMessage(null);
   }, []);
 
+  const client = useMemo(
+    () =>
+      createFeatureFlagClient({
+        baseUrl: apiBaseUrl,
+        projectKey: selectedScenario.projectKey,
+        environmentKey,
+        timeoutMs: sdkTimeoutMs,
+      }),
+    [selectedScenario.projectKey],
+  );
+
   const evaluateFlag = useCallback(async () => {
+    const requestId = requestSequence.current + 1;
+    requestSequence.current = requestId;
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/evaluate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          projectKey: selectedScenario.projectKey,
-          flagKey: selectedScenario.flagKey,
-          context: selectedScenario.context,
-        }),
-      });
+      const evaluation = await client.evaluate(
+        selectedScenario.flagKey,
+        selectedScenario.context,
+      );
 
-      if (!response.ok) {
-        throw new Error(`Evaluation failed with status ${response.status}`);
+      if (requestSequence.current !== requestId) {
+        return;
       }
 
-      const data = (await response.json()) as EvaluationResponse;
-      setResult(data);
+      setResult(evaluation);
+
+      if (isClientEvaluationError(evaluation)) {
+        setErrorMessage(
+          evaluation.errorMessage ??
+            'The SDK could not complete this evaluation safely.',
+        );
+      }
     } catch {
+      if (requestSequence.current !== requestId) {
+        return;
+      }
+
       setResult(null);
       setErrorMessage(
-        'Could not evaluate this scenario. Check that the backend is running, the database is seeded, and CORS allows the demo app.',
+        'Could not prepare this scenario. Check the browser-safe SDK configuration and retry.',
       );
     } finally {
-      setIsLoading(false);
+      if (requestSequence.current === requestId) {
+        setIsLoading(false);
+      }
     }
-  }, [selectedScenario]);
+  }, [client, selectedScenario.context, selectedScenario.flagKey]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -212,8 +225,18 @@ function App() {
 
         {errorMessage ? (
           <section className="error-panel" role="alert">
-            <h2>Evaluation unavailable</h2>
+            <h2>
+              {result && isClientEvaluationError(result)
+                ? 'SDK fallback active'
+                : 'Evaluation unavailable'}
+            </h2>
             <p>{errorMessage}</p>
+            {result && isClientEvaluationError(result) ? (
+              <p>
+                The client failed closed, so the feature remains Off. This is
+                not a backend evaluation decision.
+              </p>
+            ) : null}
             <button onClick={evaluateFlag} type="button">
               Retry selected scenario
             </button>
@@ -224,6 +247,14 @@ function App() {
           <div>
             <dt>Evaluation API</dt>
             <dd>{apiBaseUrl}</dd>
+          </div>
+          <div>
+            <dt>SDK client</dt>
+            <dd>@ffp/js-sdk</dd>
+          </div>
+          <div>
+            <dt>Environment</dt>
+            <dd>{environmentKey}</dd>
           </div>
           <div>
             <dt>Project key</dt>
@@ -254,8 +285,34 @@ function App() {
             <dd>{result ? String(result.enabled) : 'Not evaluated'}</dd>
           </div>
           <div>
+            <dt>Variant</dt>
+            <dd>{result?.variant ?? 'Not evaluated'}</dd>
+          </div>
+          <div>
             <dt>Reason</dt>
             <dd>{result?.reason ?? 'Not evaluated'}</dd>
+          </div>
+          <div>
+            <dt>Decision source</dt>
+            <dd>
+              {result
+                ? isClientEvaluationError(result)
+                  ? 'Client fallback'
+                  : 'Backend evaluation'
+                : 'Not evaluated'}
+            </dd>
+          </div>
+          <div>
+            <dt>Error source</dt>
+            <dd>
+              {result && isClientEvaluationError(result)
+                ? result.errorSource
+                : 'None'}
+            </dd>
+          </div>
+          <div>
+            <dt>Matched rule</dt>
+            <dd>{result?.matchedRuleId ?? 'None'}</dd>
           </div>
         </dl>
 

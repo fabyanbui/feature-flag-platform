@@ -103,7 +103,8 @@ The architecture follows the RUP 4+1 view model:
 ```mermaid
 graph TD
   A[Admin Dashboard] -->|REST| B[Management API]
-  C[Demo App] -->|REST| D[Evaluation API]
+  C[Demo App] --> I[JavaScript SDK]
+  I -->|POST /v1/evaluate| D[Evaluation API]
   B --> E[(PostgreSQL)]
   D --> E
   B --> F[Audit Logger]
@@ -120,12 +121,15 @@ graph TD
 2. **Management API**: CRUD endpoints, validation, group and rule persistence,
    audit logging, and statistics reads.
 3. **Evaluation API**: Stateless evaluation endpoint for runtime decisions.
-4. **Rule Evaluation Engine**: Deterministic evaluation with ordered rules.
-5. **Audit Logger**: Append-only log of configuration changes.
-6. **Database**: Persistent storage for projects, flags, groups, rules, sample
+4. **JavaScript SDK**: Data-plane-only request construction, timeout handling,
+   response validation, and typed fail-closed client fallback.
+5. **Rule Evaluation Engine**: Deterministic evaluation with ordered rules.
+6. **Audit Logger**: Append-only log of configuration changes.
+7. **Database**: Persistent storage for projects, flags, groups, rules, sample
    users, audit logs, and aggregate evaluation metrics.
-7. **Demo App**: Calls evaluation API to demonstrate global and targeted/rollout scenarios.
-8. **Metric Recorder**: Best-effort atomic increment after a decision, isolated
+8. **Demo App**: Uses the SDK to demonstrate global and targeted/rollout
+   scenarios.
+9. **Metric Recorder**: Best-effort atomic increment after a decision, isolated
    from evaluation response success.
 
 ### 5.3 Logical Data Model (Summary)

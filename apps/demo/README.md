@@ -1,10 +1,11 @@
 # Feature Flag Demo App
 
-This app demonstrates runtime feature flag evaluation by calling the backend
-Evaluation API. It behaves like a real client application: it only evaluates
-flags and shows or hides UI based on the response.
+This app demonstrates runtime feature flag evaluation through `@ffp/js-sdk`.
+It behaves like a real client application: it only evaluates flags and shows or
+hides UI based on the response.
 
-The demo app is part of Phase 8 of the implementation roadmap.
+The original demo app was delivered in MVP Phase 8. Recommended Phase 15
+migrated its direct HTTP request to the JavaScript SDK.
 
 ## Responsibility
 
@@ -12,9 +13,10 @@ The demo app is a data-plane consumer.
 
 It does:
 
-- Call `POST /v1/evaluate`.
+- Call `POST /v1/evaluate` through `@ffp/js-sdk`.
 - Display `projectKey`, `flagKey`, `enabled`, and `reason`.
-- Show loading, error, and retry states.
+- Display whether a result came from the backend or an SDK-local safe fallback.
+- Show loading, client-fallback, error, and retry states.
 - Show or hide a demo feature based on `enabled`.
 
 It does not:
@@ -40,11 +42,17 @@ Default local value:
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000/v1
+VITE_ENVIRONMENT_KEY=production
 ```
 
 Only browser-safe values should be placed in `apps/demo/.env`. Do not put
 database URLs, API secrets, admin tokens, or backend-only credentials in this
 file.
+
+The SDK uses a 1500 ms timeout in the demo. Timeout, network, unsuccessful HTTP,
+invalid JSON, and invalid response failures return a typed client fallback with
+`enabled=false`, `variant=off`, `reason=ERROR`, and `errorSource=CLIENT`.
+Backend decisions do not include `errorSource`.
 
 ## Run locally
 
@@ -68,7 +76,7 @@ http://localhost:5174
 
 ## Demo scenarios
 
-The app includes these Phase 8 scenarios:
+The app preserves these presentation scenarios through the SDK:
 
 | Scenario | Purpose | Expected result with seed data |
 | --- | --- | --- |
@@ -91,7 +99,7 @@ The app includes these Phase 8 scenarios:
 This demonstrates the separation between:
 
 - Control plane: admin dashboard configuration.
-- Data plane: runtime evaluation used by client applications.
+- Data plane: `@ffp/js-sdk` calling the runtime evaluation API.
 
 ## Validation
 
@@ -100,6 +108,7 @@ Run:
 ```bash
 npm run build --workspace=@ffp/demo
 npm run lint --workspace=@ffp/demo
+npm run test --workspace=@ffp/js-sdk
 ```
 
 For full project validation:

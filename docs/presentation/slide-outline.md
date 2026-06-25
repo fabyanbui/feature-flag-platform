@@ -66,6 +66,7 @@ Control plane:
 Data plane:
 
 - demo app,
+- `@ffp/js-sdk`,
 - `POST /v1/evaluate`,
 - deterministic evaluation.
 
@@ -239,12 +240,27 @@ Presentation message:
 > Observability should explain release behavior without becoming a user-tracking
 > system or a dependency of the evaluation response.
 
-## Slide 16 — Future Work
+## Slide 16 — Recommended Enhancement: JavaScript SDK
+
+Implementation proof:
+
+- `evaluate`, `isEnabled`, and `getVariant` use only `POST /v1/evaluate`,
+- the SDK preserves backend reason codes and matched-rule semantics,
+- timeout, network, HTTP, JSON, and shape failures return typed Off fallback,
+- `errorSource=CLIENT` distinguishes SDK failure from backend `reason=ERROR`,
+- the demo app uses the SDK without control-plane credentials or permissions.
+
+Engineering tradeoff:
+
+- polling per request keeps the contract transparent and demo-friendly,
+- production SDKs may add streaming updates, local snapshots, and stronger
+  authentication, but those would increase consistency and security scope.
+
+## Slide 17 — Future Work
 
 Only after MVP stability:
 
 - optional Redis cache provider,
-- JavaScript SDK,
 - RBAC,
 - advanced experimentation analytics and long-term metric retention,
 - Docker Compose,
@@ -255,9 +271,10 @@ Completed recommended enhancements:
 - audit-backed configuration history,
 - group kill switch,
 - in-memory evaluation-snapshot cache,
-- privacy-preserving evaluation statistics and dashboard.
+- privacy-preserving evaluation statistics and dashboard,
+- JavaScript SDK and demo migration.
 
-## Slide 17 — Conclusion
+## Slide 18 — Conclusion
 
 Final message:
 

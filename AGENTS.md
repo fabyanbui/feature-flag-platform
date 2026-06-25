@@ -19,12 +19,14 @@ without regressing that baseline.
 ## Project Structure & Module Organization
 
 This repository uses an npm workspace with implementation under `apps/` and
-project knowledge under `docs/`:
+`packages/`, and project knowledge under `docs/`:
 
 - `apps/backend/` contains the NestJS backend API, Prisma-backed persistence,
   evaluation engine, snapshot cache, and management modules.
 - `apps/admin/` contains the admin dashboard.
 - `apps/demo/` contains the demo application that calls the evaluation API.
+- `packages/js-sdk/` contains the data-plane JavaScript SDK used by the demo
+  application.
 - `docs/plan/` contains vision and project planning.
 - `docs/plan/implementation-roadmap.md` records the completed MVP path;
   `docs/plan/recommended-enhancements-roadmap.md` is the active enhancement

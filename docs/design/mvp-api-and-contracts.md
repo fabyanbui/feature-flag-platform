@@ -1447,6 +1447,11 @@ These items may be revisited only after the required backend API, admin
 dashboard, demo app, database, validation/error handling, seed data, README,
 research report, and short design docs are demo-ready.
 
+Recommended Phase 15 subsequently implemented the client SDK as
+`packages/js-sdk` without changing this historical MVP boundary. The SDK calls
+only `POST /v1/evaluate`, validates the stable response contract, and marks
+client-local fail-closed results with `errorSource=CLIENT`.
+
 ## 18. Phase 0 Acceptance Checklist
 
 - [x] Requirement traceability is documented.

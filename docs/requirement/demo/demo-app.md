@@ -1,6 +1,6 @@
 # Demo App Requirements: Feature Flag Integration
 
-**Last updated:** 2026-05-29
+**Last updated:** 2026-06-25
 
 ## 1. Purpose and Scope
 Define a small web application that demonstrates real-time feature flag evaluation by calling the platform Evaluation API. The app must clearly show how a feature is enabled/disabled globally and how targeting (role) or percentage rollout affects different users.
@@ -38,7 +38,8 @@ Out of scope:
 3. Configuration must be provided via environment variables or a simple settings panel, with safe defaults for local demo.
 
 ### 4.2 Evaluation Flow
-1. The app must call the Evaluation API on initial load with a default user context.
+1. The app must call the Evaluation API on initial load with a default user
+   context, preferably through the project JavaScript SDK.
 2. The app must provide a manual **Evaluate** action to re-run the evaluation on demand.
 3. The app must display:
    - `enabled` result
@@ -61,11 +62,12 @@ Out of scope:
 ### 4.5 Scenario B — Targeting / Percentage Rollout
 1. The app must include a **Targeting/Rollout** scenario that demonstrates at least one of:
    - Role-based enablement (e.g., `roles=["admin"]`), or
-   - Percentage rollout based on `userId` bucketing.
+   - Percentage rollout based on stable `targetingKey` bucketing.
 2. The user must be able to switch between at least two user contexts that yield different outcomes, for example:
    - **Admin user** (role-based enablement expected).
    - **Standard user** (role-based disablement or percentage-based depending on flag config).
-3. For percentage rollout, the app must allow input of `userId` so different users can be bucketed deterministically.
+3. For percentage rollout, the app must provide a stable non-PII
+   `targetingKey` so different targets can be bucketed deterministically.
 
 ### 4.6 Error and Loading States
 1. The app must show a loading state while evaluation is in progress.
@@ -79,9 +81,11 @@ Out of scope:
 ```json
 {
   "projectKey": "string",
+  "environmentKey": "production",
   "flagKey": "string",
-  "user": {
-    "userId": "string",
+  "context": {
+    "targetingKey": "stable-non-pii-key",
+    "userId": "optional-allowlist-id",
     "roles": ["string"],
     "attributes": { "key": "value" }
   }
@@ -94,9 +98,16 @@ Out of scope:
   "projectKey": "string",
   "flagKey": "string",
   "enabled": true,
-  "reason": "GLOBAL_ON | ROLE_MATCH | PERCENTAGE | DEFAULT_OFF | NOT_FOUND"
+  "variant": "on",
+  "reason": "GLOBAL_ON | ROLE_MATCH | PERCENTAGE_ROLLOUT | DEFAULT_OFF | NOT_FOUND",
+  "matchedRuleId": "string-or-null"
 }
 ```
+
+SDK-local timeout, network, unsuccessful HTTP, invalid JSON, or invalid response
+failures use `reason=ERROR`, `enabled=false`, `variant=off`, and
+`errorSource=CLIENT`. The SDK must not add client-only values to the backend
+reason-code contract.
 
 ## 6. UX and Presentation Requirements
 1. The UI must clearly separate:
