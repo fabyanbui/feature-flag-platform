@@ -13,7 +13,7 @@ describe('Phase 5 management APIs (e2e)', () => {
   let flagKey: string;
   let requestId: string;
 
-  const actor = 'admin@example.local';
+  const actor = 'demo-admin';
 
   beforeAll(async () => {
     app = await createE2eApp();
@@ -78,18 +78,24 @@ describe('Phase 5 management APIs (e2e)', () => {
     expect(audit?.after).toBeTruthy();
   });
 
-  it('rejects project creation without X-Actor', async () => {
+  it('uses the authenticated demo identity without the legacy X-Actor header', async () => {
     const response = await request(app.getHttpServer())
       .post('/v1/projects')
       .send({
         key: projectKey,
         name: 'Demo Project',
       })
-      .expect(400);
+      .expect(201);
 
     expect(response.body).toMatchObject({
-      code: 'VALIDATION_ERROR',
+      key: projectKey,
     });
+
+    await expect(
+      prisma.auditLogEntry.findFirst({
+        where: { projectKey, actor },
+      }),
+    ).resolves.toBeTruthy();
   });
 
   it('returns conflict for duplicate project key', async () => {

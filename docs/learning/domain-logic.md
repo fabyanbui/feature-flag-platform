@@ -1,5 +1,9 @@
 # Domain Logic — Feature Flag Platform
 
+> **Phase 16 update:** Sections that describe client-supplied `X-Actor`
+> authentication are retained as MVP history. The active contract uses
+> server-resolved bearer identities and centralized RBAC.
+
 This document explains the domain logic of this repository from scratch. It is
 written for learning after Phase 4 and Phase 5 of
 `docs/plan/implementation-roadmap.md`, where the backend now has:

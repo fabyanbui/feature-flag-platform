@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useAuth } from '../auth/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
 import { adminApi } from '../lib/api';
@@ -25,6 +26,9 @@ export function FlagGroupPage({
     projectKey,
     onBackToFlags,
 }: FlagGroupPageProps) {
+    const { can } = useAuth();
+    const canManageGroups = can('GROUP_MANAGE');
+    const canManageKillSwitch = can('GROUP_KILL_SWITCH');
     const [groups, setGroups] = useState<FlagGroup[]>([]);
     const [createForm, setCreateForm] = useState(initialCreateForm);
     const [renameDrafts, setRenameDrafts] = useState<Record<string, string>>(
@@ -76,6 +80,10 @@ export function FlagGroupPage({
 
     async function handleCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (!canManageGroups) {
+            setFormError('Only administrators can create flag groups.');
+            return;
+        }
 
         const validationError =
             validateKey(createForm.key) ??
@@ -200,6 +208,11 @@ export function FlagGroupPage({
                         configured per environment.
                     </p>
                 </div>
+                {!canManageGroups ? (
+                    <p className="permission-notice" id="group-permission-help">
+                        Only administrators can create or rename groups.
+                    </p>
+                ) : null}
 
                 <form className="form-grid" onSubmit={handleCreate}>
                     <label>
@@ -213,7 +226,12 @@ export function FlagGroupPage({
                                 }))
                             }
                             placeholder="checkout"
-                            disabled={creating}
+                            disabled={creating || !canManageGroups}
+                            aria-describedby={
+                                !canManageGroups
+                                    ? 'group-permission-help'
+                                    : undefined
+                            }
                         />
                     </label>
 
@@ -228,7 +246,7 @@ export function FlagGroupPage({
                                 }))
                             }
                             placeholder="Checkout flags"
-                            disabled={creating}
+                            disabled={creating || !canManageGroups}
                         />
                     </label>
 
@@ -242,7 +260,7 @@ export function FlagGroupPage({
                         <button
                             type="submit"
                             className="button button-primary"
-                            disabled={creating}
+                            disabled={creating || !canManageGroups}
                         >
                             {creating ? 'Creating...' : 'Create group'}
                         </button>
@@ -251,6 +269,12 @@ export function FlagGroupPage({
             </section>
 
             <section className="panel">
+                {!canManageKillSwitch ? (
+                    <p className="permission-notice" id="switch-permission-help">
+                        Group kill switches are emergency controls available
+                        only to administrators.
+                    </p>
+                ) : null}
                 <div className="section-header">
                     <div>
                         <h2>Group controls</h2>
@@ -339,7 +363,7 @@ export function FlagGroupPage({
                                                         event.target.value,
                                                 }))
                                             }
-                                            disabled={busy}
+                                            disabled={busy || !canManageGroups}
                                         />
                                     </label>
 
@@ -350,7 +374,12 @@ export function FlagGroupPage({
                                             onClick={() =>
                                                 void handleRename(group)
                                             }
-                                            disabled={busy}
+                                            disabled={busy || !canManageGroups}
+                                            title={
+                                                !canManageGroups
+                                                    ? 'Only administrators can rename groups.'
+                                                    : undefined
+                                            }
                                         >
                                             Save name
                                         </button>
@@ -369,7 +398,14 @@ export function FlagGroupPage({
                                                         !group.killSwitch,
                                                 })
                                             }
-                                            disabled={busy}
+                                            disabled={
+                                                busy || !canManageKillSwitch
+                                            }
+                                            aria-describedby={
+                                                !canManageKillSwitch
+                                                    ? 'switch-permission-help'
+                                                    : undefined
+                                            }
                                         >
                                             {group.killSwitch
                                                 ? 'Deactivate switch'

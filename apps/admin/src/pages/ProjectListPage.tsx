@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useAuth } from '../auth/useAuth';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
 import { adminApi } from '../lib/api';
 import type { Project } from '../lib/types';
@@ -22,6 +23,8 @@ const initialCreateForm: CreateProjectForm = {
 };
 
 export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
+    const { can } = useAuth();
+    const canManageProjects = can('PROJECT_MANAGE');
     const [projects, setProjects] = useState<Project[]>([]);
     const [search, setSearch] = useState('');
     const [submittedSearch, setSubmittedSearch] = useState('');
@@ -70,6 +73,10 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
 
     async function handleCreateProject(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (!canManageProjects) {
+            setFormError('Only administrators can create projects.');
+            return;
+        }
 
         const keyError = validateKey(createForm.key);
         const nameError = validateRequired(createForm.name, 'Project name');
@@ -118,6 +125,12 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
 
             <section className="panel">
                 <h2>Create project</h2>
+                {!canManageProjects ? (
+                    <p className="permission-notice" id="project-permission-help">
+                        Read-only for this identity. Only administrators can
+                        create projects.
+                    </p>
+                ) : null}
 
                 <form className="form-grid" onSubmit={handleCreateProject}>
                     <label>
@@ -131,7 +144,12 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                                 }))
                             }
                             placeholder="demo-project"
-                            disabled={creating}
+                            disabled={creating || !canManageProjects}
+                            aria-describedby={
+                                !canManageProjects
+                                    ? 'project-permission-help'
+                                    : undefined
+                            }
                         />
                     </label>
 
@@ -146,7 +164,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                                 }))
                             }
                             placeholder="Demo Project"
-                            disabled={creating}
+                            disabled={creating || !canManageProjects}
                         />
                     </label>
 
@@ -161,7 +179,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                                 }))
                             }
                             placeholder="Project used for feature flag demos."
-                            disabled={creating}
+                            disabled={creating || !canManageProjects}
                             rows={3}
                         />
                     </label>
@@ -176,7 +194,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                         <button
                             type="submit"
                             className="button button-primary"
-                            disabled={creating}
+                            disabled={creating || !canManageProjects}
                         >
                             {creating ? 'Creating...' : 'Create project'}
                         </button>

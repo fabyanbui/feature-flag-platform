@@ -21,7 +21,7 @@ describe('Phase 3 foundation app integration', () => {
     await app.close();
   });
 
-  it('echoes incoming request ID in response header and error body', async () => {
+  it('echoes incoming request ID in validation error responses', async () => {
     const runId = createUniqueRunId('infra');
     const requestId = `${runId}-request`;
 
@@ -29,8 +29,8 @@ describe('Phase 3 foundation app integration', () => {
       .post('/v1/projects')
       .set(REQUEST_ID_HEADER, requestId)
       .send({
-        key: `${runId}-project`,
-        name: 'Missing Actor Project',
+        key: 'Invalid_Project_Key',
+        name: 'Invalid project',
       })
       .expect(400);
 

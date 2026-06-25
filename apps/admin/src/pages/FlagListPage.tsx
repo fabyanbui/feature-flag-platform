@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useAuth } from '../auth/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
 import { RuntimeStateBadge } from '../components/RuntimeStateBadge';
@@ -32,6 +33,10 @@ export function FlagListPage({
     onEditFlag,
     onEditRules,
 }: FlagListPageProps) {
+    const { can } = useAuth();
+    const canManageFlags = can('FLAG_MANAGE');
+    const canManageRules = can('RULE_MANAGE');
+    const canManageLifecycle = can('FLAG_LIFECYCLE_MANAGE');
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
     const [search, setSearch] = useState('');
     const [submittedSearch, setSubmittedSearch] = useState('');
@@ -137,6 +142,10 @@ export function FlagListPage({
                         type="button"
                         className="button button-primary"
                         onClick={onCreateFlag}
+                        disabled={!canManageFlags}
+                        aria-describedby={
+                            !canManageFlags ? 'flag-permission-help' : undefined
+                        }
                     >
                         Create flag
                     </button>
@@ -144,6 +153,13 @@ export function FlagListPage({
             </header>
 
             <section className="panel">
+                {!canManageFlags || !canManageLifecycle ? (
+                    <p className="permission-notice" id="flag-permission-help">
+                        {canManageFlags
+                            ? 'Developers can edit flag configuration and rules. Archive and restore remain administrator-only.'
+                            : 'Viewer access is read-only. Flag configuration, rules, archive, and restore actions are disabled.'}
+                    </p>
+                ) : null}
                 <div className="section-header">
                     <div>
                         <h2>Flag list</h2>
@@ -226,8 +242,10 @@ export function FlagListPage({
                     <EmptyState
                         title="No feature flags found"
                         description="Create your first flag for this project."
-                        actionLabel="Create flag"
-                        onAction={onCreateFlag}
+                        actionLabel={
+                            canManageFlags ? 'Create flag' : undefined
+                        }
+                        onAction={canManageFlags ? onCreateFlag : undefined}
                     />
                 ) : null}
 
@@ -318,6 +336,12 @@ export function FlagListPage({
                                                     onClick={() =>
                                                         onEditFlag(flag.key)
                                                     }
+                                                    disabled={!canManageFlags}
+                                                    title={
+                                                        !canManageFlags
+                                                            ? 'Viewer access is read-only.'
+                                                            : undefined
+                                                    }
                                                 >
                                                     Edit
                                                 </button>
@@ -327,6 +351,12 @@ export function FlagListPage({
                                                     className="button button-secondary"
                                                     onClick={() =>
                                                         onEditRules(flag.key)
+                                                    }
+                                                    disabled={!canManageRules}
+                                                    title={
+                                                        !canManageRules
+                                                            ? 'Viewer access is read-only.'
+                                                            : undefined
                                                     }
                                                 >
                                                     Rules
@@ -343,6 +373,14 @@ export function FlagListPage({
                                                                 flag,
                                                             })
                                                         }
+                                                        disabled={
+                                                            !canManageLifecycle
+                                                        }
+                                                        title={
+                                                            !canManageLifecycle
+                                                                ? 'Only administrators can restore flags.'
+                                                                : undefined
+                                                        }
                                                     >
                                                         Restore
                                                     </button>
@@ -355,6 +393,14 @@ export function FlagListPage({
                                                                 type: 'archive',
                                                                 flag,
                                                             })
+                                                        }
+                                                        disabled={
+                                                            !canManageLifecycle
+                                                        }
+                                                        title={
+                                                            !canManageLifecycle
+                                                                ? 'Only administrators can archive flags.'
+                                                                : undefined
                                                         }
                                                     >
                                                         Archive

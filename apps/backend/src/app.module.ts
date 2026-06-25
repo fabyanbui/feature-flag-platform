@@ -14,6 +14,7 @@ import { SampleUsersModule } from './sample-users/sample-users.module';
 import { StatsModule } from './stats/stats.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { FlagGroupsModule } from './flag-groups/flag-groups.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { FlagGroupsModule } from './flag-groups/flag-groups.module';
       envFilePath: ['.env', '../../.env'],
     }),
     CommonModule,
+    AuthModule,
     DatabaseModule,
     AuditModule,
     RepositoriesModule,

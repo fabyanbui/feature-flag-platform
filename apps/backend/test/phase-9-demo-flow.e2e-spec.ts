@@ -7,7 +7,7 @@ import { createE2eApp } from './create-e2e-app';
 describe('Phase 9 demo flow release readiness (e2e)', () => {
   let app: INestApplication<App>;
 
-  const actor = 'phase9-demo-admin';
+  const actor = 'demo-admin';
   const projectKey = `phase9-demo-${Date.now()}`;
   const globalFlagKey = 'beta-dashboard';
   const targetedFlagKey = 'new-checkout';

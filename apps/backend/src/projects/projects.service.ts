@@ -211,12 +211,12 @@ export class ProjectsService {
 
     if (!actor) {
       throw validationError(
-        'X-Actor header is required for mutation requests.',
+        'Authenticated actor identity is required for mutation requests.',
         [
           {
-            field: 'X-Actor',
+            field: 'Authorization',
             message:
-              'Provide X-Actor header so configuration changes can be audited.',
+              'Provide valid demo credentials so configuration changes can be audited.',
           },
         ],
       );

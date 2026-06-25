@@ -1,5 +1,9 @@
 # Codebase Map — Feature Flag Platform
 
+> **Phase 16 update:** Older walkthrough sections may describe the removed
+> `ActorRequiredGuard` and trusted `X-Actor` flow. The active implementation is
+> under `apps/backend/src/auth/`.
+
 This document maps the repository after **Phase 4** and **Phase 5** of
 `docs/plan/implementation-roadmap.md`. It explains the project from scratch,
 then shows where the current implementation lives.

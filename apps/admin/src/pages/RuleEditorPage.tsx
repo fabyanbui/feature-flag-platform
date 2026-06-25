@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useAuth } from '../auth/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
 import { FlagHistoryPanel } from '../components/FlagHistoryPanel';
@@ -45,6 +46,8 @@ export function RuleEditorPage({
     onBackToFlags,
     onOpenAuditLogs,
 }: RuleEditorPageProps) {
+    const { can } = useAuth();
+    const canManageRules = can('RULE_MANAGE');
     const [rules, setRules] = useState<DraftRule[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -163,6 +166,10 @@ export function RuleEditorPage({
     }
 
     async function handleSave() {
+        if (!canManageRules) {
+            setFormError('Viewer access is read-only.');
+            return;
+        }
         const validationError = validateRules();
 
         if (validationError) {
@@ -277,7 +284,10 @@ export function RuleEditorPage({
                         type="button"
                         className="button button-primary"
                         onClick={handleSave}
-                        disabled={saving}
+                        disabled={saving || !canManageRules}
+                        aria-describedby={
+                            !canManageRules ? 'rule-permission-help' : undefined
+                        }
                     >
                         {saving ? 'Saving...' : 'Save rules'}
                     </button>
@@ -285,6 +295,12 @@ export function RuleEditorPage({
             </header>
 
             <section className="panel">
+                {!canManageRules ? (
+                    <p className="permission-notice" id="rule-permission-help">
+                        Viewer access is read-only. Rule changes are disabled,
+                        but evaluation testing remains available.
+                    </p>
+                ) : null}
                 <div className="section-header">
                     <div>
                         <h2>Rules</h2>
@@ -300,6 +316,7 @@ export function RuleEditorPage({
                             type="button"
                             className="button button-secondary"
                             onClick={() => addRule('USER_ALLOWLIST')}
+                            disabled={!canManageRules}
                         >
                             Add allowlist
                         </button>
@@ -308,6 +325,7 @@ export function RuleEditorPage({
                             type="button"
                             className="button button-secondary"
                             onClick={() => addRule('ROLE_TARGETING')}
+                            disabled={!canManageRules}
                         >
                             Add role rule
                         </button>
@@ -316,6 +334,7 @@ export function RuleEditorPage({
                             type="button"
                             className="button button-secondary"
                             onClick={() => addRule('PERCENTAGE_ROLLOUT')}
+                            disabled={!canManageRules}
                         >
                             Add rollout
                         </button>
@@ -346,6 +365,7 @@ export function RuleEditorPage({
                                             onChange={(event) =>
                                                 updateRule(rule.localId, 'enabled', event.target.checked)
                                             }
+                                            disabled={!canManageRules}
                                         />
                                         Enabled
                                     </label>
@@ -365,6 +385,7 @@ export function RuleEditorPage({
                                                     Number(event.target.value),
                                                 )
                                             }
+                                            disabled={!canManageRules}
                                         />
                                     </label>
 
@@ -375,6 +396,7 @@ export function RuleEditorPage({
                                             onChange={(event) =>
                                                 updateRule(rule.localId, 'value', event.target.value)
                                             }
+                                            disabled={!canManageRules}
                                             placeholder={placeholderForRuleType(rule.type)}
                                         />
                                     </label>
@@ -385,6 +407,7 @@ export function RuleEditorPage({
                                         type="button"
                                         className="button button-danger"
                                         onClick={() => removeRule(rule.localId)}
+                                        disabled={!canManageRules}
                                     >
                                         Remove rule
                                     </button>

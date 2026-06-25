@@ -110,7 +110,7 @@ describe('ApiExceptionFilter', () => {
     });
   });
 
-  it('maps unknown HttpException status to INTERNAL_ERROR', () => {
+  it('maps generic forbidden exceptions to FORBIDDEN', () => {
     filter.catch(
       new HttpException('Forbidden', HttpStatus.FORBIDDEN),
       host as never,
@@ -118,8 +118,8 @@ describe('ApiExceptionFilter', () => {
 
     expect(response.status).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
     expect(response.json).toHaveBeenCalledWith({
-      code: ApiErrorCode.INTERNAL_ERROR,
-      message: 'An unexpected error occurred.',
+      code: ApiErrorCode.FORBIDDEN,
+      message: 'The selected demo identity does not have permission.',
       requestId: 'req-test',
     });
   });

@@ -464,8 +464,9 @@ of scope.
 2. **Statistics**: Add durable delivery, retention policies, and advanced
    experimentation analytics if production requirements justify them.
 3. **Frontend build**: Build the admin dashboard and demo UI for production.
-4. **Platform hardening**: Add auth, logging, realtime updates, and deployment
-   automation.
+4. **Platform hardening**: Replace presentation-only bearer identities with a
+   production identity provider, token rotation, rate limiting, realtime
+   updates, and deployment automation.
 5. **Docker**: Ensure Docker integration is part of the delivery plan.
 
 ## 14. Appendix
@@ -502,3 +503,17 @@ Reason codes reflect the matched rule or default. Draft set:
 9. `/v1/projects/{projectKey}/flags/{flagKey}/group`
 10. `/v1/projects/{projectKey}/stats/flags`
 11. `/v1/projects/{projectKey}/flags/{flagKey}/stats`
+
+### 14.4 Phase 16 Demo RBAC Boundary
+
+Control-plane requests pass through two global guards. The authentication guard
+resolves a configured bearer token to a fixed actor and role. The permission
+guard checks explicit controller metadata against one centralized matrix.
+Successful mutation services read the resolved actor from asynchronous request
+context, so append-only audit entries cannot be attributed from client-provided
+role or actor headers.
+
+`ADMIN` has full access, `DEVELOPER` manages flags, rules, and group
+assignments, and `VIEWER` is read-only. Health and evaluation are explicitly
+public. This preserves control-plane/data-plane separation and avoids adding
+OAuth, passwords, refresh tokens, or session management to the mini-project.

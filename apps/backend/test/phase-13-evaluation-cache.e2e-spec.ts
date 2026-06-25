@@ -16,7 +16,7 @@ describe('Phase 13 evaluation snapshot cache (e2e)', () => {
   let sequence = 0;
   let projectKey: string;
 
-  const actor = 'phase13-admin@example.local';
+  const actor = 'demo-admin';
 
   beforeAll(async () => {
     app = await createE2eApp();

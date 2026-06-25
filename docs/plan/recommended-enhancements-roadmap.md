@@ -952,14 +952,53 @@ tokens, password reset, MFA, or production session management.
 
 ### Acceptance criteria
 
-- Client cannot become admin by changing a role header.
-- Viewer cannot mutate projects, flags, rules, groups, kill switches, RBAC state,
+- [x] Client cannot become admin by changing a role header.
+- [x] Viewer cannot mutate projects, flags, rules, groups, kill switches, RBAC state,
   or settings.
-- Developer permissions match the documented matrix.
-- Admin can perform all intended control-plane operations.
-- Evaluation API behavior remains unchanged.
-- Documentation clearly states this is a minimal demo identity model, not a
+- [x] Developer permissions match the documented matrix.
+- [x] Admin can perform all intended control-plane operations.
+- [x] Evaluation API behavior remains unchanged.
+- [x] Documentation clearly states this is a minimal demo identity model, not a
   production identity provider.
+
+### Completion evidence
+
+Phase 16 is complete:
+
+- environment-backed bearer credentials resolve on the backend to fixed
+  `demo-admin`, `demo-developer`, and `demo-viewer` actors and roles,
+- one centralized permission matrix grants administrators full access,
+  developers flag/rule/group-assignment access, and viewers read-only access,
+- global authentication protects the control plane while health and
+  `POST /v1/evaluate` remain explicitly public,
+- missing or invalid credentials return `UNAUTHORIZED` and insufficient
+  permissions return `FORBIDDEN`,
+- client-provided actor and role headers cannot elevate access or alter the
+  actor written to append-only audit entries,
+- no identity table or migration was added; the intentionally small demo model
+  remains environment-backed and reversible,
+- the admin dashboard switches among provisioned demo identities, remounts the
+  active view after a switch, and explains disabled actions accessibly,
+- README, API, architecture, security, research, presentation, and demo
+  documentation describe the trust boundary and production limitations.
+
+### Final validation evidence
+
+Final Phase 16 validation completed on June 25, 2026:
+
+- all 50 backend unit suites passed with 374 tests, including identity
+  resolution, strict bearer parsing, the permission matrix, and guard behavior,
+- all three backend integration suites passed with 11 tests,
+- all ten backend E2E suites passed with 44 tests, including seven dedicated
+  Phase 16 RBAC scenarios for admin, developer, viewer, missing/invalid token,
+  spoofed headers, trusted audit actors, and unchanged public evaluation,
+- all 21 JavaScript SDK tests passed without evaluation-contract changes,
+- backend/admin builds and lint checks passed,
+- headless Chromium checks at 1440×1000 and 390×844 confirmed the identity
+  selector, role summaries, viewer-disabled controls, accessible explanation,
+  no horizontal overflow, successful authenticated project reads, and no
+  browser console errors,
+- `git diff --check` passed and no schema migration was required.
 
 ### Likely changed files
 

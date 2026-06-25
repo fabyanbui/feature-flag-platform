@@ -118,11 +118,15 @@ cp apps/admin/.env.example apps/admin/.env
 cp apps/demo/.env.example apps/demo/.env
 ```
 
-The demo uses `VITE_ENVIRONMENT_KEY=production` by default. Both demo values are
-browser-safe routing configuration, not credentials.
+Configure three unique presentation-only bearer tokens in the root `.env`, then
+copy the same values into the matching `VITE_DEMO_*_TOKEN` variables in
+`apps/admin/.env`. The backend resolves each token to the fixed
+`demo-admin`, `demo-developer`, or `demo-viewer` identity and role.
 
 Only browser-safe `VITE_*` values belong in frontend `.env` files. Do not put
-database URLs or backend secrets in `apps/admin/.env` or `apps/demo/.env`.
+database URLs or production secrets in `apps/admin/.env` or `apps/demo/.env`.
+The Phase 16 tokens are intentionally browser-visible local demo credentials;
+never reuse them for a deployed or production system.
 
 ### Start PostgreSQL with Docker
 
@@ -206,6 +210,20 @@ Admin app:   http://localhost:5173
 Demo app:    http://localhost:5174
 Swagger UI:  http://localhost:3000/docs
 ```
+
+#### Demo RBAC
+
+The admin navigation includes a **Viewing as** selector:
+
+- `ADMIN` can perform every control-plane action.
+- `DEVELOPER` can manage flags, rules, and group assignments.
+- `VIEWER` has read-only access to projects, flags, groups, history, audit logs,
+  and statistics.
+
+All control-plane requests use `Authorization: Bearer <demo-token>`. Roles and
+audit actors are resolved on the backend; `X-Actor` and `X-Actor-Role` cannot
+grant permissions. Health and `POST /v1/evaluate` remain public so the demo app
+and JavaScript SDK stay data-plane-only.
 
 #### Evaluation statistics
 

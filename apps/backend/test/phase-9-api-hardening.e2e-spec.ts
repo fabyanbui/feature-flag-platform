@@ -7,7 +7,7 @@ describe('Phase 9 API hardening release readiness (e2e)', () => {
   let app: INestApplication<App>;
   let sequence = 0;
 
-  const actor = 'phase9-api-admin';
+  const actor = 'demo-admin';
 
   beforeAll(async () => {
     app = await createE2eApp();
@@ -113,31 +113,31 @@ describe('Phase 9 API hardening release readiness (e2e)', () => {
     });
   });
 
-  it('rejects mutation requests without X-Actor so changes stay auditable', async () => {
+  it('ignores client-provided actor headers and audits the resolved identity', async () => {
     const projectKey = `phase9-api-actor-${Date.now()}-${sequence}`;
     const requestId = `req_phase9_actor_${sequence}`;
 
     const response = await request(app.getHttpServer())
       .post('/v1/projects')
       .set('X-Request-Id', requestId)
+      .set('X-Actor', 'spoofed-admin')
+      .set('X-Actor-Role', 'ADMIN')
       .send({
         key: projectKey,
         name: 'Missing Actor Project',
       })
-      .expect(400);
+      .expect(201);
 
     expect(response.body).toMatchObject({
-      code: 'VALIDATION_ERROR',
-      message: 'X-Actor header is required for mutation requests.',
-      requestId,
+      key: projectKey,
     });
-    expect(response.body.details).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          field: 'X-Actor',
-        }),
-      ]),
-    );
+
+    const auditResponse = await request(app.getHttpServer())
+      .get(`/v1/projects/${projectKey}/audit-logs`)
+      .query({ action: 'PROJECT_CREATED' })
+      .expect(200);
+    expect(auditResponse.body.items[0].actor).toBe(actor);
+    expect(auditResponse.body.items[0].actor).not.toBe('spoofed-admin');
   });
 
   it('rejects unsupported sort fields with validation details', async () => {

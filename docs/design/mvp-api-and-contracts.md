@@ -51,23 +51,40 @@ behavior inside controllers, UI components, or tests.
 - Management APIs are control-plane APIs.
 - The evaluation API is the data-plane API.
 - Evaluation failures must prefer safe disabled responses.
-- Mutation requests must include an actor identity for audit logging.
+- Control-plane requests require a server-resolved demo identity.
 - Backend accepts `X-Request-Id` when provided; otherwise it generates one.
 - Error responses, audit entries, and server logs should include the same
   request ID.
 
-### 3.1 Actor Identity
+### 3.1 Demo Identity and Authorization
 
-MVP mutation requests use an actor header:
+Phase 16 control-plane requests use a presentation-only bearer token:
 
 ```http
-X-Actor: admin@example.local
+Authorization: Bearer <demo-token>
 ```
 
-Normal management mutations must provide `X-Actor`. Missing `X-Actor` returns
-`VALIDATION_ERROR`. The backend may use `system` for seed scripts or internal
-setup operations. Future authentication/RBAC can replace this header with
-authenticated user identity, but audit entries must still capture an actor.
+The backend maps the token to a fixed actor and one of `ADMIN`, `DEVELOPER`, or
+`VIEWER`, then applies a centralized permission matrix. Missing or invalid
+credentials return `UNAUTHORIZED`; insufficient permissions return
+`FORBIDDEN`. Client-provided `X-Actor` or `X-Actor-Role` values are not trusted
+for authorization or audit attribution. Seed scripts may continue to use the
+internal `system` actor.
+
+This is a local, presentation-grade identity model rather than OAuth or a
+production identity provider. Health and `POST /v1/evaluate` remain public.
+
+| Capability | ADMIN | DEVELOPER | VIEWER |
+| --- | :---: | :---: | :---: |
+| Read projects, flags, groups, rules, history, audit, and stats | Yes | Yes | Yes |
+| Create or update projects | Yes | No | No |
+| Create or update flags | Yes | Yes | No |
+| Replace rules | Yes | Yes | No |
+| Assign or unassign flag groups | Yes | Yes | No |
+| Archive or restore flags | Yes | No | No |
+| Create or rename groups | Yes | No | No |
+| Toggle group kill switches | Yes | No | No |
+| Manage sample users | Yes | No | No |
 
 ### 3.2 Request ID
 
@@ -577,11 +594,11 @@ Management/control-plane APIs use consistent error responses.
 | Code | HTTP status | Meaning |
 | --- | ---: | --- |
 | `VALIDATION_ERROR` | 400 | Invalid body, path parameter, or query parameter. |
+| `UNAUTHORIZED` | 401 | Missing, malformed, or invalid demo credentials. |
+| `FORBIDDEN` | 403 | Authenticated identity lacks the required permission. |
 | `NOT_FOUND` | 404 | Resource not found on a management API. |
 | `CONFLICT` | 409 | Duplicate key or invalid state conflict. |
 | `INTERNAL_ERROR` | 500 | Unexpected server error. |
-
-`UNAUTHORIZED` and `FORBIDDEN` are reserved for future authentication/RBAC.
 
 ### 9.3 Error Field Rules
 
@@ -1150,7 +1167,7 @@ of initialized environments.
 - Missing projects, groups, flags, or environments return `404 NOT_FOUND`.
 - Cross-project assignment is rejected and structurally prevented by
   persistence constraints.
-- Mutations require `X-Actor`.
+- Mutations require an authorized server-resolved demo identity.
 - Assigning a flag to its current group returns success without another audit
   mutation event.
 
@@ -1438,7 +1455,7 @@ deliverables are already complete:
 - streaming or real-time flag updates
 - multivariate flags
 - experiment analytics or statistics dashboard
-- full authentication and RBAC
+- production authentication, external identity providers, and session management
 - advanced targeting operators beyond allowlist, roles, and percentage rollout
 - rule versioning beyond append-only audit logs
 - Docker Compose one-command setup
@@ -1460,7 +1477,7 @@ client-local fail-closed results with `errorSource=CLIENT`.
 - [x] `/v1` API base path is confirmed.
 - [x] JSON conventions are confirmed.
 - [x] Control-plane and data-plane boundaries are documented.
-- [x] `X-Actor` and `X-Request-Id` conventions are documented.
+- [x] Server-resolved demo identities, RBAC, and `X-Request-Id` are documented.
 - [x] MVP evaluation request contract is documented.
 - [x] Evaluation HTTP status behavior is documented.
 - [x] MVP evaluation response includes `projectKey`, `flagKey`, `enabled`,

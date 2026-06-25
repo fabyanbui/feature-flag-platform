@@ -12,7 +12,7 @@ describe('Phase 11 flag configuration history (e2e)', () => {
   let projectKey: string;
   let flagKey: string;
 
-  const actor = 'phase11-admin@example.local';
+  const actor = 'demo-admin';
 
   beforeAll(async () => {
     app = await createE2eApp();

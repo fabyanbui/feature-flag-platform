@@ -19,7 +19,11 @@ const API_BASE_URL = (
     import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1'
 ).replace(/\/+$/, '');
 
-const ADMIN_ACTOR = import.meta.env.VITE_ADMIN_ACTOR ?? 'admin@example.local';
+let activeDemoToken = '';
+
+export function setActiveDemoToken(token: string): void {
+    activeDemoToken = token;
+}
 
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
@@ -27,7 +31,7 @@ type RequestOptions = {
     method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
     query?: QueryParams;
     body?: unknown;
-    actor?: boolean;
+    authenticated?: boolean;
 };
 
 export class AdminApiError extends Error {
@@ -81,7 +85,9 @@ export async function apiRequest<T>(
         headers: {
             Accept: 'application/json',
             ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(options.actor ? { 'X-Actor': ADMIN_ACTOR } : {}),
+            ...(options.authenticated !== false && activeDemoToken
+                ? { Authorization: `Bearer ${activeDemoToken}` }
+                : {}),
         },
         body: options.body ? JSON.stringify(options.body) : undefined,
     });
@@ -218,7 +224,6 @@ export const adminApi = {
         return apiRequest<Project>('/projects', {
             method: 'POST',
             body,
-            actor: true,
         });
     },
 
@@ -226,7 +231,6 @@ export const adminApi = {
         return apiRequest<Project>(projectPath(projectKey), {
             method: 'PATCH',
             body,
-            actor: true,
         });
     },
 
@@ -245,7 +249,6 @@ export const adminApi = {
         return apiRequest<FeatureFlag>(`${projectPath(projectKey)}/flags`, {
             method: 'POST',
             body,
-            actor: true,
         });
     },
 
@@ -253,7 +256,6 @@ export const adminApi = {
         return apiRequest<FeatureFlag>(flagPath(projectKey, flagKey), {
             method: 'PATCH',
             body,
-            actor: true,
         });
     },
 
@@ -262,7 +264,6 @@ export const adminApi = {
             `${flagPath(projectKey, flagKey)}/archive`,
             {
                 method: 'POST',
-                actor: true,
             },
         );
     },
@@ -272,7 +273,6 @@ export const adminApi = {
             `${flagPath(projectKey, flagKey)}/restore`,
             {
                 method: 'POST',
-                actor: true,
             },
         );
     },
@@ -288,7 +288,6 @@ export const adminApi = {
         return apiRequest<FlagGroup>(`${projectPath(projectKey)}/groups`, {
             method: 'POST',
             body,
-            actor: true,
         });
     },
 
@@ -298,7 +297,6 @@ export const adminApi = {
             {
                 method: 'PATCH',
                 body: { name },
-                actor: true,
             },
         );
     },
@@ -313,7 +311,6 @@ export const adminApi = {
             {
                 method: 'PUT',
                 body,
-                actor: true,
             },
         );
     },
@@ -324,7 +321,6 @@ export const adminApi = {
             {
                 method: 'PUT',
                 body: { groupKey },
-                actor: true,
             },
         );
     },
@@ -334,7 +330,6 @@ export const adminApi = {
             `${flagPath(projectKey, flagKey)}/group`,
             {
                 method: 'DELETE',
-                actor: true,
             },
         );
     },
@@ -363,7 +358,6 @@ export const adminApi = {
             {
                 method: 'PUT',
                 body: { rules },
-                actor: true,
             },
         );
     },
@@ -406,6 +400,7 @@ export const adminApi = {
         return apiRequest<EvaluationResult>('/evaluate', {
             method: 'POST',
             body,
+            authenticated: false,
         });
     },
 };

@@ -1,26 +1,20 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Param,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiOkResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Param, Put } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { Permission } from '../auth/permission';
 import { ProjectFlagKeyParamDto } from '../common/dto/key-param.dto';
-import { ActorRequiredGuard } from '../common/guards/actor-required.guard';
 import { FeatureFlagResponseDto } from '../feature-flags/dto/feature-flag-response.dto';
 import { AssignFlagGroupDto } from './dto/assign-flag-group.dto';
 import { FlagGroupsService } from './flag-groups.service';
 
 @ApiTags('Flag Groups')
+@ApiBearerAuth('demoBearer')
 @Controller('projects/:projectKey/flags/:flagKey/group')
 export class FlagGroupAssignmentsController {
   constructor(private readonly flagGroupsService: FlagGroupsService) {}
 
   @Put()
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.GROUP_ASSIGN)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   assign(
     @Param() params: ProjectFlagKeyParamDto,
@@ -34,8 +28,7 @@ export class FlagGroupAssignmentsController {
   }
 
   @Delete()
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.GROUP_ASSIGN)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   unassign(
     @Param() params: ProjectFlagKeyParamDto,
