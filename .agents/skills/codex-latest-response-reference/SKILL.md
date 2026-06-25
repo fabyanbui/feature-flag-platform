@@ -89,7 +89,8 @@ Purpose: standalone reference expanded from the latest Codex response.
 
 Keep full response references aligned with this feature flag platform:
 
-- Required MVP deliverables come before recommended enhancements.
+- Preserve the completed MVP as the release baseline while recommended work
+  follows `docs/plan/recommended-enhancements-roadmap.md` and its stop gates.
 - Preserve deterministic evaluation and fail-closed defaults.
 - Preserve append-only audit logging for mutations.
 - Preserve stable, non-PII rollout and targeting keys.

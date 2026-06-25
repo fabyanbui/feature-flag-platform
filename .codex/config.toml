@@ -12,10 +12,13 @@ Use AGENTS.md as the repository guide and active project guardrail source.
 Use docs/requirement/requirement-init.md as the product source for required and recommended deliverables.
 Use docs/requirement/info-init.md as the source for submission dates and mentor evaluation criteria.
 Use docs/plan/project-goal.md as the concise active project goal summary.
-Prioritize required MVP deliverables before recommended enhancements: research report, backend API, admin dashboard, demo app, database, validation/error handling, README run instructions, seed data, and short design docs.
-Keep work submission-ready for the July 7, 2026 deadline and presentation-ready for the July 9, 2026 presentation: slides and report are required; explain project need, practical value, novelty, chosen technologies, alternatives, comparison with existing solutions, problem-solving, design thinking, and system thinking. Treat recommended-level requirements as a plus only after the required MVP is stable.
+Treat docs/plan/implementation-roadmap.md as the completed MVP path and protected regression baseline.
+Use docs/plan/recommended-enhancements-roadmap.md as the active source for recommended phases, completion evidence, and Gate A/B/C sequencing.
+Keep work submission-ready for the July 7, 2026 deadline and presentation-ready for the July 9, 2026 presentation: slides and report are required; explain project need, practical value, novelty, chosen technologies, alternatives, comparison with existing solutions, problem-solving, design thinking, and system thinking.
+Implement recommended enhancements as small, reversible, independently testable increments; do not start a gated phase without repository evidence that its prerequisites pass.
 Preserve deterministic evaluation, append-only audit logging, safe defaults, stable non-PII rollout keys, and clear control-plane/data-plane separation.
 For frontend UI/UX changes, use the repo-scoped frontend-ui-ux-editor skill to reuse existing components/tokens, preserve accessibility and responsive states, and validate with browser/Playwright checks when available.
+Use evaluation-runtime-reliability for snapshot caching and aggregate statistics, javascript-sdk-delivery for @ffp/js-sdk, demo-rbac for server-resolved demo authorization, and docker-compose-delivery for the containerized workflow and optional Redis.
 Use docs/codex/mcp-tool-selection.md when deciding whether live database context is needed.
 Prefer repository files, Prisma schema, migrations, and tests for design/implementation work before using an MCP.
 Use the Prisma MCP for Prisma Postgres control-plane tasks: workspace/database discovery, creating databases, connection strings, backups/recovery, Prisma-managed database introspection, and explicitly approved schema/data operations against Prisma Postgres.

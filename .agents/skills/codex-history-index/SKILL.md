@@ -76,3 +76,7 @@ Purpose: compact context for future Codex sessions. Use this as an index, not a 
 - Preserve safe defaults and fail-closed evaluation.
 - Preserve control-plane/data-plane separation.
 - Keep `.env.example` aligned with `.env` variable shape using safe placeholders only.
+- Treat `docs/plan/implementation-roadmap.md` as the completed MVP path and
+  `docs/plan/recommended-enhancements-roadmap.md` as the active enhancement
+  path; record completed phases and the next unpassed gate from filesystem
+  evidence.

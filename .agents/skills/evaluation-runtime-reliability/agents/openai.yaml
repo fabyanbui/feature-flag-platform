@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evaluation Runtime Reliability"
+  short_description: "Build safe cache and evaluation metrics"
+  default_prompt: "Use $evaluation-runtime-reliability to implement or review safe evaluation caching and privacy-preserving statistics."

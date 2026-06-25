@@ -33,10 +33,10 @@ criteria in `docs/requirement/info-init.md`.
   were chosen over alternatives, and how the platform compares with existing
   feature flag solutions.
 - The presentation should demonstrate problem-solving, design thinking, and
-  system thinking; recommended-level requirements are a plus only after the MVP
-  is stable.
+  system thinking. The stable MVP is the release baseline, and recommended
+  enhancements provide additional evidence when their roadmap gates pass.
 
-## MVP Guardrails
+## Platform Guardrails
 
 - Keep management/dashboard flows (control plane) separate from runtime
   evaluation (data plane).
@@ -54,7 +54,9 @@ criteria in `docs/requirement/info-init.md`.
 - Project goal: `docs/plan/project-goal.md`
 - Vision: `docs/plan/vision.md`
 - Project plan: `docs/plan/project-plan.md`
-- Roadmap: `docs/plan/implementation-roadmap.md`
+- Completed MVP roadmap: `docs/plan/implementation-roadmap.md`
+- Active recommended roadmap:
+  `docs/plan/recommended-enhancements-roadmap.md`
 - Architecture: `docs/design/software-architecture-document.md`
 - Backend requirements: `docs/requirement/backend/be-init.md`
 - Frontend requirements: `docs/requirement/frontend/fe-init.md`

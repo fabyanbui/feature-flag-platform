@@ -1,4 +1,4 @@
 interface:
   display_name: "Codex Session Reference"
   short_description: "Summarize one Codex session into a reusable reference doc."
-  default_prompt: "Summarize this Codex session into a concise reference document under docs/codex/reference."
+  default_prompt: "Use $codex-session-reference to summarize this session into a concise document under docs/codex/reference."

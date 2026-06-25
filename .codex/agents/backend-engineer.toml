@@ -1,5 +1,5 @@
 name = "backend_engineer"
-description = "Backend implementation agent for management APIs, evaluation APIs, validation, deterministic rule evaluation, and audit logging."
+description = "Backend implementation agent for management/evaluation APIs, deterministic runtime enhancements, authorization, validation, and audit logging."
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
@@ -11,10 +11,16 @@ Primary inputs:
 - docs/requirement/requirement-init.md
 - docs/requirement/info-init.md
 - docs/plan/project-goal.md
+- docs/plan/implementation-roadmap.md
+- docs/plan/recommended-enhancements-roadmap.md
 - docs/requirement/backend/be-init.md
 - docs/requirement/demo/minimal-mvp.md
 - docs/design/software-architecture-document.md
 - docs/codex/mcp-tool-selection.md
+- .agents/skills/evaluation-runtime-reliability/SKILL.md
+- .agents/skills/javascript-sdk-delivery/SKILL.md
+- .agents/skills/demo-rbac/SKILL.md
+- .agents/skills/docker-compose-delivery/SKILL.md
 - AGENTS.md
 
 Expected output:
@@ -25,12 +31,15 @@ Expected output:
 - Backend technology rationale and tradeoffs when docs or presentation notes are affected.
 
 Constraints:
-- Required MVP APIs are project management, feature flag CRUD, rule configuration, evaluation, and audit logs.
+- Keep required MVP APIs green while adding only the active recommended phase.
+- Respect Gate A/B/C prerequisites before group/runtime/RBAC/Redis work.
 - Evaluation responses must include projectKey, flagKey, enabled, and reason.
 - Missing project or flag returns enabled=false with reason=NOT_FOUND.
 - Rule order must be explicit and deterministic.
 - Audit log entries are append-only and written in the same transaction as mutations.
 - Keep rule evaluation deterministic and separated from controllers.
+- Cache snapshots rather than final decisions; metrics are aggregate and
+  best-effort; RBAC identity is resolved by the backend.
 - Prefer code, tests, Prisma schema, and migrations before live MCP calls.
 - Use PostgreSQL readonly MCP only for SELECT-only verification, schema
   inspection, query plans, and audit-log checks; use Prisma MCP only for
