@@ -15,6 +15,17 @@ export interface IncrementEvaluationMetricInput {
   enabled: boolean;
 }
 
+export interface EvaluationMetricRangeInput {
+  projectKey: string;
+  environmentKey: string;
+  from: Date;
+  to: Date;
+}
+
+export interface FlagEvaluationMetricRangeInput extends EvaluationMetricRangeInput {
+  flagKey: string;
+}
+
 @Injectable()
 export class EvaluationMetricsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -53,6 +64,86 @@ export class EvaluationMetricsRepository {
           increment: 1,
         },
       },
+    });
+  }
+
+  findProjectReasonBreakdown(input: EvaluationMetricRangeInput) {
+    return this.prisma.flagEvaluationMetric.groupBy({
+      by: ['flagKey', 'reason', 'enabled'],
+      where: {
+        projectKey: input.projectKey,
+        environmentKey: input.environmentKey,
+        bucketStart: {
+          gte: input.from,
+          lt: input.to,
+        },
+      },
+      _sum: {
+        count: true,
+      },
+      orderBy: [
+        {
+          flagKey: 'asc',
+        },
+        {
+          reason: 'asc',
+        },
+        {
+          enabled: 'desc',
+        },
+      ],
+    });
+  }
+
+  findFlagReasonBreakdown(input: FlagEvaluationMetricRangeInput) {
+    return this.prisma.flagEvaluationMetric.groupBy({
+      by: ['reason', 'enabled'],
+      where: {
+        projectKey: input.projectKey,
+        environmentKey: input.environmentKey,
+        flagKey: input.flagKey,
+        bucketStart: {
+          gte: input.from,
+          lt: input.to,
+        },
+      },
+      _sum: {
+        count: true,
+      },
+      orderBy: [
+        {
+          reason: 'asc',
+        },
+        {
+          enabled: 'desc',
+        },
+      ],
+    });
+  }
+
+  findFlagBucketBreakdown(input: FlagEvaluationMetricRangeInput) {
+    return this.prisma.flagEvaluationMetric.groupBy({
+      by: ['bucketStart', 'enabled'],
+      where: {
+        projectKey: input.projectKey,
+        environmentKey: input.environmentKey,
+        flagKey: input.flagKey,
+        bucketStart: {
+          gte: input.from,
+          lt: input.to,
+        },
+      },
+      _sum: {
+        count: true,
+      },
+      orderBy: [
+        {
+          bucketStart: 'asc',
+        },
+        {
+          enabled: 'desc',
+        },
+      ],
     });
   }
 }

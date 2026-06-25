@@ -4,7 +4,15 @@ describe('EvaluationMetricsRepository', () => {
   const prisma = {
     flagEvaluationMetric: {
       upsert: jest.fn(),
+      groupBy: jest.fn(),
     },
+  };
+
+  const range = {
+    projectKey: 'demo-project',
+    environmentKey: 'production',
+    from: new Date('2026-06-24T08:00:00.000Z'),
+    to: new Date('2026-06-25T08:00:00.000Z'),
   };
 
   let repository: EvaluationMetricsRepository;
@@ -128,5 +136,123 @@ describe('EvaluationMetricsRepository', () => {
     expect(serializedCall).not.toContain('attributes');
     expect(serializedCall).not.toContain('context');
     expect(serializedCall).not.toContain('matchedRuleId');
+  });
+
+  it('aggregates project metrics by flag, reason, and enabled result', async () => {
+    prisma.flagEvaluationMetric.groupBy.mockResolvedValue([]);
+
+    await repository.findProjectReasonBreakdown(range);
+
+    expect(prisma.flagEvaluationMetric.groupBy).toHaveBeenCalledWith({
+      by: ['flagKey', 'reason', 'enabled'],
+      where: {
+        projectKey: 'demo-project',
+        environmentKey: 'production',
+        bucketStart: {
+          gte: range.from,
+          lt: range.to,
+        },
+      },
+      _sum: {
+        count: true,
+      },
+      orderBy: [
+        {
+          flagKey: 'asc',
+        },
+        {
+          reason: 'asc',
+        },
+        {
+          enabled: 'desc',
+        },
+      ],
+    });
+  });
+
+  it('aggregates one flag by reason and enabled result', async () => {
+    prisma.flagEvaluationMetric.groupBy.mockResolvedValue([]);
+
+    await repository.findFlagReasonBreakdown({
+      ...range,
+      flagKey: 'new-checkout',
+    });
+
+    expect(prisma.flagEvaluationMetric.groupBy).toHaveBeenCalledWith({
+      by: ['reason', 'enabled'],
+      where: {
+        projectKey: 'demo-project',
+        environmentKey: 'production',
+        flagKey: 'new-checkout',
+        bucketStart: {
+          gte: range.from,
+          lt: range.to,
+        },
+      },
+      _sum: {
+        count: true,
+      },
+      orderBy: [
+        {
+          reason: 'asc',
+        },
+        {
+          enabled: 'desc',
+        },
+      ],
+    });
+  });
+
+  it('aggregates one flag by UTC bucket and enabled result', async () => {
+    prisma.flagEvaluationMetric.groupBy.mockResolvedValue([]);
+
+    await repository.findFlagBucketBreakdown({
+      ...range,
+      flagKey: 'new-checkout',
+    });
+
+    expect(prisma.flagEvaluationMetric.groupBy).toHaveBeenCalledWith({
+      by: ['bucketStart', 'enabled'],
+      where: {
+        projectKey: 'demo-project',
+        environmentKey: 'production',
+        flagKey: 'new-checkout',
+        bucketStart: {
+          gte: range.from,
+          lt: range.to,
+        },
+      },
+      _sum: {
+        count: true,
+      },
+      orderBy: [
+        {
+          bucketStart: 'asc',
+        },
+        {
+          enabled: 'desc',
+        },
+      ],
+    });
+  });
+
+  it('reads only aggregate metric dimensions', async () => {
+    prisma.flagEvaluationMetric.groupBy.mockResolvedValue([]);
+
+    await repository.findFlagReasonBreakdown({
+      ...range,
+      flagKey: 'new-checkout',
+    });
+
+    const serializedQuery = JSON.stringify(
+      prisma.flagEvaluationMetric.groupBy.mock.calls[0][0],
+    );
+
+    expect(serializedQuery).not.toContain('targetingKey');
+    expect(serializedQuery).not.toContain('userId');
+    expect(serializedQuery).not.toContain('roles');
+    expect(serializedQuery).not.toContain('attributes');
+    expect(serializedQuery).not.toContain('context');
+    expect(serializedQuery).not.toContain('matchedRuleId');
   });
 });
