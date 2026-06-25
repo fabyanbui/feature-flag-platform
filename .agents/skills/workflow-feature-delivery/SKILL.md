@@ -4,7 +4,7 @@ description: Use when planning or delivering a feature end-to-end across managem
 ---
 
 ## Goal
-Deliver a feature across management API, evaluation, UI, and demo, aligned with MVP requirements.
+Deliver a feature across management API, evaluation, UI, and demo, aligned with MVP requirements and recommended requirements.
 
 ## Sequence
 1. **architect** confirms scope, system contracts, and integration boundaries.
