@@ -651,6 +651,32 @@ Phase 14 is complete:
 - unit and E2E tests cover atomic increments, hourly aggregation, cache-hit
   counting, privacy, pagination, and failure isolation.
 
+### Final validation evidence
+
+Final Phase 14 validation completed on June 25, 2026:
+
+- Prisma schema validation and client generation passed,
+- Prisma reported all three repository migrations applied and the database
+  schema up to date,
+- all seven focused Phase 14 unit suites passed with 57 tests,
+- the focused Phase 14 E2E suite passed with 9 tests,
+- the full backend unit suite passed with 47 suites and 357 tests,
+- the full backend integration suite passed with 3 suites and 11 tests,
+- the full backend E2E suite passed with 9 suites and 37 tests,
+- all backend, admin, and demo production builds passed,
+- all workspace lint checks and `git diff --check` passed,
+- live local API checks confirmed aggregate statistics for seeded demo flags,
+- the live Swagger document exposed both required statistics endpoints,
+- the migration/privacy review found no raw evaluation-context fields,
+- responsive dashboard validation from Step 12 was user-confirmed; a final
+  automated headless-browser rerun was attempted but could not be completed in
+  the restricted Codex environment because browser execution approval was not
+  granted.
+
+The PostgreSQL adapter emitted a non-failing `pg` deprecation warning during
+database-backed tests. It does not affect Phase 14 behavior and should be
+reviewed during dependency maintenance.
+
 ### Likely changed files
 
 - `apps/backend/prisma/schema.prisma`
