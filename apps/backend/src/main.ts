@@ -57,6 +57,7 @@ async function bootstrap() {
     .addTag('Feature Flags')
     .addTag('Rules')
     .addTag('Evaluation')
+    .addTag('Statistics')
     .addTag('Sample Users')
     .addTag('Audit Logs')
     .addApiKey(

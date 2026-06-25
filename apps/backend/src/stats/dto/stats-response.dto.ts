@@ -91,3 +91,30 @@ export class FlagStatsResponseDto {
   })
   buckets!: EvaluationTimeBucketDto[];
 }
+
+export class StatsPageMetadataDto {
+  @ApiProperty({ example: 20 })
+  limit!: number;
+
+  @ApiProperty({ example: 0 })
+  offset!: number;
+
+  @ApiProperty({ example: 2 })
+  total!: number;
+
+  @ApiProperty({ example: false })
+  hasNext!: boolean;
+}
+
+export class ProjectFlagStatsPageResponseDto {
+  @ApiProperty({
+    type: FlagStatsSummaryDto,
+    isArray: true,
+  })
+  items!: FlagStatsSummaryDto[];
+
+  @ApiProperty({
+    type: StatsPageMetadataDto,
+  })
+  page!: StatsPageMetadataDto;
+}

@@ -11,6 +11,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { FlagRulesModule } from './flag-rules/flag-rules.module';
 import { SampleUsersModule } from './sample-users/sample-users.module';
+import { StatsModule } from './stats/stats.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { FlagGroupsModule } from './flag-groups/flag-groups.module';
 
@@ -31,6 +32,7 @@ import { FlagGroupsModule } from './flag-groups/flag-groups.module';
     SampleUsersModule,
     AuditLogsModule,
     FlagGroupsModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
