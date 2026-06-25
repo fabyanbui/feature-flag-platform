@@ -18,6 +18,8 @@ Reviewed surfaces:
 - Demo app data-plane behavior.
 - Evaluation engine defaults and reason codes.
 - Evaluation snapshot cache behavior and invalidation.
+- Aggregate evaluation metric persistence and read APIs.
+- Statistics dashboard outcome semantics.
 - Audit logging behavior for configuration mutations.
 - Local environment configuration examples.
 
@@ -217,6 +219,46 @@ Test evidence:
 - `apps/backend/test/phase-12-group-kill-switch.e2e-spec.ts`
 - `apps/backend/test/phase-13-evaluation-cache.e2e-spec.ts`
 
+## Phase 14 Aggregate Evaluation Statistics
+
+Phase 14 records aggregate operational outcomes without creating a user-event
+store.
+
+Stored fields are limited to:
+
+- stable project, environment, and flag identity,
+- UTC-hour bucket,
+- reason,
+- enabled result,
+- aggregate count.
+
+The statistics subsystem does not store targeting keys, user IDs, roles,
+attributes, raw request bodies, matched rule IDs, IP addresses, actors, or
+credentials.
+
+Metric writes are best-effort and occur after the evaluation decision. Database
+or metric-service failure cannot change the evaluation result. This prioritizes
+data-plane availability over complete telemetry delivery.
+
+The public statistics read APIs resolve real project environments and therefore
+do not expose the private `__unresolved__` dimension through normal dashboard
+queries.
+
+Known limitations:
+
+- the read APIs do not yet have production authentication or RBAC,
+- the evaluation endpoint requires rate limiting before internet-facing use,
+- direct best-effort writes may be lost during process termination,
+- aggregate key cardinality requires abuse protection in a production system.
+
+Test evidence:
+
+- `apps/backend/src/repositories/evaluation-metrics.repository.spec.ts`
+- `apps/backend/src/stats/evaluation-metrics.service.spec.ts`
+- `apps/backend/src/stats/stats.service.spec.ts`
+- `apps/backend/src/evaluation/evaluation.service.spec.ts`
+- `apps/backend/test/phase-14-evaluation-stats.e2e-spec.ts`
+
 ## Known MVP Limitations and Mitigations
 
 | Limitation | MVP mitigation |
@@ -227,6 +269,7 @@ Test evidence:
 | No server-side SDK | REST evaluation API is enough for the MVP demo; SDK is a recommended enhancement only after MVP stability. |
 | Vite environment variables are browser-visible | Only browser-safe values are allowed in demo `.env` files. |
 | In-memory cache is process-local | Keep the current deployment single-instance; use a shared Redis provider before horizontal scaling. |
+| Best-effort metrics can lose in-flight increments | Treat statistics as eventually consistent observability and add durable delivery before production use. |
 
 ## Release Decision
 
@@ -237,3 +280,5 @@ The MVP is acceptable for local demonstration when:
 3. Control-plane mutations require actor identity.
 4. CORS origins are configured for local admin and demo apps.
 5. No browser app contains database URLs, backend secrets, or admin tokens.
+6. Aggregate metrics remain free of evaluation context and cannot affect
+   evaluation responses.

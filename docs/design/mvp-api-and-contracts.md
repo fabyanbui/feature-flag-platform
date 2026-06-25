@@ -1256,10 +1256,10 @@ event store.
 When an evaluation request omits `environmentKey`, a successful snapshot
 resolution records the project's actual default environment key. The private
 cache alias `__default__` must not appear as a resolved dashboard environment.
-The repository and cache therefore expose an internal resolved-snapshot
-envelope containing the effective environment key and the reusable
-`EvaluationSnapshot`; the evaluation engine continues to receive only the
-snapshot.
+The reusable `EvaluationSnapshot` therefore includes internal `resolution`
+metadata containing project, environment, and flag IDs plus the effective
+environment key. The evaluation engine ignores this attribution metadata when
+making its deterministic decision.
 
 If an evaluation returns `NOT_FOUND` or `ERROR` before an environment can be
 resolved, the metric uses the private `__unresolved__` environment dimension.

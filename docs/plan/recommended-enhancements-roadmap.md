@@ -631,6 +631,26 @@ Do not store:
 - Evaluation behavior is unchanged if metric persistence fails.
 - Metrics remain aggregate and privacy-preserving.
 
+### Completion evidence
+
+Phase 14 is complete:
+
+- evaluation requests produce one best-effort aggregate metric increment after
+  the deterministic decision,
+- cache hits and cache misses are both counted without caching final decisions,
+- `FlagEvaluationMetric` stores UTC-hour aggregates by project, environment,
+  flag, reason, and enabled result,
+- metric rows exclude user IDs, targeting keys, roles, attributes, raw
+  evaluation context, and matched rule IDs,
+- metric persistence failures are isolated from evaluation responses,
+- project-level and flag-level statistics APIs support environment and
+  normalized time-range filters,
+- the admin dashboard shows total evaluations, On outcomes, Off outcomes, On
+  percentage, and top reasons,
+- UI labels describe aggregate evaluation requests rather than unique users,
+- unit and E2E tests cover atomic increments, hourly aggregation, cache-hit
+  counting, privacy, pagination, and failure isolation.
+
 ### Likely changed files
 
 - `apps/backend/prisma/schema.prisma`

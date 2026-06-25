@@ -218,14 +218,35 @@ Engineering tradeoff:
 - horizontal scaling requires a shared cache with equivalent TTL and
   invalidation semantics.
 
-## Slide 15 — Future Work
+## Slide 15 — Recommended Enhancement: Privacy-Preserving Statistics
+
+Implementation proof:
+
+- every cached or uncached evaluation produces one aggregate increment attempt,
+- UTC-hour aggregation avoids storing raw evaluation events,
+- dashboard shows total, On, Off, percentage, and top reasons,
+- user context and targeting data are not stored,
+- metric failure cannot change evaluation behavior.
+
+Engineering tradeoff:
+
+- direct best-effort writes are simple and appropriate for demo scale,
+- a production platform would add batching, retention, rate limiting, and a
+  durable telemetry pipeline.
+
+Presentation message:
+
+> Observability should explain release behavior without becoming a user-tracking
+> system or a dependency of the evaluation response.
+
+## Slide 16 — Future Work
 
 Only after MVP stability:
 
 - optional Redis cache provider,
 - JavaScript SDK,
 - RBAC,
-- evaluation analytics,
+- advanced experimentation analytics and long-term metric retention,
 - Docker Compose,
 - flag cleanup workflow.
 
@@ -233,9 +254,10 @@ Completed recommended enhancements:
 
 - audit-backed configuration history,
 - group kill switch,
-- in-memory evaluation-snapshot cache.
+- in-memory evaluation-snapshot cache,
+- privacy-preserving evaluation statistics and dashboard.
 
-## Slide 16 — Conclusion
+## Slide 17 — Conclusion
 
 Final message:
 

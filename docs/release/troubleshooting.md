@@ -144,6 +144,25 @@ Percentage rollout is deterministic for a given combination of:
 Changing any of these values can change the rollout bucket. Use the provided
 demo scenarios for predictable presentation outcomes.
 
+## Statistics remain unchanged after evaluation
+
+Statistics writes are best-effort and eventually consistent.
+
+1. Refresh the statistics page.
+2. Confirm the selected environment matches the evaluated environment.
+3. Reset custom time filters to use the previous 24 hours.
+4. Check backend logs for `Evaluation metric write failed`.
+5. Confirm the latest Prisma migration is applied:
+
+   ```bash
+   npx prisma migrate status --config apps/backend/prisma.config.ts
+   ```
+
+6. Confirm the metric table exists and the backend uses the expected database.
+
+Evaluation may still work correctly when metric persistence fails. This is an
+intentional availability boundary.
+
 ## E2E tests fail with local port permission errors in a sandbox
 
 Supertest-backed E2E tests may need permission to bind a local test server.

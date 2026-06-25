@@ -271,6 +271,47 @@ Presenter point:
 > project-wide audit screen supports broader operational investigation. Both
 > views use the same immutable audit records.
 
+### 9. Show Evaluation Statistics
+
+Before opening the statistics page, evaluate `beta-dashboard` several times in
+the demo app.
+
+Produce both outcomes:
+
+1. evaluate while normal global serving is active,
+2. activate the flag or group kill switch,
+3. evaluate again,
+4. deactivate the switch before continuing.
+
+Open **Statistics** in the admin dashboard and refresh.
+
+Show:
+
+- total evaluation requests,
+- On outcomes,
+- Off outcomes,
+- On percentage,
+- counts per flag,
+- reasons such as `GLOBAL_ON`, `KILL_SWITCH`, or `GROUP_KILL_SWITCH`.
+
+Presenter point:
+
+> Cache hits still count because the platform measures evaluation requests, not
+> database snapshot loads. Statistics are aggregated by hour and outcome, so we
+> gain operational visibility without storing user context.
+
+Explain failure isolation:
+
+> Statistics are observability, not part of the release decision. If metric
+> persistence fails, evaluation still returns the same deterministic result.
+> We prefer incomplete telemetry over making feature delivery unavailable.
+
+Privacy point:
+
+> The dashboard shows aggregate evaluation activity, not unique users. The
+> metrics table does not contain targeting keys, user IDs, roles, attributes, or
+> raw evaluation requests.
+
 ## Required Talking Points
 
 ### Project need
@@ -288,7 +329,8 @@ The platform demonstrates common production release-management practices:
 - percentage rollout,
 - per-flag and group kill switches,
 - safe default off behavior,
-- audit logs.
+- audit logs,
+- privacy-preserving evaluation statistics.
 
 ### Novelty for this mini project
 
@@ -316,8 +358,8 @@ separation, auditability, and presentation-ready release scenarios.
 Compared with LaunchDarkly, Unleash, Flagsmith, ConfigCat, and Split, this MVP
 is smaller and educational. It borrows the core ideas: management UI, targeting,
 rollout, kill switch, evaluation API, and audit logs. It intentionally avoids
-enterprise complexity such as full RBAC, streaming SDKs, experimentation
-analytics, and multi-region operations.
+enterprise complexity such as full RBAC, streaming SDKs, advanced
+experimentation analytics, and multi-region operations.
 
 ## If Something Fails During Demo
 

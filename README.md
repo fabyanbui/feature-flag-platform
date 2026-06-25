@@ -12,8 +12,9 @@ from feature release. The system provides:
    switches, audit logs, API integration, caching, consistency, defaults, and
    endpoint security.
 2. Backend REST APIs for projects, feature flags, rule configuration,
-   evaluation, and audit logs.
-3. An admin dashboard for project, flag, rule, and audit-log workflows.
+   evaluation, audit logs, and aggregate evaluation statistics.
+3. An admin dashboard for project, flag, rule, audit-log, and statistics
+   workflows.
 4. A demo application that calls the evaluation API and shows or hides a demo
    feature based on flag results.
 
@@ -200,6 +201,17 @@ Demo app:    http://localhost:5174
 Swagger UI:  http://localhost:3000/docs
 ```
 
+#### Evaluation statistics
+
+```http
+GET /v1/projects/{projectKey}/stats/flags
+GET /v1/projects/{projectKey}/flags/{flagKey}/stats
+```
+
+Statistics are aggregate, UTC-hour based, eventually consistent, and contain no
+raw evaluation context. The admin dashboard exposes environment and time-range
+filters plus total, On, Off, percentage, and top-reason summaries.
+
 ### Validate the project
 
 ```bash
@@ -255,6 +267,14 @@ npm run test:e2e --workspace=@ffp/backend -- \
   --runInBand
 ```
 
+For a targeted Phase 14 statistics check:
+
+```bash
+npm run test:e2e --workspace=@ffp/backend -- \
+  phase-14-evaluation-stats.e2e-spec.ts \
+  --runInBand
+```
+
 ### Demo flow
 
 Use the seeded data for a local presentation:
@@ -272,8 +292,9 @@ Use the seeded data for a local presentation:
    - Percentage Rollout — Included User,
    - Percentage Rollout — Excluded User,
    - Missing Project / Flag.
-7. Return to the admin dashboard and show audit log entries for group and flag
-   changes.
+7. Open **Statistics** and show aggregate evaluation requests, On/Off outcomes,
+   and top reasons without user context.
+8. Return to the audit log screen and show entries for group and flag changes.
 
 Detailed presenter notes are in `docs/release/demo-script.md`.
 
