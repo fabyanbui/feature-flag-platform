@@ -17,6 +17,8 @@ from feature release. The system provides:
    workflows.
 4. A demo application that calls the evaluation API and shows or hides a demo
    feature based on flag results.
+5. A typed JavaScript SDK that provides evaluation helpers, response
+   validation, timeout handling, and fail-closed client fallback.
 
 The active goal is documented in `docs/plan/project-goal.md` and is derived
 from `docs/requirement/requirement-init.md` plus the submission/presentation
@@ -69,6 +71,7 @@ criteria in `docs/requirement/info-init.md`.
 - Security review: `docs/release/security-review.md`
 - Audit log release review: `docs/release/audit-log-release-review.md`
 - Slide outline: `docs/presentation/slide-outline.md`
+- JavaScript SDK guide: `packages/js-sdk/README.md`
 
 ## Local Development
 
@@ -114,6 +117,9 @@ For browser apps, copy app-specific examples only when you need local overrides:
 cp apps/admin/.env.example apps/admin/.env
 cp apps/demo/.env.example apps/demo/.env
 ```
+
+The demo uses `VITE_ENVIRONMENT_KEY=production` by default. Both demo values are
+browser-safe routing configuration, not credentials.
 
 Only browser-safe `VITE_*` values belong in frontend `.env` files. Do not put
 database URLs or backend secrets in `apps/admin/.env` or `apps/demo/.env`.
@@ -212,12 +218,31 @@ Statistics are aggregate, UTC-hour based, eventually consistent, and contain no
 raw evaluation context. The admin dashboard exposes environment and time-range
 filters plus total, On, Off, percentage, and top-reason summaries.
 
+#### JavaScript SDK
+
+The `@ffp/js-sdk` workspace package is a data-plane-only client for
+`POST /v1/evaluate`. It provides `evaluate`, `isEnabled`, and `getVariant`,
+validates backend responses, and returns a typed Off fallback for client-local
+transport or response failures.
+
+```ts
+const client = createFeatureFlagClient({
+  baseUrl: 'http://localhost:3000/v1',
+  projectKey: 'demo-project',
+  environmentKey: 'production',
+})
+```
+
+The SDK does not contain control-plane APIs, credentials, local rule
+evaluation, or user-specific decision caching.
+
 ### Validate the project
 
 ```bash
 npm run lint
 npm run build
 npm run test
+npm run test --workspace=@ffp/js-sdk
 npm run test:integration --workspace=@ffp/backend
 npm run test:e2e --workspace=@ffp/backend
 npm run diff:check
@@ -292,9 +317,11 @@ Use the seeded data for a local presentation:
    - Percentage Rollout — Included User,
    - Percentage Rollout — Excluded User,
    - Missing Project / Flag.
-7. Open **Statistics** and show aggregate evaluation requests, On/Off outcomes,
+7. Point out that the demo is using `@ffp/js-sdk`, and that backend decisions
+   are distinct from typed client-local fail-closed results.
+8. Open **Statistics** and show aggregate evaluation requests, On/Off outcomes,
    and top reasons without user context.
-8. Return to the audit log screen and show entries for group and flag changes.
+9. Return to the audit log screen and show entries for group and flag changes.
 
 Detailed presenter notes are in `docs/release/demo-script.md`.
 

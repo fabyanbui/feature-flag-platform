@@ -312,6 +312,34 @@ Privacy point:
 > metrics table does not contain targeting keys, user IDs, roles, attributes, or
 > raw evaluation requests.
 
+### 10. Show JavaScript SDK Integration
+
+Return to the demo app and point out the **SDK client** and **Decision source**
+fields.
+
+Explain:
+
+- the demo no longer constructs evaluation HTTP requests directly,
+- `@ffp/js-sdk` exposes `evaluate`, `isEnabled`, and `getVariant`,
+- it calls only the data-plane `POST /v1/evaluate` endpoint,
+- it validates response shape and keeps `targetingKey` separate from optional
+  `userId`,
+- it contains no management APIs, actor headers, or secrets.
+
+Optional failure demonstration:
+
+1. Stop the backend.
+2. Retry the selected scenario.
+3. Show `enabled=false`, `variant=off`, `reason=ERROR`,
+   `errorSource=CLIENT`, and **Decision source: Client fallback**.
+4. Restart the backend before continuing.
+
+Presenter point:
+
+> The SDK reduces integration mistakes while preserving the backend contract.
+> Transport failures fail closed locally and remain distinguishable from a
+> backend evaluation decision.
+
 ## Required Talking Points
 
 ### Project need
@@ -357,9 +385,9 @@ separation, auditability, and presentation-ready release scenarios.
 
 Compared with LaunchDarkly, Unleash, Flagsmith, ConfigCat, and Split, this MVP
 is smaller and educational. It borrows the core ideas: management UI, targeting,
-rollout, kill switch, evaluation API, and audit logs. It intentionally avoids
-enterprise complexity such as full RBAC, streaming SDKs, advanced
-experimentation analytics, and multi-region operations.
+rollout, kill switch, evaluation API, audit logs, and a small client SDK. It
+intentionally avoids enterprise complexity such as full RBAC, streaming SDKs,
+advanced experimentation analytics, and multi-region operations.
 
 ## If Something Fails During Demo
 

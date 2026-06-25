@@ -781,6 +781,63 @@ response failures return fail-closed results with `errorSource: 'CLIENT'`.
 - SDK fallback does not change backend reason-code contracts.
 - No control-plane permissions are introduced into the SDK.
 
+### Completion evidence
+
+Phase 15 is complete:
+
+- `packages/js-sdk` is registered as workspace package `@ffp/js-sdk`,
+- the public client accepts `baseUrl`, `projectKey`, optional
+  `environmentKey`, optional custom `fetch`, and configurable `timeoutMs`,
+- `evaluate`, `isEnabled`, and `getVariant` call only `POST /v1/evaluate`,
+- request construction preserves distinct `targetingKey` and optional `userId`
+  semantics,
+- backend responses are validated for project key, flag key, enabled state,
+  variant, reason code, and nullable matched rule ID,
+- timeout, network, unsuccessful HTTP, invalid JSON, invalid response shape,
+  and unserializable request failures return typed fail-closed results,
+- SDK-local fallback uses `reason=ERROR` with `errorSource=CLIENT` without
+  extending the backend `EvaluationReason` contract,
+- the demo app no longer contains direct evaluation `fetch` logic and preserves
+  all seeded presentation scenarios through the SDK,
+- the demo distinguishes backend decisions from client-local fallback while
+  keeping project, environment, flag, targeting, role, enabled, variant, reason,
+  matched rule, loading, retry, and gated-feature states visible,
+- stale demo requests cannot overwrite a newer scenario result,
+- SDK and demo documentation, architecture, security review, research report,
+  slide outline, and demo script describe the Phase 15 behavior.
+
+### Final validation evidence
+
+Final Phase 15 validation completed on June 25, 2026:
+
+- all 21 SDK unit tests passed, covering stable requests, optional environment,
+  custom fetch injection, helpers, backend `ERROR`, timeout across fetch and
+  response parsing, network failure, unsuccessful HTTP, invalid JSON, invalid
+  response shape, identity mismatch, fail-closed request validation, and static
+  client configuration,
+- the SDK TypeScript declaration/ES module build and ESLint checks passed,
+- `npm pack --dry-run --workspace=@ffp/js-sdk` confirmed the package contains
+  only the expected README, package metadata, JavaScript, source maps, and type
+  declarations,
+- all 47 backend unit suites passed with 357 tests,
+- all three backend integration suites passed with 11 tests,
+- all nine backend E2E suites passed with 37 tests,
+- backend, admin, demo, and SDK production builds passed,
+- all workspace lint checks, Prisma schema validation, and
+  `git diff --check` passed,
+- live local SDK checks against the seeded backend confirmed `GLOBAL_ON`,
+  `ROLE_MATCH`, `PERCENTAGE_ROLLOUT`, `DEFAULT_OFF`, and `NOT_FOUND`,
+- the live backend health endpoint and demo development server both returned
+  successful HTTP responses,
+- no direct `fetch` call remains in `apps/demo/src`,
+- automated browser tooling was unavailable in the execution environment;
+  responsive layout, focus visibility, textual status, loading, client
+  fallback, and retry behavior were validated through implementation review,
+  TypeScript, ESLint, production build, and live-server checks.
+
+The existing non-failing `pg` deprecation warning remained visible during
+database-backed tests and is unchanged from Phase 14.
+
 ### Likely changed files
 
 - `package.json`
@@ -804,6 +861,24 @@ Required evidence:
 - cached evaluations are still counted,
 - SDK and demo app use the stable API contract,
 - no evaluation-contract changes are pending.
+
+### Gate B completion evidence
+
+Gate B passed on June 25, 2026:
+
+- Phase 13 cache hit, miss, TTL, invalidation, isolation, and repository fallback
+  tests remain green,
+- Phase 14 proves cached and uncached evaluations are counted and metric failure
+  cannot alter evaluation responses,
+- Phase 15 SDK tests and live seeded scenarios use the stable
+  `POST /v1/evaluate` request and response contract,
+- the demo application consumes that contract through `@ffp/js-sdk`,
+- Phase 15 introduced no backend evaluation endpoint, reason-code, precedence,
+  cache, or statistics contract changes,
+- the full backend unit, integration, and E2E suites plus all workspace builds
+  and lint checks pass.
+
+Phase 16 may begin, but this gate does not require Phase 16 to start.
 
 ## Phase 16 — RBAC with Server-Resolved Demo Identities
 

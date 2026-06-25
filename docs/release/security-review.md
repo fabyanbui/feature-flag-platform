@@ -16,6 +16,7 @@ Reviewed surfaces:
 - Backend API under `/v1`.
 - Admin dashboard control-plane behavior.
 - Demo app data-plane behavior.
+- JavaScript SDK transport and fallback behavior.
 - Evaluation engine defaults and reason codes.
 - Evaluation snapshot cache behavior and invalidation.
 - Aggregate evaluation metric persistence and read APIs.
@@ -88,6 +89,7 @@ Allowed in the demo app:
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000/v1
+VITE_ENVIRONMENT_KEY=production
 ```
 
 Not allowed in the demo app:
@@ -103,10 +105,29 @@ Not allowed in the demo app:
 
 Evidence:
 
-- `apps/demo/src/App.tsx` calls only `POST /v1/evaluate`.
-- `apps/demo/.env.example` contains only browser-safe demo configuration.
+- `apps/demo/src/App.tsx` delegates evaluation to `@ffp/js-sdk`.
+- `packages/js-sdk/src/client.ts` calls only `POST /v1/evaluate`.
+- The SDK sends project, environment, flag, and caller-provided evaluation
+  context only; it adds no actor header or credential.
+- `apps/demo/.env.example` contains only browser-safe routing configuration.
 - The demo app does not send `X-Actor`; actor identity is only needed for
   audited control-plane mutations.
+
+## JavaScript SDK Failure Isolation
+
+The SDK preserves the backend reason-code contract and fails closed locally.
+
+Evidence:
+
+- timeout, network, unsuccessful HTTP, invalid JSON, and invalid response shape
+  return `enabled=false`, `variant=off`, and `reason=ERROR`,
+- SDK-local failures add `errorSource=CLIENT`; valid backend responses never do,
+- response validation verifies project key, flag key, enabled state, variant,
+  reason, and matched-rule shape,
+- `targetingKey` remains independent from optional `userId`,
+- error messages do not expose response bodies, stack traces, or secrets,
+- `packages/js-sdk/test/client.spec.ts` covers the failure paths and custom
+  fetch injection.
 
 ## CORS
 
@@ -146,6 +167,7 @@ Control plane:
 Data plane:
 
 - Demo app.
+- JavaScript SDK.
 - `POST /v1/evaluate`.
 - No mutation behavior.
 - No actor header.

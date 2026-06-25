@@ -9,6 +9,7 @@
     "url": "https://github.com/fabyanbui/feature-flag-platform.git"
   },
   "workspaces": [
+    "packages/*",
     "apps/*"
   ],
   "scripts": {

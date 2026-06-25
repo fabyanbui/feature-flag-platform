@@ -395,12 +395,12 @@ Completed recommended enhancements:
 - audit-backed configuration history,
 - group kill switch,
 - in-memory evaluation-snapshot cache,
-- privacy-preserving evaluation statistics dashboard.
+- privacy-preserving evaluation statistics dashboard,
+- simple JavaScript SDK with typed fail-closed client fallback.
 
 Remaining recommended and future work:
 
 - optional Redis provider for multi-instance cache consistency,
-- simple JavaScript SDK,
 - role-based access control,
 - Docker Compose one-command setup,
 - durable metric delivery and retention,
