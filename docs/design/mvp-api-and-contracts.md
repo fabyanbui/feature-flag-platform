@@ -1203,6 +1203,166 @@ Invalidation happens only after the database transaction and append-only audit
 entry commit. Initial flag-level invalidation may conservatively remove every
 environment scope for that flag to prevent stale default-environment aliases.
 
+### 14.6 Phase 14 Evaluation Statistics Contract
+
+Evaluation statistics provide aggregate operational visibility without changing
+the deterministic evaluation contract or collecting runtime user context.
+Statistics are an observability side effect of evaluation, not part of the
+decision itself.
+
+The required runtime flow is:
+
+```text
+validated evaluation request
+-> snapshot cache or repository lookup
+-> exactly one evaluation decision
+-> exactly one best-effort metric increment attempt
+-> unchanged evaluation response
+```
+
+Every request that passes DTO validation and reaches the evaluation service is
+counted, including cache hits and decisions with `INVALID_CONTEXT`,
+`NOT_FOUND`, or `ERROR`. Requests rejected by the global validation pipeline do
+not produce an evaluation decision and are not counted.
+
+#### 14.6.1 Aggregate Dimensions and Privacy Boundary
+
+One metric row represents a count for this unique combination:
+
+```text
+projectKey
+environmentKey
+flagKey
+UTC hourly bucket
+reason
+enabled
+```
+
+Metrics store stable resource keys and aggregate outcomes only. They must not
+store:
+
+- the evaluation context or request body
+- targeting keys or user IDs
+- roles or attributes
+- IP addresses or actors
+- raw per-request evaluation events
+- `matchedRuleId`
+- secrets or credentials
+
+This boundary keeps statistics useful for release operations while preventing
+the statistics subsystem from becoming a user-tracking or high-cardinality
+event store.
+
+When an evaluation request omits `environmentKey`, a successful snapshot
+resolution records the project's actual default environment key. The private
+cache alias `__default__` must not appear as a resolved dashboard environment.
+The reusable `EvaluationSnapshot` therefore includes internal `resolution`
+metadata containing project, environment, and flag IDs plus the effective
+environment key. The evaluation engine ignores this attribution metadata when
+making its deterministic decision.
+
+If an evaluation returns `NOT_FOUND` or `ERROR` before an environment can be
+resolved, the metric uses the private `__unresolved__` environment dimension.
+This value cannot conflict with public environment keys because underscores are
+not allowed by the common key validation contract.
+
+#### 14.6.2 Time Buckets and Query Ranges
+
+Metric timestamps are normalized to the start of a UTC hour:
+
+```text
+2026-06-25T08:42:19.000Z -> 2026-06-25T08:00:00.000Z
+```
+
+Statistics queries use a half-open interval, `[from, to)`. The service rounds
+`from` down to the start of its UTC hour and rounds `to` up to the next UTC
+hour when necessary. Responses expose the effective normalized range so the
+hourly precision is explicit.
+
+The initial query defaults are:
+
+- the project's default environment when `environmentKey` is omitted
+- the previous 24 hours when `from` and `to` are omitted
+- a maximum query range of 30 days
+- `limit=20`, with a maximum of `100`, for project-level flag results
+
+#### 14.6.3 Write and Availability Semantics
+
+Metric increments use an atomic database upsert. A new aggregate combination
+starts with `count=1`; an existing combination increments `count` without a
+read-modify-write race.
+
+Metric persistence is best-effort and non-blocking:
+
+- evaluation does not wait for metric persistence before responding
+- metric failures are caught and logged without changing `enabled`, `reason`,
+  `variant`, or `matchedRuleId`
+- metric writes do not participate in configuration transactions
+- metric writes do not create audit entries because they are telemetry rather
+  than control-plane configuration mutations
+
+Statistics are eventually consistent. A dashboard request immediately after an
+evaluation may briefly observe the previous count. A process termination may
+lose an in-flight best-effort increment; a durable queue and delivery guarantee
+are deferred beyond the mini-project scope.
+
+#### 14.6.4 Read Endpoints
+
+Project-level flag statistics:
+
+```http
+GET /v1/projects/{projectKey}/stats/flags
+```
+
+Supported query parameters:
+
+```text
+environmentKey
+from
+to
+limit
+offset
+sort
+order
+```
+
+The response uses the standard page envelope. Each item contains the flag key,
+total evaluation count, enabled count, disabled count, and top reason counts
+for the effective environment and time range. The initial endpoint returns
+flags with recorded metrics in the selected range.
+
+Flag-level statistics:
+
+```http
+GET /v1/projects/{projectKey}/flags/{flagKey}/stats
+```
+
+The response contains:
+
+- project, flag, and effective environment keys
+- effective `from` and `to` timestamps
+- total, enabled, and disabled counts
+- enabled percentage
+- reason and enabled-result breakdown
+- UTC hourly bucket breakdown
+
+An existing flag with no metrics in the selected range returns zero totals and
+empty breakdown arrays.
+
+#### 14.6.5 Validation and Error Behavior
+
+Statistics endpoints are control-plane read APIs and use the standard HTTP
+error contract:
+
+- missing projects, flags, or environments return `404 NOT_FOUND`
+- malformed keys or timestamps return `400 VALIDATION_ERROR`
+- `from` later than `to` returns `400 VALIDATION_ERROR`
+- a requested range longer than 30 days returns `400 VALIDATION_ERROR`
+- unsupported sorting fields return `400 VALIDATION_ERROR`
+
+This intentionally differs from `POST /v1/evaluate`, where missing resources
+produce a safe `200 OK` response with `enabled=false` and `reason=NOT_FOUND`.
+
 ## 15. Bulk Evaluation
 
 Bulk evaluation is a future extension only and is not part of MVP scope.

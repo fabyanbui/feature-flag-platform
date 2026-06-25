@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { AuditLogsRepository } from './audit-logs.repository';
+import { EvaluationMetricsRepository } from './evaluation-metrics.repository';
 import { FeatureFlagsRepository } from './feature-flags.repository';
 import { FlagRulesRepository } from './flag-rules.repository';
 import { ProjectsRepository } from './projects.repository';
@@ -22,6 +23,7 @@ import { FlagGroupsRepository } from './flag-groups.repository';
     FlagRulesRepository,
     SampleUsersRepository,
     AuditLogsRepository,
+    EvaluationMetricsRepository,
   ],
   exports: [
     ProjectsRepository,
@@ -33,6 +35,7 @@ import { FlagGroupsRepository } from './flag-groups.repository';
     FlagRulesRepository,
     SampleUsersRepository,
     AuditLogsRepository,
+    EvaluationMetricsRepository,
   ],
 })
 export class RepositoriesModule {}

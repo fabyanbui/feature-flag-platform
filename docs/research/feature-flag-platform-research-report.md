@@ -300,7 +300,24 @@ The process-local provider is intentionally appropriate for this
 single-instance mini project. A horizontally scaled deployment would require a
 shared provider such as Redis with equivalent TTL and invalidation semantics.
 
-### 10.3 Defaults
+### 10.3 Aggregate Evaluation Statistics
+
+Operational teams need to understand whether features are being evaluated On
+or Off and why. The implementation records aggregate counts by flag,
+environment, UTC-hour bucket, reason, and enabled result.
+
+The system intentionally avoids storing one raw event per evaluation. It also
+excludes targeting keys, user IDs, roles, attributes, and matched rule IDs.
+This provides release visibility without turning feature evaluation into a
+user-tracking system.
+
+Every valid evaluation request produces one best-effort increment, including
+requests served from the snapshot cache. Metric persistence failure does not
+alter the evaluation response. This demonstrates a system-design tradeoff:
+runtime release decisions prioritize availability, while statistics accept
+eventual consistency and possible telemetry loss.
+
+### 10.4 Defaults
 
 Defaults should be safe:
 
@@ -368,22 +385,30 @@ The novelty for this mini project is the combination of:
 - visible reason codes,
 - append-only audit logs,
 - control-plane/data-plane separation,
+- privacy-preserving aggregate evaluation statistics,
 - presentation scenarios that show different runtime outcomes.
 
 ## 15. Limitations and Future Work
 
-Recommended enhancements after MVP stability:
+Completed recommended enhancements:
+
+- audit-backed configuration history,
+- group kill switch,
+- in-memory evaluation-snapshot cache,
+- privacy-preserving evaluation statistics dashboard.
+
+Remaining recommended and future work:
 
 - optional Redis provider for multi-instance cache consistency,
 - simple JavaScript SDK,
 - role-based access control,
-- evaluation statistics dashboard,
-- group kill switch,
 - Docker Compose one-command setup,
+- durable metric delivery and retention,
+- advanced experimentation analytics,
 - flag lifecycle cleanup workflow.
 
-These are intentionally deferred so the required MVP remains stable for
-submission.
+Remaining work is sequenced behind the stable MVP and completed recommended
+phases so it cannot weaken submission readiness.
 
 ## 16. Conclusion
 

@@ -631,6 +631,52 @@ Do not store:
 - Evaluation behavior is unchanged if metric persistence fails.
 - Metrics remain aggregate and privacy-preserving.
 
+### Completion evidence
+
+Phase 14 is complete:
+
+- evaluation requests produce one best-effort aggregate metric increment after
+  the deterministic decision,
+- cache hits and cache misses are both counted without caching final decisions,
+- `FlagEvaluationMetric` stores UTC-hour aggregates by project, environment,
+  flag, reason, and enabled result,
+- metric rows exclude user IDs, targeting keys, roles, attributes, raw
+  evaluation context, and matched rule IDs,
+- metric persistence failures are isolated from evaluation responses,
+- project-level and flag-level statistics APIs support environment and
+  normalized time-range filters,
+- the admin dashboard shows total evaluations, On outcomes, Off outcomes, On
+  percentage, and top reasons,
+- UI labels describe aggregate evaluation requests rather than unique users,
+- unit and E2E tests cover atomic increments, hourly aggregation, cache-hit
+  counting, privacy, pagination, and failure isolation.
+
+### Final validation evidence
+
+Final Phase 14 validation completed on June 25, 2026:
+
+- Prisma schema validation and client generation passed,
+- Prisma reported all three repository migrations applied and the database
+  schema up to date,
+- all seven focused Phase 14 unit suites passed with 57 tests,
+- the focused Phase 14 E2E suite passed with 9 tests,
+- the full backend unit suite passed with 47 suites and 357 tests,
+- the full backend integration suite passed with 3 suites and 11 tests,
+- the full backend E2E suite passed with 9 suites and 37 tests,
+- all backend, admin, and demo production builds passed,
+- all workspace lint checks and `git diff --check` passed,
+- live local API checks confirmed aggregate statistics for seeded demo flags,
+- the live Swagger document exposed both required statistics endpoints,
+- the migration/privacy review found no raw evaluation-context fields,
+- responsive dashboard validation from Step 12 was user-confirmed; a final
+  automated headless-browser rerun was attempted but could not be completed in
+  the restricted Codex environment because browser execution approval was not
+  granted.
+
+The PostgreSQL adapter emitted a non-failing `pg` deprecation warning during
+database-backed tests. It does not affect Phase 14 behavior and should be
+reviewed during dependency maintenance.
+
 ### Likely changed files
 
 - `apps/backend/prisma/schema.prisma`

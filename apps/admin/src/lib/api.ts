@@ -4,6 +4,8 @@ import type {
     EvaluationContext,
     EvaluationResult,
     FeatureFlag,
+    FlagStats,
+    FlagStatsSummary,
     FlagGroup,
     FlagConfigStatus,
     FlagRule,
@@ -192,6 +194,16 @@ export type ListFlagGroupsQuery = {
     order?: 'asc' | 'desc';
 };
 
+export type ListFlagStatsQuery = {
+    environmentKey?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+    sort?: 'totalEvaluations' | 'enabledCount' | 'disabledCount' | 'flagKey';
+    order?: 'asc' | 'desc';
+};
+
 export type CreateFlagGroupInput = {
     key: string;
     name: string;
@@ -359,6 +371,28 @@ export const adminApi = {
     listAuditLogs(projectKey: string, query: ListAuditLogsQuery = {}) {
         return apiRequest<PageResponse<AuditLog>>(
             `${projectPath(projectKey)}/audit-logs`,
+            { query },
+        );
+    },
+
+    listFlagStats(projectKey: string, query: ListFlagStatsQuery = {}) {
+        return apiRequest<PageResponse<FlagStatsSummary>>(
+            `${projectPath(projectKey)}/stats/flags`,
+            { query },
+        );
+    },
+
+    getFlagStats(
+        projectKey: string,
+        flagKey: string,
+        query: {
+            environmentKey?: string;
+            from?: string;
+            to?: string;
+        } = {},
+    ) {
+        return apiRequest<FlagStats>(
+            `${flagPath(projectKey, flagKey)}/stats`,
             { query },
         );
     },

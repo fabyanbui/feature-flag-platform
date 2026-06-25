@@ -69,6 +69,7 @@ describe('EvaluationRepository', () => {
       },
       select: {
         id: true,
+        key: true,
       },
     });
 
@@ -96,6 +97,7 @@ describe('EvaluationRepository', () => {
       },
       select: {
         id: true,
+        key: true,
       },
     });
 
@@ -108,6 +110,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue(null);
 
@@ -141,6 +144,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
@@ -202,6 +206,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
@@ -221,6 +226,12 @@ describe('EvaluationRepository', () => {
         flagKey: 'new-checkout',
       }),
     ).resolves.toEqual({
+      resolution: {
+        projectId: 'project-1',
+        environmentId: 'environment-1',
+        flagId: 'flag-1',
+        environmentKey: 'production',
+      },
       flag: {
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
       },
@@ -234,12 +245,46 @@ describe('EvaluationRepository', () => {
     });
   });
 
+  it('returns the actual default environment identity for metric recording', async () => {
+    prisma.project.findUnique.mockResolvedValue({
+      id: 'project-1',
+    });
+    prisma.environment.findFirst.mockResolvedValue({
+      id: 'environment-1',
+      key: 'production',
+    });
+    prisma.featureFlag.findUnique.mockResolvedValue({
+      id: 'flag-1',
+      groupId: null,
+      lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+    });
+    prisma.flagEnvironmentConfig.findUnique.mockResolvedValue({
+      status: FlagConfigStatus.ENABLED,
+      servingMode: ServingMode.GLOBAL_ON,
+      killSwitch: false,
+      rules: [],
+    });
+
+    const result = await repository.findSnapshot({
+      projectKey: 'demo-project',
+      flagKey: 'new-checkout',
+    });
+
+    expect(result?.resolution).toEqual({
+      projectId: 'project-1',
+      environmentId: 'environment-1',
+      flagId: 'flag-1',
+      environmentKey: 'production',
+    });
+  });
+
   it('orders selected rules by priority ascending', async () => {
     prisma.project.findUnique.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
@@ -277,6 +322,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
@@ -300,6 +346,12 @@ describe('EvaluationRepository', () => {
         flagKey: 'new-checkout',
       }),
     ).resolves.toEqual({
+      resolution: {
+        projectId: 'project-1',
+        environmentId: 'environment-1',
+        flagId: 'flag-1',
+        environmentKey: 'production',
+      },
       flag: {
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
       },
@@ -333,6 +385,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
@@ -361,6 +414,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',
@@ -395,6 +449,7 @@ describe('EvaluationRepository', () => {
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
+      key: 'production',
     });
     prisma.featureFlag.findUnique.mockResolvedValue({
       id: 'flag-1',

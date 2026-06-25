@@ -61,6 +61,10 @@ describe('EvaluationService', () => {
     getRequestId: jest.fn(),
   };
 
+  const evaluationMetricsService = {
+    record: jest.fn(),
+  };
+
   let service: EvaluationService;
   let loggerErrorSpy: jest.SpyInstance;
   let loggerWarnSpy: jest.SpyInstance;
@@ -82,11 +86,13 @@ describe('EvaluationService', () => {
     requestContext.getRequestId.mockReturnValue('req-test');
     snapshotCache.get.mockResolvedValue(null);
     snapshotCache.set.mockResolvedValue(undefined);
+    evaluationMetricsService.record.mockResolvedValue(undefined);
 
     service = new EvaluationService(
       evaluationRepository as never,
       requestContext as never,
       snapshotCache,
+      evaluationMetricsService,
     );
   });
 
@@ -188,6 +194,164 @@ describe('EvaluationService', () => {
 
     expect(evaluationRepository.findSnapshot).not.toHaveBeenCalled();
     expect(snapshotCache.set).not.toHaveBeenCalled();
+  });
+
+  it('records one aggregate metric for an evaluation served from cache', async () => {
+    snapshotCache.get.mockResolvedValue(globalOnSnapshot);
+
+    const result = await service.evaluate({
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'new-checkout',
+      context: {
+        targetingKey: 'private-targeting-key',
+        userId: 'private-user-id',
+        roles: ['beta-tester'],
+        attributes: {
+          country: 'VN',
+        },
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        reason: EvaluationReason.GLOBAL_ON,
+      }),
+    );
+
+    expect(evaluationMetricsService.record).toHaveBeenCalledTimes(1);
+    expect(evaluationMetricsService.record).toHaveBeenCalledWith({
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'new-checkout',
+      enabled: true,
+      reason: EvaluationReason.GLOBAL_ON,
+    });
+
+    const [metric] = evaluationMetricsService.record.mock.calls[0] as [
+      Record<string, unknown>,
+    ];
+
+    expect(Object.keys(metric).sort()).toEqual(
+      ['enabled', 'environmentKey', 'flagKey', 'projectKey', 'reason'].sort(),
+    );
+    expect(metric).not.toHaveProperty('context');
+    expect(metric).not.toHaveProperty('targetingKey');
+    expect(metric).not.toHaveProperty('userId');
+    expect(metric).not.toHaveProperty('roles');
+    expect(metric).not.toHaveProperty('attributes');
+    expect(metric).not.toHaveProperty('matchedRuleId');
+    expect(evaluationRepository.findSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('records one aggregate metric for an evaluation loaded from the repository', async () => {
+    snapshotCache.get.mockResolvedValue(null);
+    evaluationRepository.findSnapshot.mockResolvedValue(globalOnSnapshot);
+
+    await service.evaluate({
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'new-checkout',
+      context: {
+        targetingKey: 'stable-user',
+      },
+    });
+
+    expect(evaluationMetricsService.record).toHaveBeenCalledTimes(1);
+    expect(evaluationMetricsService.record).toHaveBeenCalledWith({
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'new-checkout',
+      enabled: true,
+      reason: EvaluationReason.GLOBAL_ON,
+    });
+  });
+
+  it('records resolved database identities and the actual default environment', async () => {
+    evaluationRepository.findSnapshot.mockResolvedValue({
+      ...globalOnSnapshot,
+      resolution: {
+        projectId: 'project-1',
+        environmentId: 'environment-1',
+        flagId: 'flag-1',
+        environmentKey: 'production',
+      },
+    });
+
+    await service.evaluate({
+      projectKey: 'demo-project',
+      flagKey: 'new-checkout',
+      context: {
+        targetingKey: 'stable-user',
+      },
+    });
+
+    expect(evaluationMetricsService.record).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      environmentId: 'environment-1',
+      flagId: 'flag-1',
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'new-checkout',
+      enabled: true,
+      reason: EvaluationReason.GLOBAL_ON,
+    });
+  });
+
+  it('records NOT_FOUND without storing evaluation context', async () => {
+    snapshotCache.get.mockResolvedValue(null);
+    evaluationRepository.findSnapshot.mockResolvedValue(null);
+
+    const result = await service.evaluate({
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'missing-flag',
+      context: {
+        targetingKey: 'must-not-be-recorded',
+        roles: ['must-not-be-recorded'],
+      },
+    });
+
+    expect(result.reason).toBe(EvaluationReason.NOT_FOUND);
+    expect(evaluationMetricsService.record).toHaveBeenCalledTimes(1);
+    expect(evaluationMetricsService.record).toHaveBeenCalledWith({
+      projectKey: 'demo-project',
+      environmentKey: 'production',
+      flagKey: 'missing-flag',
+      enabled: false,
+      reason: EvaluationReason.NOT_FOUND,
+    });
+  });
+
+  it('records the safe ERROR result with an unresolved environment when evaluation fails', async () => {
+    snapshotCache.get.mockResolvedValue(null);
+    evaluationRepository.findSnapshot.mockRejectedValue(
+      new Error('database unavailable'),
+    );
+
+    const result = await service.evaluate({
+      projectKey: 'demo-project',
+      flagKey: 'new-checkout',
+      context: {
+        targetingKey: 'stable-user',
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        enabled: false,
+        reason: EvaluationReason.ERROR,
+      }),
+    );
+    expect(evaluationMetricsService.record).toHaveBeenCalledTimes(1);
+    expect(evaluationMetricsService.record).toHaveBeenCalledWith({
+      projectKey: 'demo-project',
+      environmentKey: '__unresolved__',
+      flagKey: 'new-checkout',
+      enabled: false,
+      reason: EvaluationReason.ERROR,
+    });
   });
 
   it('loads and stores a snapshot on a cache miss', async () => {
@@ -321,6 +485,34 @@ describe('EvaluationService', () => {
       reason: EvaluationReason.ERROR,
       matchedRuleId: null,
     });
+  });
+
+  it('preserves the evaluation result when metric recording throws synchronously', async () => {
+    snapshotCache.get.mockResolvedValue(globalOnSnapshot);
+    evaluationMetricsService.record.mockImplementation(() => {
+      throw new Error('unexpected metric failure');
+    });
+
+    await expect(
+      service.evaluate({
+        projectKey: 'demo-project',
+        environmentKey: 'production',
+        flagKey: 'new-checkout',
+        context: {
+          targetingKey: 'stable-user',
+        },
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        enabled: true,
+        reason: EvaluationReason.GLOBAL_ON,
+      }),
+    );
+
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('evaluation response was preserved'),
+      expect.any(String),
+    );
   });
 
   it('returns safe ERROR result when evaluation engine processing throws', async () => {

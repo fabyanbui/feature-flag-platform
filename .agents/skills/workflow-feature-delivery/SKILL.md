@@ -4,8 +4,7 @@ description: Plan or deliver a feature end-to-end across the stable MVP and acti
 ---
 
 ## Goal
-Deliver the smallest reversible vertical slice while keeping the completed MVP
-green and satisfying the active recommended phase and stop gate.
+Deliver the smallest reversible vertical slice while keeping the completed MVP green and satisfying the active recommended phase and stop gate.
 
 ## Sequence
 1. Read `AGENTS.md`, both roadmaps, and current completion evidence.
