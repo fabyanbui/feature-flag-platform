@@ -8,20 +8,20 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
-  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { Permission } from '../auth/permission';
 import {
   ProjectFlagKeyParamDto,
   ProjectKeyParamDto,
 } from '../common/dto/key-param.dto';
 import { PageResponse } from '../common/dto/page-response.dto';
-import { ActorRequiredGuard } from '../common/guards/actor-required.guard';
 import { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
 import { FeatureFlagQueryDto } from './dto/feature-flag-query.dto';
 import { FeatureFlagResponseDto } from './dto/feature-flag-response.dto';
@@ -29,6 +29,8 @@ import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 import { FeatureFlagsService } from './feature-flags.service';
 
 @ApiTags('Feature Flags')
+@ApiBearerAuth('demoBearer')
+@RequirePermissions(Permission.CONTROL_PLANE_READ)
 @Controller('projects/:projectKey/flags')
 export class FeatureFlagsController {
   constructor(private readonly featureFlagsService: FeatureFlagsService) {}
@@ -43,8 +45,7 @@ export class FeatureFlagsController {
   }
 
   @Post()
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.FLAG_MANAGE)
   @ApiCreatedResponse({ type: FeatureFlagResponseDto })
   create(
     @Param() params: ProjectKeyParamDto,
@@ -62,8 +63,7 @@ export class FeatureFlagsController {
   }
 
   @Patch(':flagKey')
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.FLAG_MANAGE)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   update(
     @Param() params: ProjectFlagKeyParamDto,
@@ -77,8 +77,7 @@ export class FeatureFlagsController {
   }
 
   @Post(':flagKey/archive')
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.FLAG_LIFECYCLE_MANAGE)
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   archive(
@@ -88,8 +87,7 @@ export class FeatureFlagsController {
   }
 
   @Post(':flagKey/restore')
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.FLAG_LIFECYCLE_MANAGE)
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: FeatureFlagResponseDto })
   restore(

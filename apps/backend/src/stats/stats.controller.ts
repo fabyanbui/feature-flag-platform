@@ -1,10 +1,13 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { Permission } from '../auth/permission';
 import {
   ProjectFlagKeyParamDto,
   ProjectKeyParamDto,
@@ -20,6 +23,8 @@ import {
 import { StatsService } from './stats.service';
 
 @ApiTags('Statistics')
+@ApiBearerAuth('demoBearer')
+@RequirePermissions(Permission.CONTROL_PLANE_READ)
 @Controller('projects/:projectKey')
 export class StatsController {
   constructor(private readonly statsService: StatsService) {}

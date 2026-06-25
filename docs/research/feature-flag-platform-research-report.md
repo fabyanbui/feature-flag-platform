@@ -335,7 +335,8 @@ Important security practices:
 - avoid PII in targeting keys,
 - fail closed on errors,
 - restrict CORS to expected admin and demo origins,
-- require actor identity for audited mutations,
+- resolve control-plane identity and role on the server,
+- authorize routes through a centralized least-privilege permission matrix,
 - keep control-plane and data-plane responsibilities separate.
 
 The demo app only calls:
@@ -344,7 +345,7 @@ The demo app only calls:
 POST /v1/evaluate
 ```
 
-It does not send admin actor headers or secrets.
+It does not send admin bearer credentials, actor headers, or secrets.
 
 ## 12. Comparison with Existing Solutions
 
@@ -396,12 +397,13 @@ Completed recommended enhancements:
 - group kill switch,
 - in-memory evaluation-snapshot cache,
 - privacy-preserving evaluation statistics dashboard,
-- simple JavaScript SDK with typed fail-closed client fallback.
+- simple JavaScript SDK with typed fail-closed client fallback,
+- server-resolved demo RBAC with admin, developer, and viewer roles.
 
 Remaining recommended and future work:
 
 - optional Redis provider for multi-instance cache consistency,
-- role-based access control,
+- production identity-provider integration,
 - Docker Compose one-command setup,
 - durable metric delivery and retention,
 - advanced experimentation analytics,

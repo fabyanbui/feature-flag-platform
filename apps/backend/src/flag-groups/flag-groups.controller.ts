@@ -7,20 +7,20 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
-  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { Permission } from '../auth/permission';
 import {
   ProjectGroupKeyParamDto,
   ProjectKeyParamDto,
 } from '../common/dto/key-param.dto';
 import { PageResponse } from '../common/dto/page-response.dto';
-import { ActorRequiredGuard } from '../common/guards/actor-required.guard';
 import { CreateFlagGroupDto } from './dto/create-flag-group.dto';
 import { FlagGroupQueryDto } from './dto/flag-group-query.dto';
 import { FlagGroupResponseDto } from './dto/flag-group-response.dto';
@@ -29,6 +29,8 @@ import { UpdateFlagGroupDto } from './dto/update-flag-group.dto';
 import { FlagGroupsService } from './flag-groups.service';
 
 @ApiTags('Flag Groups')
+@ApiBearerAuth('demoBearer')
+@RequirePermissions(Permission.CONTROL_PLANE_READ)
 @Controller('projects/:projectKey/groups')
 export class FlagGroupsController {
   constructor(private readonly flagGroupsService: FlagGroupsService) {}
@@ -43,8 +45,7 @@ export class FlagGroupsController {
   }
 
   @Post()
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.GROUP_MANAGE)
   @ApiCreatedResponse({ type: FlagGroupResponseDto })
   create(
     @Param() params: ProjectKeyParamDto,
@@ -54,8 +55,7 @@ export class FlagGroupsController {
   }
 
   @Patch(':groupKey')
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.GROUP_MANAGE)
   @ApiOkResponse({ type: FlagGroupResponseDto })
   update(
     @Param() params: ProjectGroupKeyParamDto,
@@ -69,8 +69,7 @@ export class FlagGroupsController {
   }
 
   @Put(':groupKey/config')
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.GROUP_KILL_SWITCH)
   @ApiOkResponse({ type: FlagGroupResponseDto })
   updateConfig(
     @Param() params: ProjectGroupKeyParamDto,

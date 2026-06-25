@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useAuth } from '../auth/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState, LoadingState } from '../components/DataState';
 import { RuntimeStateBadge } from '../components/RuntimeStateBadge';
@@ -46,6 +47,9 @@ export function FlagForm({
     onCancel,
     onSaved,
 }: FlagFormProps) {
+    const { can } = useAuth();
+    const canManageFlags = can('FLAG_MANAGE');
+    const canAssignGroups = can('GROUP_ASSIGN');
     const isEditing = flagKey !== null;
 
     const [form, setForm] = useState<FlagFormState>(initialForm);
@@ -160,6 +164,10 @@ export function FlagForm({
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (!canManageFlags) {
+            setFormError('Viewer access is read-only.');
+            return;
+        }
 
         const validationError = validateForm();
 
@@ -279,6 +287,12 @@ export function FlagForm({
             </header>
 
             <section className="panel">
+                {!canManageFlags ? (
+                    <p className="permission-notice" id="flag-form-permission-help">
+                        Viewer access is read-only. Flag configuration cannot be
+                        changed.
+                    </p>
+                ) : null}
                 <form className="form-grid" onSubmit={handleSubmit}>
                     <label>
                         Flag key
@@ -288,7 +302,7 @@ export function FlagForm({
                                 updateForm('key', event.target.value)
                             }
                             placeholder="new-checkout"
-                            disabled={isEditing || saving}
+                            disabled={isEditing || saving || !canManageFlags}
                         />
                     </label>
 
@@ -300,7 +314,7 @@ export function FlagForm({
                                 updateForm('name', event.target.value)
                             }
                             placeholder="New Checkout"
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         />
                     </label>
 
@@ -313,7 +327,7 @@ export function FlagForm({
                             }
                             placeholder="Controls rollout of the new checkout experience."
                             rows={4}
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         />
                     </label>
 
@@ -327,7 +341,7 @@ export function FlagForm({
                                     event.target.value as FlagConfigStatus,
                                 )
                             }
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         >
                             <option value="DISABLED">Disabled</option>
                             <option value="ENABLED">Enabled</option>
@@ -344,7 +358,7 @@ export function FlagForm({
                                     event.target.value as ServingMode,
                                 )
                             }
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         >
                             <option value="TARGETED">
                                 Targeted / conditional
@@ -360,7 +374,12 @@ export function FlagForm({
                             onChange={(event) =>
                                 updateForm('groupKey', event.target.value)
                             }
-                            disabled={saving}
+                            disabled={saving || !canAssignGroups}
+                            title={
+                                !canAssignGroups
+                                    ? 'This identity cannot change group assignments.'
+                                    : undefined
+                            }
                         >
                             <option value="">No group</option>
                             {groups.map((group) => (
@@ -383,7 +402,7 @@ export function FlagForm({
                             onChange={(event) =>
                                 updateForm('killSwitch', event.target.checked)
                             }
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         />
                         <span>
                             Kill switch active — force runtime Off even when
@@ -427,7 +446,7 @@ export function FlagForm({
                             type="button"
                             className="button button-secondary"
                             onClick={handleCancel}
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         >
                             Cancel
                         </button>
@@ -435,7 +454,7 @@ export function FlagForm({
                         <button
                             type="submit"
                             className="button button-primary"
-                            disabled={saving}
+                            disabled={saving || !canManageFlags}
                         >
                             {saving
                                 ? 'Saving...'

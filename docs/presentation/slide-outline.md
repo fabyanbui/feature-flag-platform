@@ -256,12 +256,31 @@ Engineering tradeoff:
 - production SDKs may add streaming updates, local snapshots, and stronger
   authentication, but those would increase consistency and security scope.
 
-## Slide 17 — Future Work
+## Slide 17 — Recommended Enhancement: Server-Resolved Demo RBAC
+
+Implementation proof:
+
+- bearer tokens resolve to fixed actors and `ADMIN`, `DEVELOPER`, or `VIEWER`
+  roles on the backend,
+- one centralized permission matrix protects control-plane reads and mutations,
+- spoofed actor or role headers cannot elevate permission or alter audit actors,
+- the admin selector demonstrates read-only, developer, and administrator
+  experiences with accessible disabled-state explanations,
+- health and evaluation remain public, preserving data-plane behavior.
+
+Engineering tradeoff:
+
+- static environment-backed identities keep the mini-project small and
+  presentation-friendly,
+- production use would require an external identity provider, rotation,
+  sessions, revocation, and stronger deployment controls.
+
+## Slide 18 — Future Work
 
 Only after MVP stability:
 
 - optional Redis cache provider,
-- RBAC,
+- production identity-provider integration,
 - advanced experimentation analytics and long-term metric retention,
 - Docker Compose,
 - flag cleanup workflow.
@@ -273,8 +292,9 @@ Completed recommended enhancements:
 - in-memory evaluation-snapshot cache,
 - privacy-preserving evaluation statistics and dashboard,
 - JavaScript SDK and demo migration.
+- server-resolved demo RBAC.
 
-## Slide 18 — Conclusion
+## Slide 19 — Conclusion
 
 Final message:
 

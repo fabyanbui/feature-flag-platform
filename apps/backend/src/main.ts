@@ -60,14 +60,15 @@ async function bootstrap() {
     .addTag('Statistics')
     .addTag('Sample Users')
     .addTag('Audit Logs')
-    .addApiKey(
+    .addBearerAuth(
       {
-        type: 'apiKey',
-        name: 'X-Actor',
-        in: 'header',
-        description: 'MVP actor identity for audited mutation requests.',
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'Demo token',
+        description:
+          'Presentation-only demo identity token for control-plane access.',
       },
-      'actor',
+      'demoBearer',
     )
     .addApiKey(
       {

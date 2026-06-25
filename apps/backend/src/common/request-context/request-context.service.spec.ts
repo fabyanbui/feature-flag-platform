@@ -1,4 +1,5 @@
 import { RequestContextService } from './request-context.service';
+import { DemoRole } from '../../auth/demo-role';
 
 describe('RequestContextService', () => {
   let service: RequestContextService;
@@ -15,15 +16,19 @@ describe('RequestContextService', () => {
     expect(service.getActor()).toBeUndefined();
   });
 
-  it('returns request ID and actor inside run callback', () => {
+  it('stores a server-resolved identity inside the active request context', () => {
     service.run(
       {
         requestId: 'req-test',
-        actor: 'mentor@example.local',
       },
       () => {
+        service.setIdentity({
+          actor: 'mentor@example.local',
+          role: DemoRole.ADMIN,
+        });
         expect(service.getRequestId()).toBe('req-test');
         expect(service.getActor()).toBe('mentor@example.local');
+        expect(service.getRole()).toBe(DemoRole.ADMIN);
       },
     );
   });
@@ -32,9 +37,12 @@ describe('RequestContextService', () => {
     service.run(
       {
         requestId: 'req-test',
-        actor: 'mentor@example.local',
       },
       () => {
+        service.setIdentity({
+          actor: 'mentor@example.local',
+          role: DemoRole.ADMIN,
+        });
         expect(service.getRequestId()).toBe('req-test');
       },
     );
@@ -47,9 +55,9 @@ describe('RequestContextService', () => {
     service.run(
       {
         requestId: 'req-one',
-        actor: 'actor-one',
       },
       () => {
+        service.setIdentity({ actor: 'actor-one', role: DemoRole.ADMIN });
         expect(service.getRequestId()).toBe('req-one');
         expect(service.getActor()).toBe('actor-one');
       },
@@ -58,9 +66,9 @@ describe('RequestContextService', () => {
     service.run(
       {
         requestId: 'req-two',
-        actor: 'actor-two',
       },
       () => {
+        service.setIdentity({ actor: 'actor-two', role: DemoRole.VIEWER });
         expect(service.getRequestId()).toBe('req-two');
         expect(service.getActor()).toBe('actor-two');
       },
@@ -71,17 +79,20 @@ describe('RequestContextService', () => {
     service.run(
       {
         requestId: 'req-outer',
-        actor: 'outer-actor',
       },
       () => {
+        service.setIdentity({ actor: 'outer-actor', role: DemoRole.ADMIN });
         expect(service.getRequestId()).toBe('req-outer');
 
         service.run(
           {
             requestId: 'req-inner',
-            actor: 'inner-actor',
           },
           () => {
+            service.setIdentity({
+              actor: 'inner-actor',
+              role: DemoRole.DEVELOPER,
+            });
             expect(service.getRequestId()).toBe('req-inner');
             expect(service.getActor()).toBe('inner-actor');
           },

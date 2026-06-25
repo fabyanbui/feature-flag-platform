@@ -11,13 +11,33 @@ import { ApiErrorCode } from '../src/common/errors/api-error-code';
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
 import { RequestContextMiddleware } from '../src/common/middleware/request-context.middleware';
 import { RequestContextService } from '../src/common/request-context/request-context.service';
+import {
+  bearer,
+  configureRbacTestEnvironment,
+  RBAC_TEST_CREDENTIALS,
+} from './rbac-test-credentials';
 
-export async function createE2eApp(): Promise<INestApplication<App>> {
+export async function createE2eApp(
+  options: { defaultAuthorization?: boolean } = {},
+): Promise<INestApplication<App>> {
+  configureRbacTestEnvironment();
+
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
 
   const app = moduleFixture.createNestApplication<App>();
+
+  if (options.defaultAuthorization !== false) {
+    app.use((request, _response, next) => {
+      if (!request.headers.authorization) {
+        request.headers.authorization = bearer(
+          RBAC_TEST_CREDENTIALS.admin.token,
+        );
+      }
+      next();
+    });
+  }
 
   const requestContext = moduleFixture.get<RequestContextService>(
     RequestContextService,

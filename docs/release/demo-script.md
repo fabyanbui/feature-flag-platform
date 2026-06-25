@@ -340,6 +340,28 @@ Presenter point:
 > Transport failures fail closed locally and remain distinguishable from a
 > backend evaluation decision.
 
+### 11. Show Server-Resolved Demo RBAC
+
+1. Open the admin dashboard and select **Viewer**.
+2. Show that projects, flags, groups, history, statistics, and audit logs remain
+   readable while mutation controls are disabled with role explanations.
+3. Select **Developer** and show flag/rule editing plus group assignment.
+4. Point out that archive/restore, project management, group management, and
+   group kill switches remain disabled.
+5. Select **Admin** and perform one administrator-only action.
+6. Open the resulting audit entry and show the resolved `demo-admin` actor.
+
+Presenter point:
+
+> The selector changes provisioned demo credentials, but the browser never
+> declares its own role. The backend resolves the token, checks one permission
+> matrix, and supplies the trusted audit actor.
+
+Security boundary:
+
+> This is presentation-grade authorization, not OAuth or a production identity
+> provider. The evaluation API remains public and unchanged for the SDK.
+
 ## Required Talking Points
 
 ### Project need
@@ -386,7 +408,8 @@ separation, auditability, and presentation-ready release scenarios.
 Compared with LaunchDarkly, Unleash, Flagsmith, ConfigCat, and Split, this MVP
 is smaller and educational. It borrows the core ideas: management UI, targeting,
 rollout, kill switch, evaluation API, audit logs, and a small client SDK. It
-intentionally avoids enterprise complexity such as full RBAC, streaming SDKs,
+intentionally avoids enterprise complexity such as production identity
+providers, streaming SDKs,
 advanced experimentation analytics, and multi-region operations.
 
 ## If Something Fails During Demo

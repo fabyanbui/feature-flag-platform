@@ -8,21 +8,21 @@ import {
   Param,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiExtraModels,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
-  ApiSecurity,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { Permission } from '../auth/permission';
 import { IsString, MaxLength } from 'class-validator';
 import { ProjectKeyParamDto } from '../common/dto/key-param.dto';
 import { PageResponse } from '../common/dto/page-response.dto';
-import { ActorRequiredGuard } from '../common/guards/actor-required.guard';
 import { CreateSampleUserDto } from './dto/create-sample-user.dto';
 import { SampleUserQueryDto } from './dto/sample-user-query.dto';
 import { SampleUserResponseDto } from './dto/sample-user-response.dto';
@@ -36,6 +36,8 @@ class SampleUserKeyParamDto extends ProjectKeyParamDto {
 
 @ApiTags('Sample Users')
 @ApiExtraModels(SampleUserResponseDto)
+@ApiBearerAuth('demoBearer')
+@RequirePermissions(Permission.CONTROL_PLANE_READ)
 @Controller('projects/:projectKey/sample-users')
 export class SampleUsersController {
   constructor(private readonly sampleUsersService: SampleUsersService) {}
@@ -71,8 +73,7 @@ export class SampleUsersController {
   }
 
   @Post()
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.SAMPLE_USER_MANAGE)
   @ApiCreatedResponse({ type: SampleUserResponseDto })
   create(
     @Param() params: ProjectKeyParamDto,
@@ -82,8 +83,7 @@ export class SampleUsersController {
   }
 
   @Delete(':targetingKey')
-  @UseGuards(ActorRequiredGuard)
-  @ApiSecurity('actor')
+  @RequirePermissions(Permission.SAMPLE_USER_MANAGE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
   delete(@Param() params: SampleUserKeyParamDto): Promise<void> {

@@ -14,7 +14,7 @@ describe('Phase 12 group kill switch (e2e)', () => {
   let secondFlagKey: string;
   let groupKey: string;
 
-  const actor = 'phase12-admin@example.local';
+  const actor = 'demo-admin';
 
   beforeAll(async () => {
     app = await createE2eApp();
@@ -252,30 +252,21 @@ describe('Phase 12 group kill switch (e2e)', () => {
     expect(switchAuditEntries).toHaveLength(3);
   });
 
-  it('validates actors, duplicate keys, project scope, and request bodies', async () => {
+  it('validates duplicate keys, project scope, and request bodies', async () => {
     await createProject(app, actor, projectKey);
     await createGlobalFlag(app, actor, projectKey, firstFlagKey);
 
-    const missingActorResponse = await request(app.getHttpServer())
+    const authenticatedResponse = await request(app.getHttpServer())
       .post(`/v1/projects/${projectKey}/groups`)
-      .send({
-        key: groupKey,
-        name: 'Checkout flags',
-      })
-      .expect(400);
-
-    expect(missingActorResponse.body).toMatchObject({
-      code: 'VALIDATION_ERROR',
-    });
-
-    await request(app.getHttpServer())
-      .post(`/v1/projects/${projectKey}/groups`)
-      .set('X-Actor', actor)
       .send({
         key: groupKey,
         name: 'Checkout flags',
       })
       .expect(201);
+
+    expect(authenticatedResponse.body).toMatchObject({
+      key: groupKey,
+    });
 
     const duplicateResponse = await request(app.getHttpServer())
       .post(`/v1/projects/${projectKey}/groups`)

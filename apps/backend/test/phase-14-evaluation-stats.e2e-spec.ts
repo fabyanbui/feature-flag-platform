@@ -11,7 +11,7 @@ import { EvaluationMetricsRepository } from '../src/repositories/evaluation-metr
 import { cleanDatabase } from './database-test-utils';
 import { createE2eApp } from './create-e2e-app';
 
-const actor = 'phase14-admin@example.local';
+const actor = 'demo-admin';
 
 describe('Phase 14 evaluation statistics routes (e2e)', () => {
   let app: INestApplication<App>;

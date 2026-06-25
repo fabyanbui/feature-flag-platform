@@ -1,5 +1,4 @@
 import {
-  ACTOR_HEADER,
   REQUEST_ID_HEADER,
   RESPONSE_REQUEST_ID_HEADER,
 } from '../constants/api.constants';
@@ -46,17 +45,17 @@ describe('RequestContextMiddleware', () => {
     expect(requestContext.run).toHaveBeenCalledWith(
       {
         requestId: 'req-existing',
-        actor: undefined,
       },
       next,
     );
     expect(next).toHaveBeenCalled();
   });
 
-  it('trims incoming request ID and actor headers', () => {
+  it('trims the incoming request ID without trusting actor headers', () => {
     const request = createRequest({
       [REQUEST_ID_HEADER]: ' req-existing ',
-      [ACTOR_HEADER]: ' mentor@example.local ',
+      'x-actor': ' mentor@example.local ',
+      'x-actor-role': 'ADMIN',
     });
 
     middleware.use(request as never, response as never, next);
@@ -68,7 +67,6 @@ describe('RequestContextMiddleware', () => {
     expect(requestContext.run).toHaveBeenCalledWith(
       {
         requestId: 'req-existing',
-        actor: 'mentor@example.local',
       },
       next,
     );
@@ -85,7 +83,6 @@ describe('RequestContextMiddleware', () => {
     expect(requestContext.run).toHaveBeenCalledWith(
       {
         requestId: generatedRequestId,
-        actor: undefined,
       },
       next,
     );
@@ -101,22 +98,5 @@ describe('RequestContextMiddleware', () => {
     const generatedRequestId = response.setHeader.mock.calls[0][1];
 
     expect(generatedRequestId).toEqual(expect.stringMatching(/^req_/));
-  });
-
-  it('stores undefined actor when actor header is missing or blank', () => {
-    const request = createRequest({
-      [REQUEST_ID_HEADER]: 'req-existing',
-      [ACTOR_HEADER]: '   ',
-    });
-
-    middleware.use(request as never, response as never, next);
-
-    expect(requestContext.run).toHaveBeenCalledWith(
-      {
-        requestId: 'req-existing',
-        actor: undefined,
-      },
-      next,
-    );
   });
 });

@@ -24,9 +24,10 @@ Reviewed surfaces:
 - Audit logging behavior for configuration mutations.
 - Local environment configuration examples.
 
-Out of scope for the MVP:
+Out of scope for the current release:
 
-- Full authentication and authorization.
+- Production authentication, external identity providers, and session
+  management.
 - Secret rotation.
 - Production rate limiting and abuse protection.
 - Multi-tenant isolation beyond project-scoped data modeling.
@@ -108,10 +109,10 @@ Evidence:
 - `apps/demo/src/App.tsx` delegates evaluation to `@ffp/js-sdk`.
 - `packages/js-sdk/src/client.ts` calls only `POST /v1/evaluate`.
 - The SDK sends project, environment, flag, and caller-provided evaluation
-  context only; it adds no actor header or credential.
+  context only; it adds no control-plane credential.
 - `apps/demo/.env.example` contains only browser-safe routing configuration.
-- The demo app does not send `X-Actor`; actor identity is only needed for
-  audited control-plane mutations.
+- The demo app sends no bearer token; identity is only required on the control
+  plane.
 
 ## JavaScript SDK Failure Isolation
 
@@ -162,7 +163,7 @@ Control plane:
 - Feature flag creation and updates.
 - Rule replacement.
 - Audit log inspection.
-- Requires `X-Actor` for audited mutations.
+- Requires a server-resolved demo identity and permission.
 
 Data plane:
 
@@ -170,7 +171,7 @@ Data plane:
 - JavaScript SDK.
 - `POST /v1/evaluate`.
 - No mutation behavior.
-- No actor header.
+- No control-plane bearer credential.
 - No database or backend secrets in browser configuration.
 
 Evidence:
@@ -181,9 +182,9 @@ Evidence:
 
 ## Audit and Accountability
 
-Mutation flows require actor identity and write audit records with before/after
-snapshots in the same transaction as the mutation. This supports accountability
-for control-plane changes.
+Mutation flows require an authorized server-resolved identity and write audit
+records with before/after snapshots in the same transaction as the mutation.
+This supports accountability for control-plane changes.
 
 Evidence:
 
@@ -268,7 +269,8 @@ queries.
 
 Known limitations:
 
-- the read APIs do not yet have production authentication or RBAC,
+- the read APIs use presentation-only demo RBAC rather than production
+  authentication,
 - the evaluation endpoint requires rate limiting before internet-facing use,
 - direct best-effort writes may be lost during process termination,
 - aggregate key cardinality requires abuse protection in a production system.
@@ -285,7 +287,7 @@ Test evidence:
 
 | Limitation | MVP mitigation |
 | --- | --- |
-| No full authentication system | Actor header is required for audited mutations and documented as MVP-only. |
+| No production identity provider | Static local demo bearer tokens resolve to fixed roles on the backend; do not deploy or reuse them as production credentials. |
 | Evaluation endpoint is browser-callable for the demo | Demo only exposes non-sensitive demo flags and non-PII targeting keys. |
 | No production rate limiting | Keep deployment local/demo scoped; add rate limiting before production use. |
 | No server-side SDK | REST evaluation API is enough for the MVP demo; SDK is a recommended enhancement only after MVP stability. |
@@ -299,8 +301,26 @@ The MVP is acceptable for local demonstration when:
 
 1. Safe-default evaluation tests pass.
 2. Demo app remains data-plane only.
-3. Control-plane mutations require actor identity.
+3. Control-plane reads and mutations require server-resolved demo identity and
+   permissions.
 4. CORS origins are configured for local admin and demo apps.
-5. No browser app contains database URLs, backend secrets, or admin tokens.
+5. No browser app contains database URLs or production secrets; admin demo
+   tokens are explicitly local and presentation-only.
 6. Aggregate metrics remain free of evaluation context and cannot affect
    evaluation responses.
+
+## Phase 16 Demo RBAC Review
+
+- Bearer tokens are loaded from backend environment configuration and are never
+  persisted in the database, audit snapshots, metrics, or logs.
+- The backend—not the browser—maps tokens to actors and roles.
+- `X-Actor` and `X-Actor-Role` are ignored for authorization and audit
+  attribution.
+- `UNAUTHORIZED` distinguishes missing or invalid identity from `FORBIDDEN`
+  permission failures.
+- The admin selector exposes only local presentation credentials and disables
+  unavailable actions accessibly; backend guards remain authoritative.
+- The evaluation endpoint stays public and unchanged, preserving SDK and demo
+  data-plane behavior.
+- This model intentionally excludes passwords, OAuth, refresh tokens, MFA,
+  password reset, sessions, and identity administration.

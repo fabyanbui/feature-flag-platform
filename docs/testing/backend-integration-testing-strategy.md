@@ -1,5 +1,9 @@
 # Backend Integration Testing Strategy
 
+> **Phase 16 update:** Request-context tests now resolve actors from configured
+> bearer identities. Older `X-Actor` examples are historical MVP coverage, not
+> the active authorization contract.
+
 ## Purpose
 
 This document explains how to design **integration tests** for
