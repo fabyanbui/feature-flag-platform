@@ -6,6 +6,7 @@ import { FlagListPage } from './pages/FlagListPage';
 import { FlagGroupPage } from './pages/FlagGroupPage';
 import { ProjectListPage } from './pages/ProjectListPage';
 import { RuleEditorPage } from './pages/RuleEditorPage';
+import { StatisticsPage } from './pages/StatisticsPage';
 
 type AdminView =
   | 'projects'
@@ -13,7 +14,8 @@ type AdminView =
   | 'groups'
   | 'flag-form'
   | 'rules'
-  | 'audit';
+  | 'audit'
+  | 'statistics';
 
 function App() {
   const [view, setView] = useState<AdminView>('projects');
@@ -91,6 +93,14 @@ function App() {
               <button
                 type="button"
                 className="button button-secondary"
+                onClick={() => setView('statistics')}
+              >
+                Statistics
+              </button>
+
+              <button
+                type="button"
+                className="button button-secondary"
                 onClick={() => setView('audit')}
               >
                 Audit logs
@@ -141,6 +151,13 @@ function App() {
 
       {view === 'audit' && selectedProjectKey ? (
         <AuditLogPage
+          projectKey={selectedProjectKey}
+          onBackToFlags={() => setView('flags')}
+        />
+      ) : null}
+
+      {view === 'statistics' && selectedProjectKey ? (
+        <StatisticsPage
           projectKey={selectedProjectKey}
           onBackToFlags={() => setView('flags')}
         />

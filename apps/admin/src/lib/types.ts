@@ -122,6 +122,43 @@ export type EvaluationResult = {
   matchedRuleId: string | null;
 };
 
+export type EvaluationReason = EvaluationResult["reason"];
+
+export type EvaluationReasonCount = {
+  reason: EvaluationReason;
+  enabled: boolean;
+  count: number;
+};
+
+export type FlagStatsSummary = {
+  flagKey: string;
+  totalEvaluations: number;
+  enabledCount: number;
+  disabledCount: number;
+  topReasons: EvaluationReasonCount[];
+};
+
+export type EvaluationTimeBucket = {
+  bucketStart: string;
+  totalEvaluations: number;
+  enabledCount: number;
+  disabledCount: number;
+};
+
+export type FlagStats = {
+  projectKey: string;
+  flagKey: string;
+  environmentKey: string;
+  from: string;
+  to: string;
+  totalEvaluations: number;
+  enabledCount: number;
+  disabledCount: number;
+  enabledPercentage: number;
+  reasons: EvaluationReasonCount[];
+  buckets: EvaluationTimeBucket[];
+};
+
 export type ApiError = {
   code: string;
   message: string;
