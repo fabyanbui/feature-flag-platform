@@ -86,6 +86,7 @@ model Project {
   flagConfigs        FlagEnvironmentConfig[] @relation("ProjectFlagConfigs")
   sampleUserContexts SampleUserContext[]
   auditLogEntries    AuditLogEntry[]
+  evaluationMetrics  FlagEvaluationMetric[]
 
   @@map("projects")
 }
@@ -101,10 +102,11 @@ model Environment {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  project          Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  flagConfigs      FlagEnvironmentConfig[]
-  flagGroupConfigs FlagGroupConfig[]
-  auditLogEntries  AuditLogEntry[]
+  project           Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  flagConfigs       FlagEnvironmentConfig[]
+  flagGroupConfigs  FlagGroupConfig[]
+  auditLogEntries   AuditLogEntry[]
+  evaluationMetrics FlagEvaluationMetric[]
 
   @@unique([projectId, key])
   @@unique([projectId, id])
@@ -128,6 +130,7 @@ model FeatureFlag {
   project            Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
   group              FlagGroup?              @relation(fields: [projectId, groupId], references: [projectId, id], onDelete: Restrict)
   environmentConfigs FlagEnvironmentConfig[]
+  evaluationMetrics  FlagEvaluationMetric[]
 
   @@unique([projectId, key])
   @@unique([projectId, id])
@@ -213,6 +216,38 @@ model FlagRule {
   @@index([flagConfigId])
   @@index([flagConfigId, type, priority])
   @@map("flag_rules")
+}
+
+model FlagEvaluationMetric {
+  id String @id @default(cuid())
+
+  projectId     String? @map("project_id")
+  environmentId String? @map("environment_id")
+  flagId        String? @map("flag_id")
+
+  projectKey     String @map("project_key") @db.VarChar(64)
+  environmentKey String @map("environment_key") @db.VarChar(64)
+  flagKey        String @map("flag_key") @db.VarChar(64)
+
+  bucketStart DateTime @map("bucket_start") @db.Timestamptz(3)
+  reason      String   @db.VarChar(40)
+  enabled     Boolean
+  count       Int      @default(1)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  environment Environment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  flag        FeatureFlag? @relation(fields: [flagId], references: [id], onDelete: SetNull)
+
+  @@unique([projectKey, environmentKey, flagKey, bucketStart, reason, enabled], name: "metricBucket", map: "flag_evaluation_metrics_bucket_key")
+  @@index([projectKey, environmentKey, bucketStart])
+  @@index([projectKey, flagKey, environmentKey, bucketStart])
+  @@index([projectId])
+  @@index([environmentId])
+  @@index([flagId])
+  @@map("flag_evaluation_metrics")
 }
 
 model SampleUserContext {
