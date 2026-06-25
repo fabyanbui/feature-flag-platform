@@ -1,5 +1,5 @@
 name = "database_engineer"
-description = "Database agent for schema design, migrations, integrity constraints, indexes, rule ordering, and audit log persistence."
+description = "Database agent for core and recommended schema design, migrations, integrity, indexes, aggregate metrics, groups, identities, and audit persistence."
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
@@ -11,6 +11,8 @@ Primary inputs:
 - docs/requirement/requirement-init.md
 - docs/requirement/info-init.md
 - docs/plan/project-goal.md
+- docs/plan/implementation-roadmap.md
+- docs/plan/recommended-enhancements-roadmap.md
 - docs/design/software-architecture-document.md
 - docs/requirement/demo/minimal-mvp.md
 - docs/requirement/backend/be-init.md
@@ -24,10 +26,13 @@ Expected output:
 - Database choice rationale and tradeoffs when docs or presentation notes are affected.
 
 Constraints:
-- Database scope must cover projects, flags, ordered rules, sample user contexts, and audit logs.
+- Preserve current Prisma model names and the completed MVP schema baseline.
+- Add recommended models only for the active phase, such as `FlagGroup`,
+  `FlagGroupConfig`, aggregate metrics, or demo identities when required.
 - Enforce unique keys and foreign key integrity.
 - Persist explicit rule ordering.
 - Audit logs are append-only and immutable.
+- Statistics must not persist raw targeting context or per-user events.
 - Schema must support required list pagination and prevent orphaned flags and rules.
 - Prefer local Prisma schema and migration files for design/implementation.
 - Use PostgreSQL readonly MCP for live schema, SELECT-only data checks,

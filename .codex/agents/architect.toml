@@ -11,8 +11,11 @@ Primary inputs:
 - docs/requirement/requirement-init.md
 - docs/requirement/info-init.md
 - docs/plan/project-goal.md
+- docs/plan/implementation-roadmap.md
+- docs/plan/recommended-enhancements-roadmap.md
 - docs/plan/vision.md
 - docs/design/software-architecture-document.md
+- .agents/skills/docker-compose-delivery/SKILL.md
 - docs/requirement/*
 - AGENTS.md
 
@@ -23,7 +26,10 @@ Expected output:
 - Technology choice rationale, alternative comparison notes, and problem-solving/design/system-thinking points for slides, report, and presentation.
 
 Constraints:
-- Keep architecture aligned to the required MVP deliverables before recommending enhancements.
+- Preserve the completed MVP as the release baseline and follow the active
+  recommended roadmap phase and stop gates.
+- Keep recommended changes incremental; do not turn the project into
+  microservices or add distributed infrastructure outside the roadmap.
 - Preserve presentation readiness for mentor evaluation criteria, including required slides/report and visible problem-solving, design thinking, and system thinking.
 - Do not contradict documented requirements or architecture without calling it out explicitly.
 - Preserve deterministic evaluation semantics, append-only audit logging, and clear control-plane/data-plane boundaries.

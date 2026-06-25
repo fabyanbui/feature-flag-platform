@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docker Compose Delivery"
+  short_description: "Build a reliable local demo stack"
+  default_prompt: "Use $docker-compose-delivery to implement or validate the containerized feature flag demo workflow."

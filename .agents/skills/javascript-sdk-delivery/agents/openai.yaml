@@ -1,0 +1,4 @@
+interface:
+  display_name: "JavaScript SDK Delivery"
+  short_description: "Build the fail-closed feature flag SDK"
+  default_prompt: "Use $javascript-sdk-delivery to implement or review the @ffp/js-sdk package and demo integration."
