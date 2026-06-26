@@ -1241,6 +1241,54 @@ restart.
 - Migration and seed behavior are safe to rerun.
 - Normal npm-local workflow still works.
 
+### Completion evidence
+
+Phase 19 is complete:
+
+- added default Compose one-shot `migrate` and `demo-seed` services so
+  `docker compose up --build` starts the complete demo path after PostgreSQL is
+  healthy,
+- changed the demo seed to create missing demo records without resetting
+  existing flag state, rules, group kill switches, lifecycle state, group
+  assignment, or sample users on every restart,
+- kept Redis optional under the existing `redis` profile and did not make Redis
+  part of the stable demo startup path,
+- kept browser-facing frontend build variables on `http://localhost:<port>/v1`
+  and preserved backend CORS configuration through environment variables,
+- updated clean-environment startup, troubleshooting, and presentation demo
+  instructions for the Phase 19 workflow,
+- preserved the normal npm-local PostgreSQL, migration, seed, backend, admin,
+  and demo commands.
+
+Final Phase 19 validation completed on June 26, 2026:
+
+- `docker compose config --quiet`, Prisma schema validation, `npm run lint`,
+  `npm run test`, `npm run build`, and `npm run diff:check` passed,
+- all 52 backend unit suites passed with 401 tests and all 21 JavaScript SDK
+  tests passed,
+- database-backed integration and E2E suites passed with 11 integration tests
+  and 44 E2E tests,
+- an isolated clean Compose stack started on alternate host ports with
+  PostgreSQL healthy, `migrate` exited `0`, `demo-seed` exited `0`, and
+  backend, admin, and demo containers healthy,
+- clean-stack endpoint smoke checks returned backend health, admin `200`, and
+  demo `200`,
+- seeded evaluations through the containerized backend returned
+  `new-checkout` as `enabled=true` with `reason=ROLE_MATCH` and
+  `beta-dashboard` as `enabled=true` with `reason=GLOBAL_ON`,
+- CORS preflight responses allowed the configured admin and demo origins,
+- compiled admin and demo bundles used the browser-resolvable API URL and did
+  not contain the Docker-internal `backend:3000` hostname,
+- rerunning `migrate` reported no pending migrations and rerunning `demo-seed`
+  completed successfully,
+- after a user-style group kill-switch change in the isolated stack, rerunning
+  `demo-seed` preserved the edited switch and evaluation still returned
+  `reason=GROUP_KILL_SWITCH`, proving seed reruns are non-destructive,
+- the optional Redis profile started a healthy Redis service and returned
+  `PONG`,
+- Docker image validation used the legacy Docker builder because the local
+  Docker Buildx plugin was unavailable.
+
 ### Likely changed files
 
 - `docker-compose.yml`

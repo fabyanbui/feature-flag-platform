@@ -178,14 +178,14 @@ Seed demo data:
 npm run db:seed --workspace=@ffp/backend
 ```
 
-Seed data creates:
+Seed data creates missing demo records without resetting existing demo edits.
+On a clean database it creates:
 
 - project `demo-project`,
 - environments `production`, `staging`, and `development`,
-- group `customer-experience`, with its kill switch inactive in every seeded
-  environment,
-- flags `beta-dashboard` and `new-checkout`,
-- both flags assigned to `customer-experience`,
+- group `customer-experience`, with its kill switch inactive when created,
+- flags `beta-dashboard` and `new-checkout`, assigned to
+  `customer-experience` when created,
 - sample users for beta, regular, and admin scenarios,
 - audit entries for seeded setup.
 
@@ -218,12 +218,12 @@ Demo app:    http://localhost:5174
 Swagger UI:  http://localhost:3000/docs
 ```
 
-### Docker Compose baseline
+### Docker Compose demo workflow
 
-Phase 17 provides a containerized baseline for PostgreSQL, the backend, the
-admin dashboard, and the demo application. It intentionally keeps migrations
-and seed data as explicit initialization commands. The automated one-command
-demo dependency chain is reserved for Phase 19 stabilization.
+Phase 19 provides the final local Docker workflow for PostgreSQL, committed
+migrations, repeatable demo seed data, the backend API, the admin dashboard,
+and the demo application. The normal npm-local workflow above remains fully
+supported.
 
 Copy and review the environment example before building:
 
@@ -237,46 +237,48 @@ Keep `DATABASE_URL` for npm-local development. Compose uses
 `http://localhost:3000/v1`; a browser cannot resolve the internal `backend`
 service name.
 
-Build the application images and start PostgreSQL:
+Start the complete demo path from a clean environment:
 
 ```bash
-docker compose build
-docker compose up -d postgres
-docker compose ps
+docker compose up --build
 ```
+
+For detached mode:
+
+```bash
+docker compose up --build -d
+docker compose ps -a
+```
+
+The dependency order is:
+
+```text
+postgres healthy
+-> migrate exits 0
+-> demo-seed exits 0
+-> backend healthy
+-> admin and demo healthy
+```
+
+The `migrate` service runs `prisma migrate deploy`. The `demo-seed` service
+creates missing demo records and is safe to rerun; it does not truncate data or
+reset existing flag state, rules, group kill switches, or sample users on every
+restart.
 
 If port `5432` is already used by a local PostgreSQL service, set
 `POSTGRES_HOST_PORT` to another host port. The backend still reaches PostgreSQL
 through the internal `postgres:5432` address:
 
 ```bash
-POSTGRES_HOST_PORT=55432 docker compose up -d postgres
+POSTGRES_HOST_PORT=55432 docker compose up --build
 ```
 
-After PostgreSQL reports `healthy`, apply committed migrations and seed the
-repeatable demo data:
+The optional Redis cache provider is not part of the stable demo requirement.
+To run the same stack with Redis-backed evaluation snapshot caching, enable the
+`redis` profile and select the provider:
 
 ```bash
-docker compose run --rm backend \
-  npm run prisma:migrate:deploy --workspace=@ffp/backend
-docker compose run --rm backend \
-  npm run db:seed --workspace=@ffp/backend
-```
-
-Start the application services:
-
-```bash
-docker compose up -d backend admin demo
-docker compose ps
-```
-
-The optional Redis cache provider is not part of the baseline startup and is
-not a ninth requirement. To run the same stack with Redis-backed evaluation
-snapshot caching, enable the `redis` profile and select the provider:
-
-```bash
-EVALUATION_CACHE_PROVIDER=redis docker compose --profile redis up -d redis backend admin demo
-docker compose ps
+EVALUATION_CACHE_PROVIDER=redis docker compose --profile redis up --build
 ```
 
 The backend reaches Redis through `REDIS_URL=redis://redis:6379` in Compose. If
@@ -293,7 +295,7 @@ curl --head http://localhost:5173
 curl --head http://localhost:5174
 ```
 
-Stop the baseline while preserving PostgreSQL data:
+Stop the stack while preserving PostgreSQL data:
 
 ```bash
 docker compose down
@@ -302,10 +304,6 @@ docker compose down
 To remove the Compose database volume as well, use
 `docker compose down --volumes`. This is destructive and should only be used
 for an intentional clean-environment test.
-
-This baseline is not yet advertised as one-command demo startup. Phase 19 will
-add safe migration and seed dependency ordering after the optional Redis
-decision at Gate C. The normal npm-local commands above remain fully supported.
 
 #### Demo RBAC
 

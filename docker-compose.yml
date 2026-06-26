@@ -1,3 +1,22 @@
+x-backend-build: &backend-build
+  context: .
+  dockerfile: apps/backend/Dockerfile
+
+x-backend-environment: &backend-environment
+  DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql://ffp:ffp_dev_password@postgres:5432/ffp_dev?schema=public}
+  API_PORT: 3000
+  ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:5173}
+  DEMO_ORIGIN: ${DEMO_ORIGIN:-http://localhost:5174}
+  EVALUATION_CACHE_PROVIDER: ${EVALUATION_CACHE_PROVIDER:-memory}
+  EVALUATION_CACHE_TTL_MS: ${EVALUATION_CACHE_TTL_MS:-30000}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
+  DEMO_ADMIN_ACTOR: ${DEMO_ADMIN_ACTOR:-demo-admin}
+  DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
+  DEMO_DEVELOPER_ACTOR: ${DEMO_DEVELOPER_ACTOR:-demo-developer}
+  DEMO_VIEWER_TOKEN: ${DEMO_VIEWER_TOKEN:-replace-with-local-viewer-demo-token}
+  DEMO_VIEWER_ACTOR: ${DEMO_VIEWER_ACTOR:-demo-viewer}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,29 +40,43 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  migrate:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    environment: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      [
+        "npm",
+        "run",
+        "prisma:migrate:deploy",
+        "--workspace=@ffp/backend",
+      ]
+    restart: "no"
+
+  demo-seed:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    environment: *backend-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["npm", "run", "db:seed", "--workspace=@ffp/backend"]
+    restart: "no"
+
   backend:
-    build:
-      context: .
-      dockerfile: apps/backend/Dockerfile
-    environment:
-      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql://ffp:ffp_dev_password@postgres:5432/ffp_dev?schema=public}
-      API_PORT: 3000
-      ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:5173}
-      DEMO_ORIGIN: ${DEMO_ORIGIN:-http://localhost:5174}
-      EVALUATION_CACHE_PROVIDER: ${EVALUATION_CACHE_PROVIDER:-memory}
-      EVALUATION_CACHE_TTL_MS: ${EVALUATION_CACHE_TTL_MS:-30000}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
-      DEMO_ADMIN_ACTOR: ${DEMO_ADMIN_ACTOR:-demo-admin}
-      DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
-      DEMO_DEVELOPER_ACTOR: ${DEMO_DEVELOPER_ACTOR:-demo-developer}
-      DEMO_VIEWER_TOKEN: ${DEMO_VIEWER_TOKEN:-replace-with-local-viewer-demo-token}
-      DEMO_VIEWER_ACTOR: ${DEMO_VIEWER_ACTOR:-demo-viewer}
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    environment: *backend-environment
     ports:
       - "${BACKEND_HOST_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
+      demo-seed:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [

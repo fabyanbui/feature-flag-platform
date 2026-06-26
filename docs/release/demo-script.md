@@ -8,22 +8,25 @@ keeps configuration changes auditable.
 
 ## Pre-Demo Setup
 
-From the repository root:
+Recommended Phase 19 Docker setup from the repository root:
 
 ```bash
 npm install
 cp .env.example .env
-docker start ffp-postgres
-npm run prisma:migrate --workspace=@ffp/backend
-npm run db:seed --workspace=@ffp/backend
+docker compose up --build -d
+docker compose ps -a
+curl http://localhost:3000/v1/health
 ```
 
-Start the apps in separate terminals:
+Expected Compose state:
 
-```bash
-npm run dev:backend
-npm run dev:admin
-npm run dev:demo
+```text
+postgres   healthy
+migrate    exited 0
+demo-seed  exited 0
+backend    healthy
+admin      healthy
+demo       healthy
 ```
 
 Open:
@@ -32,6 +35,19 @@ Open:
 Backend Swagger: http://localhost:3000/docs
 Admin app:       http://localhost:5173
 Demo app:        http://localhost:5174
+```
+
+The npm-local workflow remains available if Docker Compose is not used:
+
+```bash
+npm install
+cp .env.example .env
+docker start ffp-postgres
+npm run prisma:migrate --workspace=@ffp/backend
+npm run db:seed --workspace=@ffp/backend
+npm run dev:backend
+npm run dev:admin
+npm run dev:demo
 ```
 
 ## Main Story
@@ -416,7 +432,17 @@ advanced experimentation analytics, and multi-region operations.
 
 Use `docs/release/troubleshooting.md`.
 
-Most common fixes:
+Most common Docker fixes:
+
+```bash
+docker compose ps -a
+docker compose logs migrate
+docker compose logs demo-seed
+docker compose logs backend
+docker compose up --build --force-recreate migrate demo-seed backend admin demo
+```
+
+Most common npm-local fixes:
 
 ```bash
 docker start ffp-postgres
