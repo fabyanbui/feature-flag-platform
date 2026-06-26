@@ -130,6 +130,9 @@ never reuse them for a deployed or production system.
 
 ### Start PostgreSQL with Docker
 
+The following standalone PostgreSQL container remains available for the normal
+npm-local workflow:
+
 ```bash
 docker run --name ffp-postgres \
   -e POSTGRES_USER=ffp \
@@ -210,6 +213,80 @@ Admin app:   http://localhost:5173
 Demo app:    http://localhost:5174
 Swagger UI:  http://localhost:3000/docs
 ```
+
+### Docker Compose baseline
+
+Phase 17 provides a containerized baseline for PostgreSQL, the backend, the
+admin dashboard, and the demo application. It intentionally keeps migrations
+and seed data as explicit initialization commands. The automated one-command
+demo dependency chain is reserved for Phase 19 stabilization.
+
+Copy and review the environment example before building:
+
+```bash
+cp .env.example .env
+```
+
+Keep `DATABASE_URL` for npm-local development. Compose uses
+`COMPOSE_DATABASE_URL`, where the database host is the Compose service name
+`postgres`. Browser-facing `VITE_API_BASE_URL` must continue to use
+`http://localhost:3000/v1`; a browser cannot resolve the internal `backend`
+service name.
+
+Build the application images and start PostgreSQL:
+
+```bash
+docker compose build
+docker compose up -d postgres
+docker compose ps
+```
+
+If port `5432` is already used by a local PostgreSQL service, set
+`POSTGRES_HOST_PORT` to another host port. The backend still reaches PostgreSQL
+through the internal `postgres:5432` address:
+
+```bash
+POSTGRES_HOST_PORT=55432 docker compose up -d postgres
+```
+
+After PostgreSQL reports `healthy`, apply committed migrations and seed the
+repeatable demo data:
+
+```bash
+docker compose run --rm backend \
+  npm run prisma:migrate:deploy --workspace=@ffp/backend
+docker compose run --rm backend \
+  npm run db:seed --workspace=@ffp/backend
+```
+
+Start the application services:
+
+```bash
+docker compose up -d backend admin demo
+docker compose ps
+```
+
+Verify the public endpoints:
+
+```bash
+curl http://localhost:3000/v1/health
+curl --head http://localhost:5173
+curl --head http://localhost:5174
+```
+
+Stop the baseline while preserving PostgreSQL data:
+
+```bash
+docker compose down
+```
+
+To remove the Compose database volume as well, use
+`docker compose down --volumes`. This is destructive and should only be used
+for an intentional clean-environment test.
+
+This baseline is not yet advertised as one-command demo startup. Phase 19 will
+add safe migration and seed dependency ordering after the optional Redis
+decision at Gate C. The normal npm-local commands above remain fully supported.
 
 #### Demo RBAC
 
