@@ -33,12 +33,12 @@ async function createAuditIfMissing(
 }
 
 async function main() {
+    // Phase 19 runs this seed automatically from Docker Compose. Keep it
+    // non-destructive: create missing demo records, but never reset existing
+    // demo edits, kill switches, lifecycle states, rules, or sample users.
     const project = await prisma.project.upsert({
         where: { key: 'demo-project' },
-        update: {
-            name: 'Demo Project',
-            description: 'Seed project for feature flag demos.',
-        },
+        update: {},
         create: {
             key: 'demo-project',
             name: 'Demo Project',
@@ -53,12 +53,7 @@ async function main() {
                 key: 'production',
             },
         },
-        update: {
-            name: 'Production',
-            description: 'Default demo environment.',
-            isDefault: true,
-            sortOrder: 1,
-        },
+        update: {},
         create: {
             projectId: project.id,
             key: 'production',
@@ -76,12 +71,7 @@ async function main() {
                 key: 'staging',
             },
         },
-        update: {
-            name: 'Staging',
-            description: 'Pre-production testing environment.',
-            isDefault: false,
-            sortOrder: 2,
-        },
+        update: {},
         create: {
             projectId: project.id,
             key: 'staging',
@@ -99,12 +89,7 @@ async function main() {
                 key: 'development',
             },
         },
-        update: {
-            name: 'Development',
-            description: 'Local development environment.',
-            isDefault: false,
-            sortOrder: 3,
-        },
+        update: {},
         create: {
             projectId: project.id,
             key: 'development',
@@ -122,9 +107,7 @@ async function main() {
                 key: 'customer-experience',
             },
         },
-        update: {
-            name: 'Customer Experience',
-        },
+        update: {},
         create: {
             projectId: project.id,
             key: 'customer-experience',
@@ -140,10 +123,7 @@ async function main() {
                     environmentId: environment.id,
                 },
             },
-            update: {
-                projectId: project.id,
-                killSwitch: false,
-            },
+            update: {},
             create: {
                 projectId: project.id,
                 groupId: customerExperienceGroup.id,
@@ -160,13 +140,7 @@ async function main() {
                 key: 'beta-dashboard',
             },
         },
-        update: {
-            groupId: customerExperienceGroup.id,
-            name: 'Beta Dashboard',
-            description: 'Globally enabled demo flag.',
-            lifecycleStatus: 'ACTIVE',
-            archivedAt: null,
-        },
+        update: {},
         create: {
             projectId: project.id,
             groupId: customerExperienceGroup.id,
@@ -184,13 +158,7 @@ async function main() {
                 key: 'new-checkout',
             },
         },
-        update: {
-            groupId: customerExperienceGroup.id,
-            name: 'New Checkout',
-            description: 'Targeted checkout rollout demo flag.',
-            lifecycleStatus: 'ACTIVE',
-            archivedAt: null,
-        },
+        update: {},
         create: {
             projectId: project.id,
             groupId: customerExperienceGroup.id,
@@ -209,11 +177,7 @@ async function main() {
                     environmentId: production.id,
                 },
             },
-            update: {
-                status: 'ENABLED',
-                servingMode: 'GLOBAL_ON',
-                killSwitch: false,
-            },
+            update: {},
             create: {
                 projectId: project.id,
                 flagId: betaDashboard.id,
@@ -231,11 +195,7 @@ async function main() {
                 environmentId: staging.id,
             },
         },
-        update: {
-            status: 'ENABLED',
-            servingMode: 'GLOBAL_ON',
-            killSwitch: false,
-        },
+        update: {},
         create: {
             projectId: project.id,
             flagId: betaDashboard.id,
@@ -253,11 +213,7 @@ async function main() {
                 environmentId: development.id,
             },
         },
-        update: {
-            status: 'ENABLED',
-            servingMode: 'GLOBAL_ON',
-            killSwitch: false,
-        },
+        update: {},
         create: {
             projectId: project.id,
             flagId: betaDashboard.id,
@@ -276,11 +232,7 @@ async function main() {
                     environmentId: production.id,
                 },
             },
-            update: {
-                status: 'ENABLED',
-                servingMode: 'TARGETED',
-                killSwitch: false,
-            },
+            update: {},
             create: {
                 projectId: project.id,
                 flagId: newCheckout.id,
@@ -298,11 +250,7 @@ async function main() {
                 environmentId: staging.id,
             },
         },
-        update: {
-            status: 'ENABLED',
-            servingMode: 'GLOBAL_ON',
-            killSwitch: false,
-        },
+        update: {},
         create: {
             projectId: project.id,
             flagId: newCheckout.id,
@@ -320,11 +268,7 @@ async function main() {
                 environmentId: development.id,
             },
         },
-        update: {
-            status: 'ENABLED',
-            servingMode: 'GLOBAL_ON',
-            killSwitch: false,
-        },
+        update: {},
         create: {
             projectId: project.id,
             flagId: newCheckout.id,
@@ -342,13 +286,7 @@ async function main() {
                 priority: 10,
             },
         },
-        update: {
-            type: 'USER_ALLOWLIST',
-            enabled: true,
-            parameters: {
-                userIds: ['demo-user-admin'],
-            },
-        },
+        update: {},
         create: {
             flagConfigId: newCheckoutProductionConfig.id,
             type: 'USER_ALLOWLIST',
@@ -367,13 +305,7 @@ async function main() {
                 priority: 20,
             },
         },
-        update: {
-            type: 'ROLE_TARGETING',
-            enabled: true,
-            parameters: {
-                roles: ['beta-tester'],
-            },
-        },
+        update: {},
         create: {
             flagConfigId: newCheckoutProductionConfig.id,
             type: 'ROLE_TARGETING',
@@ -392,13 +324,7 @@ async function main() {
                 priority: 30,
             },
         },
-        update: {
-            type: 'PERCENTAGE_ROLLOUT',
-            enabled: true,
-            parameters: {
-                percentage: 50,
-            },
-        },
+        update: {},
         create: {
             flagConfigId: newCheckoutProductionConfig.id,
             type: 'PERCENTAGE_ROLLOUT',
@@ -417,12 +343,7 @@ async function main() {
                 targetingKey: 'demo-user-beta',
             },
         },
-        update: {
-            displayName: 'Beta User',
-            userId: 'demo-user-beta',
-            roles: ['beta-tester'],
-            attributes: { plan: 'pro' },
-        },
+        update: {},
         create: {
             projectId: project.id,
             displayName: 'Beta User',
@@ -440,12 +361,7 @@ async function main() {
                 targetingKey: 'demo-user-regular',
             },
         },
-        update: {
-            displayName: 'Regular User',
-            userId: 'demo-user-regular',
-            roles: ['user'],
-            attributes: { plan: 'free' },
-        },
+        update: {},
         create: {
             projectId: project.id,
             displayName: 'Regular User',
@@ -463,12 +379,7 @@ async function main() {
                 targetingKey: 'demo-user-admin',
             },
         },
-        update: {
-            displayName: 'Admin User',
-            userId: 'demo-user-admin',
-            roles: ['admin'],
-            attributes: { plan: 'pro' },
-        },
+        update: {},
         create: {
             projectId: project.id,
             displayName: 'Admin User',
@@ -716,7 +627,7 @@ async function main() {
         requestId: 'seed_init',
     });
 
-    console.log('Seed data created successfully.');
+    console.log('Seed data is present.');
     console.log({
         projectKey: project.key,
         environments: [production.key, staging.key, development.key],

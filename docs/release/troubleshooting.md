@@ -47,7 +47,7 @@ Verify the database:
 docker exec ffp-postgres psql -U ffp -d ffp_dev -c "select current_database(), current_user;"
 ```
 
-For the Docker Compose baseline, check the PostgreSQL health state and logs:
+For the Docker Compose workflow, check the PostgreSQL health state and logs:
 
 ```bash
 docker compose ps
@@ -83,17 +83,18 @@ Run:
 npm run db:seed --workspace=@ffp/backend
 ```
 
-Expected seed data:
+Expected seed data on a clean database:
 
 - project `demo-project`,
 - environments `production`, `staging`, and `development`,
-- group `customer-experience`, inactive in every seeded environment,
-- flags `beta-dashboard` and `new-checkout`,
-- both flags assigned to `customer-experience`,
+- group `customer-experience`, inactive when first created,
+- flags `beta-dashboard` and `new-checkout`, assigned to
+  `customer-experience` when first created,
 - sample users `demo-user-beta`, `demo-user-regular`, and `demo-user-admin`.
 
-The seed intentionally resets the demo group kill switch to inactive. This
-provides a safe, repeatable starting point before demonstrating activation.
+The Phase 19 seed is non-destructive. It creates missing demo records but does
+not reset existing flag state, rules, group kill switches, or sample users on
+every Compose restart.
 
 ## Demo app cannot call the backend
 
@@ -148,32 +149,75 @@ For npm-local development, the `VITE_DEMO_*_TOKEN` values belong in
 `DEMO_*_TOKEN` values as browser-visible build arguments. These are
 presentation-only credentials and must never be reused in production.
 
-## Docker Compose backend is unhealthy
+## Docker Compose build fails because Buildx is missing
 
-Inspect the backend logs and health endpoint:
+If `docker compose up --build` fails with a message similar to
+`docker-buildx: no such file or directory`, either install the Docker Buildx
+plugin or use Docker's legacy builder for the local validation run:
 
 ```bash
+COMPOSE_DOCKER_CLI_BUILD=0 DOCKER_BUILDKIT=0 docker compose up --build
+```
+
+This does not change the application images or runtime behavior; it only
+selects the local Docker builder implementation.
+
+## Docker Compose backend is unhealthy
+
+Inspect all startup services, including the one-shot migration and seed jobs:
+
+```bash
+docker compose ps -a
+docker compose logs postgres
+docker compose logs migrate
+docker compose logs demo-seed
 docker compose logs backend
 curl -i http://localhost:3000/v1/health
 ```
 
+Expected startup order:
+
+```text
+postgres healthy
+-> migrate exits 0
+-> demo-seed exits 0
+-> backend healthy
+-> admin and demo healthy
+```
+
 Confirm all three `DEMO_*_TOKEN` and `DEMO_*_ACTOR` pairs are configured and
-that PostgreSQL is healthy. Phase 17 does not automatically apply migrations or
-seed data; initialize them explicitly:
+that PostgreSQL is healthy. `migrate` must complete successfully before
+`demo-seed`, and `demo-seed` must complete successfully before the backend
+starts.
+
+If frontend environment values changed, rebuild the images because Vite embeds
+`VITE_*` values at build time:
 
 ```bash
-docker compose run --rm backend \
-  npm run prisma:migrate:deploy --workspace=@ffp/backend
-docker compose run --rm backend \
-  npm run db:seed --workspace=@ffp/backend
+docker compose build admin demo
+docker compose up -d admin demo
+```
+
+Use Docker Compose v2 with support for `service_completed_successfully`. If a
+one-shot service is stuck with stale state during local testing, recreate it:
+
+```bash
+docker compose up --build --force-recreate migrate demo-seed backend admin demo
 ```
 
 ## Demo scenario returns `NOT_FOUND`
 
-If the scenario should use seeded data, run:
+If the scenario should use seeded data in the npm-local workflow, run:
 
 ```bash
 npm run db:seed --workspace=@ffp/backend
+```
+
+For Compose, confirm the one-shot seed job completed:
+
+```bash
+docker compose ps -a
+docker compose logs demo-seed
 ```
 
 Then evaluate again.
