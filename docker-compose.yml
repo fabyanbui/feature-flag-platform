@@ -1,0 +1,104 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ffp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ffp_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ffp_dev}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-ffp} -d ${POSTGRES_DB:-ffp_dev}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    environment:
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql://ffp:ffp_dev_password@postgres:5432/ffp_dev?schema=public}
+      API_PORT: 3000
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:5173}
+      DEMO_ORIGIN: ${DEMO_ORIGIN:-http://localhost:5174}
+      EVALUATION_CACHE_TTL_MS: ${EVALUATION_CACHE_TTL_MS:-30000}
+      DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
+      DEMO_ADMIN_ACTOR: ${DEMO_ADMIN_ACTOR:-demo-admin}
+      DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
+      DEMO_DEVELOPER_ACTOR: ${DEMO_DEVELOPER_ACTOR:-demo-developer}
+      DEMO_VIEWER_TOKEN: ${DEMO_VIEWER_TOKEN:-replace-with-local-viewer-demo-token}
+      DEMO_VIEWER_ACTOR: ${DEMO_VIEWER_ACTOR:-demo-viewer}
+    ports:
+      - "${BACKEND_HOST_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/v1/health').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_DEFAULT_PROJECT_KEY: ${VITE_DEFAULT_PROJECT_KEY:-demo-project}
+        VITE_DEFAULT_FLAG_KEY: ${VITE_DEFAULT_FLAG_KEY:-new-checkout}
+        VITE_DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
+        VITE_DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
+        VITE_DEMO_VIEWER_TOKEN: ${DEMO_VIEWER_TOKEN:-replace-with-local-viewer-demo-token}
+    ports:
+      - "${ADMIN_HOST_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  demo:
+    build:
+      context: .
+      dockerfile: apps/demo/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_ENVIRONMENT_KEY: ${VITE_ENVIRONMENT_KEY:-production}
+    ports:
+      - "${DEMO_HOST_PORT:-5174}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

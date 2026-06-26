@@ -1048,6 +1048,57 @@ variables, CORS, ports, and service health before final stabilization.
 - Admin and demo apps can reach the backend when configured.
 - README distinguishes baseline compose from final one-command demo startup.
 
+### Completion evidence
+
+Phase 17 is complete:
+
+- added a root Docker Compose baseline for PostgreSQL, backend, admin, and demo
+  services without adding Redis or claiming Phase 19 one-command startup,
+- added service health checks and dependency ordering so PostgreSQL becomes
+  healthy before backend startup and frontend containers wait for backend
+  health,
+- added Dockerfiles for the NestJS backend, admin Vite app, and demo Vite app,
+  including workspace-aware `npm ci`, JavaScript SDK build support, Prisma
+  client generation, and OpenSSL availability for Prisma in slim Node images,
+- corrected the backend production entrypoint to the actual Nest build output
+  path `dist/src/main.js`,
+- documented Compose environment variables, container-internal database
+  addressing, browser-facing API URL rules, manual migration/seed commands, and
+  the distinction between Phase 17 baseline startup and Phase 19 final
+  one-command workflow,
+- kept the normal npm-local PostgreSQL, migration, seed, backend, admin, and
+  demo commands available.
+
+Final Phase 17 validation completed on June 26, 2026:
+
+- `docker compose config --quiet` and `git diff --check` passed,
+- all workspace builds and lint checks passed,
+- all 21 JavaScript SDK tests and all 374 backend unit tests passed,
+- the database-backed integration and E2E suites passed outside the restricted
+  sandbox with 11 integration tests and 44 E2E tests,
+- Compose images for backend, admin, and demo built successfully,
+- an isolated Compose validation stack started PostgreSQL on host port `55432`
+  with a healthy PostgreSQL service while preserving the internal
+  `postgres:5432` contract,
+- `prisma migrate deploy` applied all three committed migrations to a clean
+  Compose database,
+- the demo seed ran successfully twice against the Compose database,
+  demonstrating repeatability,
+- backend, admin, demo, and PostgreSQL containers reached healthy status,
+- `GET /v1/health` returned the expected backend health response,
+- admin and demo HTTP endpoints returned `200`,
+- CORS preflight responses allowed `http://localhost:5173` and
+  `http://localhost:5174`,
+- a seeded evaluation through the containerized backend returned
+  `enabled=true` with `reason=GLOBAL_ON`,
+- compiled admin and demo bundles used the browser-resolvable
+  `http://localhost:3000/v1` API URL and did not use the internal `backend`
+  service hostname,
+- an authenticated control-plane smoke check using the backend container's
+  configured demo admin identity returned seeded project `demo-project`,
+- restarting PostgreSQL, backend, admin, and demo preserved seeded data and
+  returned all services to healthy status.
+
 ### Likely changed files
 
 - `docker-compose.yml`

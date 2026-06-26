@@ -47,6 +47,25 @@ Verify the database:
 docker exec ffp-postgres psql -U ffp -d ffp_dev -c "select current_database(), current_user;"
 ```
 
+For the Docker Compose baseline, check the PostgreSQL health state and logs:
+
+```bash
+docker compose ps
+docker compose logs postgres
+```
+
+If host port `5432` is already used by a local database, keep the Compose
+database internal port unchanged and publish it on a different host port:
+
+```bash
+POSTGRES_HOST_PORT=55432 docker compose up -d postgres
+```
+
+The npm-local backend uses a `DATABASE_URL` host such as `localhost`. The
+containerized backend uses `COMPOSE_DATABASE_URL` with the Compose service host
+`postgres`. Using `localhost` inside the backend container points back to that
+container rather than PostgreSQL.
+
 ## Tables or Prisma client are missing
 
 Run:
@@ -103,18 +122,51 @@ Restart the backend after changing CORS settings:
 npm run dev:backend
 ```
 
-## Admin app mutation fails with validation error
+For Compose, rebuild frontend images after changing any `VITE_*` value because
+Vite embeds these values during the image build:
 
-Mutating configuration requires actor identity for audit logging.
-
-Check:
-
-```env
-VITE_ADMIN_ACTOR=admin@example.local
+```bash
+docker compose build admin demo
+docker compose up -d admin demo
 ```
 
-This value belongs in the admin app environment only. Do not add it to the demo
-app.
+Do not set `VITE_API_BASE_URL` to `http://backend:3000/v1`. That hostname is
+only resolvable between containers, while frontend API requests originate in
+the user's browser.
+
+## Admin control-plane request is unauthorized
+
+Check that each frontend demo token matches the corresponding backend token:
+
+```env
+DEMO_ADMIN_TOKEN=replace-with-local-admin-demo-token
+VITE_DEMO_ADMIN_TOKEN=replace-with-local-admin-demo-token
+```
+
+For npm-local development, the `VITE_DEMO_*_TOKEN` values belong in
+`apps/admin/.env`. For Compose, the image build receives the backend
+`DEMO_*_TOKEN` values as browser-visible build arguments. These are
+presentation-only credentials and must never be reused in production.
+
+## Docker Compose backend is unhealthy
+
+Inspect the backend logs and health endpoint:
+
+```bash
+docker compose logs backend
+curl -i http://localhost:3000/v1/health
+```
+
+Confirm all three `DEMO_*_TOKEN` and `DEMO_*_ACTOR` pairs are configured and
+that PostgreSQL is healthy. Phase 17 does not automatically apply migrations or
+seed data; initialize them explicitly:
+
+```bash
+docker compose run --rm backend \
+  npm run prisma:migrate:deploy --workspace=@ffp/backend
+docker compose run --rm backend \
+  npm run db:seed --workspace=@ffp/backend
+```
 
 ## Demo scenario returns `NOT_FOUND`
 
