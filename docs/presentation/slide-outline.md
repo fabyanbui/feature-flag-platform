@@ -211,7 +211,7 @@ Implementation proof:
 - uses explicit post-commit invalidation to prevent stale configuration,
 - falls back to PostgreSQL when cache access fails,
 - keeps the mini-project simple with in-memory storage,
-- preserves Redis as a future multi-instance provider.
+- preserves Redis as an optional multi-instance provider.
 
 Engineering tradeoff:
 
@@ -275,14 +275,34 @@ Engineering tradeoff:
 - production use would require an external identity provider, rotation,
   sessions, revocation, and stronger deployment controls.
 
-## Slide 18 — Future Work
+## Slide 18 — Recommended Enhancement: Docker and Optional Redis
+
+Implementation proof:
+
+- `docker compose up --build` starts PostgreSQL, migrations, seed data,
+  backend, admin, and demo in dependency order,
+- the seed process is idempotent and does not reset edited flag state, rules,
+  group kill switches, or sample users,
+- Redis is available through an optional Compose profile and provider setting,
+- Redis failures fall back to repository/no-cache behavior and do not change
+  deterministic evaluation results,
+- the stable presentation path does not require Redis.
+
+Engineering tradeoff:
+
+- the one-command Docker workflow improves repeatability for reviewers,
+- Redis demonstrates production-style cache direction without becoming a demo
+  dependency.
+
+## Slide 19 — Future Work
 
 Only after MVP stability:
 
-- optional Redis cache provider,
 - production identity-provider integration,
 - advanced experimentation analytics and long-term metric retention,
-- Docker Compose,
+- durable metric delivery,
+- production rate limiting, TLS termination, and secret management,
+- multi-instance deployment hardening,
 - flag cleanup workflow.
 
 Completed recommended enhancements:
@@ -291,10 +311,12 @@ Completed recommended enhancements:
 - group kill switch,
 - in-memory evaluation-snapshot cache,
 - privacy-preserving evaluation statistics and dashboard,
-- JavaScript SDK and demo migration.
-- server-resolved demo RBAC.
+- JavaScript SDK and demo migration,
+- server-resolved demo RBAC,
+- optional Redis cache provider,
+- Docker Compose one-command local demo workflow.
 
-## Slide 19 — Conclusion
+## Slide 20 — Conclusion
 
 Final message:
 

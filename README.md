@@ -60,6 +60,8 @@ criteria in `docs/requirement/info-init.md`.
 - Completed MVP roadmap: `docs/plan/implementation-roadmap.md`
 - Active recommended roadmap:
   `docs/plan/recommended-enhancements-roadmap.md`
+- Requirement traceability matrix:
+  `docs/plan/requirement-traceability-matrix.md`
 - Architecture: `docs/design/software-architecture-document.md`
 - Backend requirements: `docs/requirement/backend/be-init.md`
 - Frontend requirements: `docs/requirement/frontend/fe-init.md`
@@ -70,6 +72,8 @@ criteria in `docs/requirement/info-init.md`.
 - Troubleshooting notes: `docs/release/troubleshooting.md`
 - Security review: `docs/release/security-review.md`
 - Audit log release review: `docs/release/audit-log-release-review.md`
+- Final recommended release review:
+  `docs/release/final-recommended-release-review.md`
 - Slide outline: `docs/presentation/slide-outline.md`
 - JavaScript SDK guide: `packages/js-sdk/README.md`
 
@@ -352,19 +356,18 @@ evaluation, or user-specific decision caching.
 
 ```bash
 npm run lint
-npm run build
 npm run test
-npm run test --workspace=@ffp/js-sdk
 npm run test:integration --workspace=@ffp/backend
 npm run test:e2e --workspace=@ffp/backend
+npm run build
 npm run diff:check
-```
-
-Optional Prisma schema validation:
-
-```bash
 npm run prisma:validate --workspace=@ffp/backend
 ```
+
+For Phase 20 final release review, record these results in
+`docs/release/final-recommended-release-review.md`. `npm run test` already
+runs the JavaScript SDK tests through the workspace test script; use
+`npm run test --workspace=@ffp/js-sdk` only when you want a focused SDK check.
 
 ### Continuous integration
 

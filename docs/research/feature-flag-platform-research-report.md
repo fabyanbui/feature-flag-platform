@@ -398,19 +398,21 @@ Completed recommended enhancements:
 - in-memory evaluation-snapshot cache,
 - privacy-preserving evaluation statistics dashboard,
 - simple JavaScript SDK with typed fail-closed client fallback,
-- server-resolved demo RBAC with admin, developer, and viewer roles.
+- server-resolved demo RBAC with admin, developer, and viewer roles,
+- optional Redis cache provider with repository fallback,
+- Docker Compose one-command local demo workflow.
 
-Remaining recommended and future work:
+Remaining future work:
 
-- optional Redis provider for multi-instance cache consistency,
 - production identity-provider integration,
-- Docker Compose one-command setup,
 - durable metric delivery and retention,
 - advanced experimentation analytics,
+- multi-instance deployment hardening and observability,
+- production rate limiting, TLS termination, and secret management,
 - flag lifecycle cleanup workflow.
 
-Remaining work is sequenced behind the stable MVP and completed recommended
-phases so it cannot weaken submission readiness.
+Remaining future work is sequenced behind the stable MVP and completed
+recommended phases so it cannot weaken submission readiness.
 
 ## 16. Conclusion
 

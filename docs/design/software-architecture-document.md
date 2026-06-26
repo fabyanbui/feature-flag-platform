@@ -441,7 +441,8 @@ of scope.
 1. Evaluation API target latency: <= 1s (demo scale).
 2. Dashboard list rendering: <= 2s on typical broadband.
 3. Support pagination for list endpoints to prevent large payloads.
-4. In-memory cache (NestJS) for evaluation throughput; promote to Redis if needed.
+4. In-memory cache (NestJS) for evaluation throughput; use the optional Redis
+   provider when validating multi-instance cache direction.
 
 ## 11. Quality Attributes and Tactics
 | Attribute | Tactics |
@@ -463,14 +464,17 @@ of scope.
 | Scope creep | Delay MVP | Strict MVP gate before enhancements |
 
 ## 13. Future Considerations
-1. **Caching**: Promote to Redis if in-memory cache is insufficient.
+1. **Caching**: Redis provider support exists for optional multi-instance cache
+   validation; production use still needs operational monitoring, capacity
+   planning, and secret management.
 2. **Statistics**: Add durable delivery, retention policies, and advanced
    experimentation analytics if production requirements justify them.
 3. **Frontend build**: Build the admin dashboard and demo UI for production.
 4. **Platform hardening**: Replace presentation-only bearer identities with a
    production identity provider, token rotation, rate limiting, realtime
    updates, and deployment automation.
-5. **Docker**: Ensure Docker integration is part of the delivery plan.
+5. **Docker**: The local Compose workflow is available for repeatable demo
+   startup; production deployment hardening remains future work.
 
 ## 14. Appendix
 ### 14.1 Reason Codes (Draft)

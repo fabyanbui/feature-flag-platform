@@ -304,11 +304,12 @@ Test evidence:
 | No production identity provider | Static local demo bearer tokens resolve to fixed roles on the backend; do not deploy or reuse them as production credentials. |
 | Evaluation endpoint is browser-callable for the demo | Demo only exposes non-sensitive demo flags and non-PII targeting keys. |
 | No production rate limiting | Keep deployment local/demo scoped; add rate limiting before production use. |
-| No server-side SDK | REST evaluation API is enough for the MVP demo; SDK is a recommended enhancement only after MVP stability. |
+| No production-grade SDK feature set | The JavaScript SDK intentionally remains data-plane-only and does not include streaming, local rule evaluation, or control-plane credentials. |
 | Vite environment variables are browser-visible | Only browser-safe values are allowed in demo `.env` files. |
 | Memory cache is process-local | Keep memory mode for local/simple deployments; use the optional Redis provider before horizontal scaling. |
 | Redis outage can reduce cache effectiveness | Cache failures fall back to repository/no-cache behavior and do not alter evaluation responses. |
 | Best-effort metrics can lose in-flight increments | Treat statistics as eventually consistent observability and add durable delivery before production use. |
+| Local Docker demo credentials are not production secrets | Compose defaults are for local validation only; replace credentials and add secret management before deployment. |
 
 ## Release Decision
 
@@ -323,6 +324,7 @@ The MVP is acceptable for local demonstration when:
    tokens are explicitly local and presentation-only.
 6. Aggregate metrics remain free of evaluation context and cannot affect
    evaluation responses.
+7. Redis remains optional and is not required for the stable live demo.
 
 ## Phase 16 Demo RBAC Review
 
@@ -339,3 +341,20 @@ The MVP is acceptable for local demonstration when:
   data-plane behavior.
 - This model intentionally excludes passwords, OAuth, refresh tokens, MFA,
   password reset, sessions, and identity administration.
+
+## Phase 20 Final Security Review
+
+- The stable live demo path uses PostgreSQL, migration, seed, backend, admin,
+  and demo containers; Redis remains optional through the `redis` profile.
+- Redis stores only reusable evaluation snapshots with stable project,
+  environment-scope, and flag keys. It does not store raw evaluation context or
+  final user decisions.
+- Cache and metric write failures are availability/observability degradations,
+  not release-decision dependencies.
+- Control-plane writes remain protected by server-resolved demo identities and
+  write append-only audit entries with before/after snapshots.
+- Browser apps must not contain database URLs or production secrets. Demo
+  bearer tokens are intentionally local presentation credentials.
+- Production hardening remains future work: identity-provider integration,
+  secret rotation, TLS termination, rate limiting, monitoring, and deployment
+  controls.

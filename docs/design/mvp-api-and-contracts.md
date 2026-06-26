@@ -1464,10 +1464,18 @@ These items may be revisited only after the required backend API, admin
 dashboard, demo app, database, validation/error handling, seed data, README,
 research report, and short design docs are demo-ready.
 
-Recommended Phase 15 subsequently implemented the client SDK as
-`packages/js-sdk` without changing this historical MVP boundary. The SDK calls
-only `POST /v1/evaluate`, validates the stable response contract, and marks
-client-local fail-closed results with `errorSource=CLIENT`.
+Recommended phases subsequently implemented several items from this historical
+out-of-MVP list without changing the MVP baseline:
+
+- Phase 14 implemented aggregate evaluation statistics without storing raw
+  evaluation context or changing release decisions.
+- Phase 15 implemented the client SDK as `packages/js-sdk`. The SDK calls only
+  `POST /v1/evaluate`, validates the stable response contract, and marks
+  client-local fail-closed results with `errorSource=CLIENT`.
+- Phase 18 implemented an optional Redis cache provider with the same snapshot
+  and fallback semantics as the in-memory provider.
+- Phase 19 implemented the one-command local Docker Compose workflow with
+  idempotent migration and seed services.
 
 ## 18. Phase 0 Acceptance Checklist
 
