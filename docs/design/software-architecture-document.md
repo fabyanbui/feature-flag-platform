@@ -349,10 +349,12 @@ final `enabled` decisions, variants, matched rule IDs, validation failures,
 The internal resolution metadata is configuration identity. It does not contain
 evaluation context or a final decision.
 
-The initial provider is a process-local in-memory cache backed by a `Map`. Its
+The default provider is a process-local in-memory cache backed by a `Map`. Its
 TTL is configurable through `EVALUATION_CACHE_TTL_MS` and defaults to 30
-seconds. No Prisma schema change or public evaluation response change is
-required.
+seconds. Phase 18 adds `EVALUATION_CACHE_PROVIDER=none|memory|redis`; `none`
+turns the cache into a no-op, and `redis` uses the same snapshot, TTL, key, and
+invalidation contracts for optional Compose/demo validation. No Prisma schema
+change or public evaluation response change is required.
 
 The conceptual cache key is:
 
@@ -366,8 +368,9 @@ specific default environment key. Cache keys and values contain no request
 context or PII.
 
 Cache read failures fall back to repository access. Cache write failures do not
-change the evaluation result. Repository or evaluation-engine failures retain
-the existing fail-closed `enabled=false`, `reason=ERROR` behavior.
+change the evaluation result. Redis outages are treated as cache failures, not
+as evaluation failures. Repository or evaluation-engine failures retain the
+existing fail-closed `enabled=false`, `reason=ERROR` behavior.
 
 | Mutation | Cache invalidation |
 |---|---|

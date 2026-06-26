@@ -1139,6 +1139,51 @@ Do not start this phase unless Gate C passes.
 - Tests cover provider selection and Redis-failure fallback through mocks or an
   integration profile.
 
+### Completion evidence
+
+Phase 18 is complete:
+
+- added `EVALUATION_CACHE_PROVIDER=memory|none|redis` with memory as the
+  default, no-cache mode for disabled-cache validation, and Redis as an
+  optional provider,
+- kept the existing `EvaluationSnapshotCache` abstraction and preserved the
+  evaluation API response contract, deterministic engine behavior, and
+  repository fallback path,
+- added a Redis provider that caches only reusable evaluation snapshots, uses
+  the same TTL key and invalidation semantics as the in-memory provider, and
+  avoids storing request context, targeting keys, roles, user IDs, attributes,
+  or final decisions,
+- configured Redis client outage behavior to fail cache operations quickly so
+  the evaluation service can fall back to repository/no-cache behavior,
+- added an optional Docker Compose `redis` profile with health check while
+  leaving the Phase 17 PostgreSQL/backend/admin/demo baseline independent of
+  Redis,
+- documented cache provider selection, Redis environment variables, optional
+  Compose startup, Redis-failure fallback, and security/privacy constraints.
+
+Final Phase 18 validation completed on June 26, 2026:
+
+- focused cache and evaluation-service tests passed with 71 tests,
+- all 52 backend unit suites passed with 401 tests,
+- all 21 JavaScript SDK tests passed,
+- all workspace builds and lint checks passed,
+- Prisma schema validation, `docker compose config --quiet`, and
+  `git diff --check` passed,
+- database-backed integration and E2E suites passed with 11 integration tests
+  and 44 E2E tests,
+- optional Redis Compose profile started a healthy `redis:7-alpine` service and
+  returned `PONG`,
+- backend image rebuilt successfully with the Redis dependency, using legacy
+  Docker build mode because the local Docker Buildx plugin was unavailable,
+- Redis-provider Compose smoke validation applied all three committed
+  migrations, ran the idempotent demo seed, started PostgreSQL/Redis/backend
+  as healthy services, returned the expected `/v1/health` response, and
+  evaluated seeded flag `new-checkout` as `enabled=true` with
+  `reason=ROLE_MATCH`,
+- stopping Redis while the backend used `EVALUATION_CACHE_PROVIDER=redis` still
+  returned the same successful seeded evaluation through repository fallback,
+  with cache warnings and without exposing Redis URLs or evaluation context.
+
 ### Likely changed files
 
 - `apps/backend/src/evaluation/*cache*`

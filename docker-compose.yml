@@ -30,7 +30,9 @@ services:
       API_PORT: 3000
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:5173}
       DEMO_ORIGIN: ${DEMO_ORIGIN:-http://localhost:5174}
+      EVALUATION_CACHE_PROVIDER: ${EVALUATION_CACHE_PROVIDER:-memory}
       EVALUATION_CACHE_TTL_MS: ${EVALUATION_CACHE_TTL_MS:-30000}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
       DEMO_ADMIN_ACTOR: ${DEMO_ADMIN_ACTOR:-demo-admin}
       DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
@@ -94,6 +96,20 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    profiles:
+      - redis
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
