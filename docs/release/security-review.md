@@ -229,14 +229,28 @@ Configuration mutations commit their database and append-only audit changes
 before invalidating affected snapshots. An invalidation failure is logged but
 does not incorrectly report an already committed mutation as failed.
 
-The initial cache is process-local. It is suitable for the current single
-backend instance but does not provide cross-instance consistency. A shared
-provider such as Redis would be required before horizontally scaling the
-backend.
+Phase 18 adds provider selection with `memory`, `none`, and optional `redis`
+modes. Memory remains the safe default for local development. The no-cache mode
+always misses so repository-backed evaluation remains available for debugging
+and validation. The Redis provider uses the same snapshot shape, TTL contract,
+and invalidation contract as the in-memory provider. Redis keys contain only
+project, environment-scope, and flag keys; Redis values contain reusable
+configuration snapshots only.
+
+Redis is configured through environment variables and is optional in Docker
+Compose. Redis connection strings are not logged by the provider. Redis read,
+write, scan, or invalidation failures surface to the existing safe cache
+fallback path: evaluation falls back to PostgreSQL/no-cache behavior, and
+committed control-plane mutations remain successful even if invalidation logs a
+warning. Redis unavailability does not change deterministic evaluation or
+public response fields.
 
 Test evidence:
 
 - `apps/backend/src/evaluation/cache/in-memory-evaluation-snapshot-cache.spec.ts`
+- `apps/backend/src/evaluation/cache/noop-evaluation-snapshot-cache.spec.ts`
+- `apps/backend/src/evaluation/cache/redis-evaluation-snapshot-cache.spec.ts`
+- `apps/backend/src/evaluation/cache/evaluation-cache.module.spec.ts`
 - `apps/backend/src/evaluation/cache/evaluation-cache-invalidator.spec.ts`
 - `apps/backend/src/evaluation/evaluation.service.spec.ts`
 - `apps/backend/test/phase-12-group-kill-switch.e2e-spec.ts`
@@ -292,7 +306,8 @@ Test evidence:
 | No production rate limiting | Keep deployment local/demo scoped; add rate limiting before production use. |
 | No server-side SDK | REST evaluation API is enough for the MVP demo; SDK is a recommended enhancement only after MVP stability. |
 | Vite environment variables are browser-visible | Only browser-safe values are allowed in demo `.env` files. |
-| In-memory cache is process-local | Keep the current deployment single-instance; use a shared Redis provider before horizontal scaling. |
+| Memory cache is process-local | Keep memory mode for local/simple deployments; use the optional Redis provider before horizontal scaling. |
+| Redis outage can reduce cache effectiveness | Cache failures fall back to repository/no-cache behavior and do not alter evaluation responses. |
 | Best-effort metrics can lose in-flight increments | Treat statistics as eventually consistent observability and add durable delivery before production use. |
 
 ## Release Decision

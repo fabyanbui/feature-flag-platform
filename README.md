@@ -101,15 +101,19 @@ The default local database URL is:
 postgresql://ffp:ffp_dev_password@localhost:5432/ffp_dev?schema=public
 ```
 
-The backend caches reusable evaluation configuration snapshots in memory. The
-default TTL is 30 seconds and can be changed in `.env`:
+The backend caches reusable evaluation configuration snapshots. Memory cache is
+the default provider, `none` disables caching, and Redis is an optional Phase 18
+provider for Docker/demo validation:
 
 ```env
+EVALUATION_CACHE_PROVIDER=memory
 EVALUATION_CACHE_TTL_MS=30000
+REDIS_URL=redis://localhost:6379
 ```
 
 The cache does not store user context or final evaluation decisions. Cache
-read or write failures preserve safe repository-backed evaluation.
+read or write failures, including Redis outages, preserve safe
+repository-backed evaluation.
 
 For browser apps, copy app-specific examples only when you need local overrides:
 
@@ -265,6 +269,21 @@ Start the application services:
 docker compose up -d backend admin demo
 docker compose ps
 ```
+
+The optional Redis cache provider is not part of the baseline startup and is
+not a ninth requirement. To run the same stack with Redis-backed evaluation
+snapshot caching, enable the `redis` profile and select the provider:
+
+```bash
+EVALUATION_CACHE_PROVIDER=redis docker compose --profile redis up -d redis backend admin demo
+docker compose ps
+```
+
+The backend reaches Redis through `REDIS_URL=redis://redis:6379` in Compose. If
+Redis is stopped or unavailable, evaluation falls back to PostgreSQL/no-cache
+behavior and remains fail-closed on repository or engine errors. Use
+`EVALUATION_CACHE_PROVIDER=none` when you want to validate evaluation with the
+cache disabled.
 
 Verify the public endpoints:
 
