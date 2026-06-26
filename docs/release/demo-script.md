@@ -18,6 +18,10 @@ docker compose ps -a
 curl http://localhost:3000/v1/health
 ```
 
+For the safest live presentation, keep Redis disabled unless you explicitly
+want to show the optional cache provider. The stable demo path is PostgreSQL,
+the default evaluation snapshot cache provider, backend, admin, and demo.
+
 Expected Compose state:
 
 ```text
@@ -59,6 +63,15 @@ The demo has two planes:
 
 - **Control plane:** admin dashboard and management APIs.
 - **Data plane:** demo app calling `POST /v1/evaluate`.
+
+Recommended live sequence:
+
+1. Show SDK-backed evaluation in the demo app.
+2. Activate and deactivate the group kill switch to prove fast rollback.
+3. Show Viewer RBAC disabled controls and backend-protected mutations.
+4. Show flag history, audit logs, and statistics as supporting evidence.
+5. Mention optional Redis only as a completed provider/fallback enhancement,
+   not as a dependency for the stable demo.
 
 ## Demo Flow
 
@@ -396,7 +409,9 @@ The platform demonstrates common production release-management practices:
 - per-flag and group kill switches,
 - safe default off behavior,
 - audit logs,
-- privacy-preserving evaluation statistics.
+- privacy-preserving evaluation statistics,
+- a small JavaScript SDK,
+- one-command Docker Compose startup.
 
 ### Novelty for this mini project
 
@@ -426,7 +441,9 @@ is smaller and educational. It borrows the core ideas: management UI, targeting,
 rollout, kill switch, evaluation API, audit logs, and a small client SDK. It
 intentionally avoids enterprise complexity such as production identity
 providers, streaming SDKs,
-advanced experimentation analytics, and multi-region operations.
+advanced experimentation analytics, and multi-region operations. Redis support
+and Docker Compose are implemented for this project, but Redis is intentionally
+optional so the stable demo remains simple.
 
 ## If Something Fails During Demo
 

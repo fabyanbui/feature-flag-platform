@@ -1344,8 +1344,8 @@ or the final documented equivalent.
 - Update research report with implementation tradeoffs.
 - Update slide outline with recommended-level proof points.
 - Update demo script with the safest recommended features to present live.
-- Mark incomplete optional extensions, especially Redis, as future work rather
-  than mixing them into the stable demo path.
+- Mark any incomplete optional extensions as future work, and keep completed
+  optional Redis outside the stable demo dependency path.
 
 ### Final acceptance criteria
 
@@ -1357,8 +1357,41 @@ or the final documented equivalent.
 - Control-plane mutations are authorized and audited.
 - Docker Compose works from a clean environment.
 - At least three recommended features are safe to demonstrate live.
-- Incomplete optional extensions such as Redis are clearly marked as future work
-  and are not part of the stable demo path.
+- Incomplete optional extensions are clearly marked as future work, and
+  completed optional Redis is not part of the stable demo dependency path.
+
+### Completion evidence
+
+Phase 20 is complete as of June 26, 2026:
+
+- added a release-level requirement traceability matrix mapping MVP and
+  recommended requirements to code/API evidence, UI behavior, tests, docs, and
+  demo scenarios,
+- added the final recommended release review record with validation evidence,
+  clean Docker Compose startup plan, safe live demo path, known limitations,
+  and final release decision,
+- updated README, architecture/API docs, research report, slide outline, demo
+  script, security review, and troubleshooting notes so Redis is optional,
+  Docker Compose is complete, and future work reflects only post-project
+  hardening,
+- preserved the stable MVP baseline and kept Phase 10 through Phase 19 behavior
+  presentation-ready without adding new product scope,
+- kept at least three recommended features safe for live demonstration: group
+  kill switch, JavaScript SDK/demo app migration, server-resolved RBAC,
+  audit-backed history, and evaluation statistics,
+- completed validation: `npm run lint`, `npm run test`, backend integration
+  tests, backend E2E tests, `npm run build`, `npm run diff:check`, Prisma
+  schema validation, and `docker compose config --quiet`,
+- validated an isolated clean Compose stack on alternate host ports with
+  PostgreSQL healthy, `migrate` exited `0`, `demo-seed` exited `0`, backend,
+  admin, and demo healthy, successful backend/admin/demo smoke checks, CORS
+  preflight checks, and seeded `new-checkout` evaluation returning
+  `reason=ROLE_MATCH`,
+- used Docker legacy build mode for the clean Compose validation because the
+  local Docker Buildx plugin was unavailable, matching the documented
+  troubleshooting path,
+- `markdownlint` was not installed locally, so the optional markdown lint check
+  was not run.
 
 ### Likely changed files
 

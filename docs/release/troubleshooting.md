@@ -279,6 +279,7 @@ npm run test:integration --workspace=@ffp/backend
 npm run test:e2e --workspace=@ffp/backend
 npm run build
 npm run diff:check
+npm run prisma:validate --workspace=@ffp/backend
 ```
 
 If `markdownlint` is installed:
