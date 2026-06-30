@@ -365,6 +365,10 @@ summary:focus-visible,
   border-width: 2px;
 }
 
+.beta-panel {
+  border-width: 2px;
+}
+
 .checkout-card-on,
 .beta-panel-on {
   border-color: rgba(34, 197, 94, 0.76);
@@ -458,13 +462,35 @@ summary:focus-visible,
   font-size: 1.15rem;
 }
 
+code {
+  color: #bbf7d0;
+  font-weight: 900;
+}
+
+.compact-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1rem;
+  color: #f0fdf4;
+  line-height: 1.45;
+}
+
+.compact-list li::marker {
+  color: #86efac;
+}
+
+.flag-result-card {
+  grid-column: span 2;
+}
+
 
 .technical-footer {
   margin-top: 1rem;
 }
 
 .technical-footer .details-panel .result-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .details-panel {
@@ -586,6 +612,10 @@ dd {
 
   .technical-footer .details-panel .result-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flag-result-card {
+    grid-column: span 1;
   }
 }
 
