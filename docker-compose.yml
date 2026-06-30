@@ -66,6 +66,43 @@ services:
     command: ["npm", "run", "db:seed", "--workspace=@ffp/backend"]
     restart: "no"
 
+  prisma-studio:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    profiles:
+      - tools
+    environment: *backend-environment
+    ports:
+      - "${PRISMA_STUDIO_HOST_PORT:-5555}:5555"
+    depends_on:
+      demo-seed:
+        condition: service_completed_successfully
+    command:
+      [
+        "npm",
+        "run",
+        "prisma:studio",
+        "--workspace=@ffp/backend",
+        "--",
+        "--hostname",
+        "0.0.0.0",
+        "--port",
+        "5555",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:5555').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
   backend:
     build: *backend-build
     image: feature-flag-platform-backend:local

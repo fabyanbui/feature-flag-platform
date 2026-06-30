@@ -299,6 +299,19 @@ curl --head http://localhost:5173
 curl --head http://localhost:5174
 ```
 
+Open the Compose database with Prisma Studio when you need a local
+data-inspection UI:
+
+```bash
+docker compose --profile tools up --build prisma-studio
+```
+
+Then open `http://localhost:5555`. The `prisma-studio` service is in the
+optional `tools` profile so it does not start during the default demo workflow.
+It uses `COMPOSE_DATABASE_URL`, waits for migration and seed to complete, and
+publishes the UI through `PRISMA_STUDIO_HOST_PORT` when a different host port
+is needed.
+
 Stop the stack while preserving PostgreSQL data:
 
 ```bash
