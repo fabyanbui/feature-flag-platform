@@ -94,7 +94,7 @@ Explain:
 
 ### 2. Show Global Toggle
 
-Open the demo app and select:
+Open **FFP Shop — Feature Flag Checkout Demo** and select:
 
 ```text
 Global Toggle
@@ -115,7 +115,9 @@ runtime state: On
 Presenter point:
 
 > This shows a release decision made by configuration. The code is already
-> deployed; the feature becomes visible because the flag evaluates to On.
+> deployed; the optional beta dashboard panel becomes visible because the
+> `beta-dashboard` flag evaluates to On. Checkout remains controlled only by
+> `new-checkout`.
 
 Optional live change:
 
@@ -134,7 +136,7 @@ runtime state: Off
 Presenter point:
 
 > This is the single-flag rollback story. We can turn off risky behavior
-> without a redeploy.
+> without a redeploy. Disabling `beta-dashboard` hides only the optional panel.
 
 ### 3. Show Group Kill Switch
 
@@ -200,8 +202,9 @@ runtime state: On
 
 Presenter point:
 
-> Only users with the beta-tester role see this feature. This supports internal
-> testing or limited beta release.
+> Only users with the beta-tester role see New One-Page Checkout. This supports
+> internal testing or limited beta release while Classic Checkout remains the
+> safe fallback for everyone else.
 
 ### 5. Show Percentage Rollout
 
@@ -234,7 +237,9 @@ reason: DEFAULT_OFF
 Presenter point:
 
 > Percentage rollout uses stable hashing. The same user context gets the same
-> result on repeated evaluations, so the user experience is stable.
+> result on repeated evaluations, so the user experience is stable. The included
+> rollout user sees New One-Page Checkout; the excluded rollout user stays on
+> Classic Checkout.
 
 ### 6. Show Safe Fallback
 
