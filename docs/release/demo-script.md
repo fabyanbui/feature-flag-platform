@@ -66,7 +66,7 @@ The demo has two planes:
 
 Recommended live sequence:
 
-1. Show SDK-backed evaluation in the demo app.
+1. Show SDK-backed role targeting and percentage rollout in the demo app.
 2. Activate and deactivate the group kill switch to prove fast rollback.
 3. Show Viewer RBAC disabled controls and backend-protected mutations.
 4. Show flag history, audit logs, and statistics as supporting evidence.
@@ -89,56 +89,11 @@ Show:
 Explain:
 
 - both demo flags belong to one operational rollback group,
-- `beta-dashboard` demonstrates global serving.
-- `new-checkout` demonstrates role targeting and percentage rollout.
+- `beta-dashboard` remains available in Admin as an additional seeded flag.
+- the streamlined demo app focuses on `new-checkout` users for role targeting
+  and percentage rollout.
 
-### 2. Show Global Toggle
-
-Open **ShopEase Checkout** and select:
-
-```text
-Standard shopper
-```
-
-Click **Refresh preview**.
-
-Expected result with seed data:
-
-```text
-projectKey: demo-project
-flagKey: beta-dashboard
-enabled: true
-reason: GLOBAL_ON
-runtime state: On
-```
-
-Presenter point:
-
-> This shows a release decision made by configuration. The code is already
-> deployed; the optional beta dashboard panel becomes visible because the
-> `beta-dashboard` flag evaluates to On. Checkout remains controlled only by
-> `new-checkout`.
-
-Optional live change:
-
-1. In admin, update `beta-dashboard` to disabled or enable kill switch.
-2. Return to demo app.
-3. Click **Evaluate flag** again.
-
-Expected result:
-
-```text
-enabled: false
-reason: FLAG_DISABLED or KILL_SWITCH
-runtime state: Off
-```
-
-Presenter point:
-
-> This is the single-flag rollback story. We can turn off risky behavior
-> without a redeploy. Disabling `beta-dashboard` hides only the optional panel.
-
-### 3. Show Group Kill Switch
+### 2. Show Group Kill Switch
 
 Return to the admin dashboard and open **Groups**.
 
@@ -148,10 +103,10 @@ For group `customer-experience` in `production`, show:
 - lifecycle status remains `Enabled` for both flags,
 - group kill switch starts `Inactive`.
 
-Activate the group kill switch and accept the confirmation. Evaluate
-`beta-dashboard` and `new-checkout` again.
+Activate the group kill switch and accept the confirmation. In the demo app,
+refresh any `new-checkout` customer account.
 
-Expected result for both assigned flags:
+Expected result for the selected checkout user:
 
 ```text
 enabled: false
@@ -167,12 +122,12 @@ Explain:
 - one group audit entry records the group mutation; the system does not claim
   that every member flag was individually edited.
 
-Deactivate the group switch before continuing. Re-evaluate `beta-dashboard` and
-confirm normal evaluation returns:
+Deactivate the group switch before continuing. Re-evaluate **Beta customer**
+and confirm normal evaluation returns:
 
 ```text
 enabled: true
-reason: GLOBAL_ON
+reason: ROLE_MATCH
 runtime state: On
 ```
 
@@ -182,7 +137,7 @@ Presenter point:
 > safely disables a related set of features, while preserving each flag's
 > configuration for fast restoration.
 
-### 4. Show Role Targeting
+### 3. Show Role Targeting
 
 Select:
 
@@ -206,7 +161,7 @@ Presenter point:
 > internal testing or limited beta release while Classic Checkout remains the
 > safe fallback for everyone else.
 
-### 5. Show Percentage Rollout
+### 4. Show Percentage Rollout
 
 In the demo app, use **Switch customer accounts** and select several regular
 accounts from the staged rollout series:
@@ -239,30 +194,7 @@ Presenter point:
 > experience is stable. A series of accounts makes the rollout behavior visible
 > better than only one included and one excluded user.
 
-### 6. Show Safe Fallback
-
-Select:
-
-```text
-Safe fallback preview
-```
-
-Expected result:
-
-```text
-projectKey: missing-project
-flagKey: missing-flag
-enabled: false
-reason: NOT_FOUND
-runtime state: Off
-```
-
-Presenter point:
-
-> The evaluation API fails closed. Missing configuration does not accidentally
-> expose a feature.
-
-### 7. Show Flag Configuration History
+### 5. Show Flag Configuration History
 
 Return to the admin dashboard and open the rule editor for `new-checkout`.
 
@@ -284,7 +216,7 @@ Presenter point:
 > for accountability. We avoid duplicating configuration versions in a second
 > table, which keeps one source of truth and reduces consistency risk.
 
-### 8. Show Audit Logs
+### 6. Show Audit Logs
 
 Return to the admin dashboard audit log screen.
 
@@ -303,17 +235,18 @@ Presenter point:
 > project-wide audit screen supports broader operational investigation. Both
 > views use the same immutable audit records.
 
-### 9. Show Evaluation Statistics
+### 7. Show Evaluation Statistics
 
-Before opening the statistics page, evaluate `beta-dashboard` several times in
-the demo app.
+Before opening the statistics page, evaluate several `new-checkout` customer
+accounts in the demo app.
 
-Produce both outcomes:
+Produce multiple outcomes:
 
-1. evaluate while normal global serving is active,
-2. activate the flag or group kill switch,
-3. evaluate again,
-4. deactivate the switch before continuing.
+1. choose **Beta customer** for `ROLE_MATCH`,
+2. choose rollout accounts that return `PERCENTAGE_ROLLOUT`,
+3. choose rollout accounts that return `DEFAULT_OFF`,
+4. optionally activate the group kill switch, evaluate again, then deactivate
+   the switch before continuing.
 
 Open **Statistics** in the admin dashboard and refresh.
 
@@ -324,7 +257,8 @@ Show:
 - Off outcomes,
 - On percentage,
 - counts per flag,
-- reasons such as `GLOBAL_ON`, `KILL_SWITCH`, or `GROUP_KILL_SWITCH`.
+- reasons such as `ROLE_MATCH`, `PERCENTAGE_ROLLOUT`, `DEFAULT_OFF`, or
+  `GROUP_KILL_SWITCH`.
 
 Presenter point:
 
@@ -344,7 +278,7 @@ Privacy point:
 > metrics table does not contain targeting keys, user IDs, roles, attributes, or
 > raw evaluation requests.
 
-### 10. Show JavaScript SDK Integration
+### 8. Show JavaScript SDK Integration
 
 Return to the demo app, scroll to the footer, expand **Show technical
 diagnostics**, and point out the **SDK client** and **Decision source** fields.
@@ -372,7 +306,7 @@ Presenter point:
 > Transport failures fail closed locally and remain distinguishable from a
 > backend evaluation decision.
 
-### 11. Show Server-Resolved Demo RBAC
+### 9. Show Server-Resolved Demo RBAC
 
 1. Open the admin dashboard and select **Viewer**.
 2. Show that projects, flags, groups, history, statistics, and audit logs remain

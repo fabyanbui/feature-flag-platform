@@ -7,10 +7,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
-type BusinessFeature =
-  | 'Checkout experience'
-  | 'Beta dashboard panel'
-  | 'Safe fallback';
+type BusinessFeature = 'Checkout experience';
 
 type DemoScenario = {
   id: string;
@@ -63,26 +60,6 @@ const checkoutRolloutAccounts: DemoScenario[] = [
 
 const demoScenarios: DemoScenario[] = [
   {
-    id: 'global-toggle',
-    title: 'Global store preview',
-    customerLabel: 'Standard shopper',
-    accountGroup: 'Storewide release preview',
-    scenarioSummary:
-      'Shows the deployed storefront with the optional customer insights panel available when the storewide release is active.',
-    expectedOutcome: 'Beta dashboard panel visible when beta-dashboard returns On.',
-    expectedReason: 'GLOBAL_ON',
-    businessFeature: 'Beta dashboard panel',
-    projectKey: 'demo-project',
-    flagKey: 'beta-dashboard',
-    context: {
-      targetingKey: 'demo-user-global',
-      userId: 'demo-user-global',
-      roles: ['user'],
-    },
-    presenterNote:
-      'Use Admin to change beta-dashboard, then refresh this preview. This does not control checkout.',
-  },
-  {
     id: 'role-targeting-on',
     title: 'Early-access customer',
     customerLabel: 'Beta customer',
@@ -103,25 +80,6 @@ const demoScenarios: DemoScenario[] = [
     presenterNote: 'Expected technical reason: ROLE_MATCH.',
   },
   ...checkoutRolloutAccounts,
-  {
-    id: 'not-found',
-    title: 'Unavailable preview settings',
-    customerLabel: 'Safe fallback preview',
-    accountGroup: 'Safety check',
-    scenarioSummary:
-      'Shows the safe customer fallback when preview settings are unavailable.',
-    expectedOutcome: 'Classic Checkout remains active because missing config fails closed.',
-    expectedReason: 'NOT_FOUND',
-    businessFeature: 'Safe fallback',
-    projectKey: 'missing-project',
-    flagKey: 'missing-flag',
-    context: {
-      targetingKey: 'demo-missing-user',
-      userId: 'demo-missing-user',
-      roles: ['user'],
-    },
-    presenterNote: 'Expected technical reason: NOT_FOUND; fallback stays active.',
-  },
 ];
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
@@ -286,66 +244,6 @@ function CheckoutExperience({
             <button type="button">Continue to payment</button>
           </div>
         </>
-      )}
-    </section>
-  );
-}
-
-type BetaDashboardPanelProps = {
-  isBetaDashboardOn: boolean;
-  selectedFlagKey: string;
-};
-
-function BetaDashboardPanel({
-  isBetaDashboardOn,
-  selectedFlagKey,
-}: BetaDashboardPanelProps) {
-  const isBetaScenario = selectedFlagKey === 'beta-dashboard';
-
-  return (
-    <section
-      className={
-        isBetaDashboardOn
-          ? 'shop-card beta-panel beta-panel-on'
-          : 'shop-card beta-panel beta-panel-off'
-      }
-      aria-labelledby="beta-panel-heading"
-      aria-live="polite"
-    >
-      <div className="section-heading-row">
-        <div>
-          <p className="eyebrow">Optional store panel</p>
-          <h2 id="beta-panel-heading">
-            {isBetaDashboardOn
-              ? 'Customer Insights Dashboard'
-              : 'Insights panel hidden'}
-          </h2>
-        </div>
-        <span className={isBetaDashboardOn ? 'status-pill status-on' : 'status-pill'}>
-          {isBetaDashboardOn ? 'Insights available' : 'Hidden'}
-        </span>
-      </div>
-      {isBetaDashboardOn ? (
-        <div className="insight-grid" aria-label="Customer insights preview">
-          <span>
-            <strong>18%</strong>
-            cart recovery lift
-          </span>
-          <span>
-            <strong>42</strong>
-            saved checkouts
-          </span>
-          <span>
-            <strong>Live</strong>
-            store preview
-          </span>
-        </div>
-      ) : (
-        <p>
-          {isBetaScenario
-            ? 'The optional panel stays hidden until this preview customer is eligible.'
-            : 'This preview focuses on checkout, so the optional panel stays hidden.'}
-        </p>
       )}
     </section>
   );
@@ -603,8 +501,6 @@ function App() {
 
   const isNewCheckoutOn =
     selectedScenario.flagKey === 'new-checkout' && currentResult?.enabled === true;
-  const isBetaDashboardOn =
-    selectedScenario.flagKey === 'beta-dashboard' && currentResult?.enabled === true;
   const liveStatus = isLoading
     ? `Refreshing ${selectedScenario.customerLabel}. Classic Checkout remains active while loading.`
     : currentResult
@@ -672,10 +568,6 @@ function App() {
             <CheckoutExperience
               isNewCheckoutOn={isNewCheckoutOn}
               result={currentResult}
-            />
-            <BetaDashboardPanel
-              isBetaDashboardOn={isBetaDashboardOn}
-              selectedFlagKey={selectedScenario.flagKey}
             />
           </div>
           <aside className="commerce-sidebar" aria-label="Order summary">
