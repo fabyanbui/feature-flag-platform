@@ -1,5 +1,11 @@
 #root {
+  display: block;
   min-height: 100vh;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  text-align: left;
 }
 
 * {
@@ -84,6 +90,8 @@ p {
 
 h1 {
   margin-bottom: 0.75rem;
+  color: #f8fafc;
+  font-weight: 900;
   max-width: 48rem;
   font-size: clamp(2.25rem, 6vw, 4.75rem);
   line-height: 0.98;
@@ -133,6 +141,7 @@ button:disabled {
 
 button:focus-visible,
 input:focus-visible,
+summary:focus-visible,
 .scenario-option:has(input:focus-visible) {
   outline: 3px solid #f0fdf4;
   outline-offset: 3px;
@@ -166,7 +175,7 @@ input:focus-visible,
 
 .scenario-options {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 0.75rem;
   margin: 1rem 0;
 }
@@ -206,6 +215,7 @@ input:focus-visible,
   line-height: 1.45;
 }
 
+.account-series-note,
 .presenter-note {
   margin: 0;
   padding: 0.85rem 1rem;
@@ -377,6 +387,61 @@ input:focus-visible,
 .insight-grid strong {
   color: #f8fafc;
   font-size: 1.15rem;
+}
+
+
+.details-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.details-panel summary,
+.error-panel summary {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 1rem 1.25rem;
+  color: #f0fdf4;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.details-panel summary::-webkit-details-marker,
+.error-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-panel summary::after,
+.error-panel summary::after {
+  margin-left: auto;
+  color: #86efac;
+  content: 'Show';
+}
+
+.details-panel[open] summary::after,
+.error-panel details[open] summary::after {
+  content: 'Hide';
+}
+
+.details-panel > :not(summary) {
+  margin-right: 1.25rem;
+  margin-left: 1.25rem;
+}
+
+.details-panel > :last-child {
+  margin-bottom: 1.25rem;
+}
+
+.error-panel details {
+  margin: 0.75rem 0;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+  border-radius: 0.85rem;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.error-panel details p {
+  margin-right: 1rem;
+  margin-left: 1rem;
 }
 
 .summary-list,

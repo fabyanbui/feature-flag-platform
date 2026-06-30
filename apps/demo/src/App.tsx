@@ -7,25 +7,68 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
+type BusinessFeature =
+  | 'Checkout experience'
+  | 'Beta dashboard panel'
+  | 'Safe fallback';
+
 type DemoScenario = {
   id: string;
   title: string;
+  customerLabel: string;
+  accountGroup: string;
   scenarioSummary: string;
   expectedOutcome: string;
   expectedReason: string;
-  businessFeature: 'Checkout experience' | 'Beta dashboard panel' | 'Safe fallback';
+  businessFeature: BusinessFeature;
   projectKey: string;
   flagKey: string;
   context: EvaluationContext;
   presenterNote: string;
 };
 
+const checkoutRolloutAccounts: DemoScenario[] = [
+  ['01', 'demo-rollout-01', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  ['02', 'demo-rollout-03', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
+  ['03', 'demo-rollout-06', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
+  ['04', 'demo-rollout-08', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  ['05', 'demo-rollout-11', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
+  ['06', 'demo-rollout-13', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  ['07', 'demo-rollout-17', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
+  ['08', 'demo-rollout-18', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  ['09', 'demo-rollout-20', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
+  ['10', 'demo-rollout-24', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  ['11', 'demo-rollout-32', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
+  ['12', 'demo-rollout-34', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+].map(([accountNumber, targetingKey, expectedReason, expectedOutcome]) => ({
+  id: `rollout-account-${accountNumber}`,
+  title: `Rollout account ${accountNumber}`,
+  customerLabel: `Customer account ${accountNumber}`,
+  accountGroup: 'Staged checkout rollout',
+  scenarioSummary:
+    'Regular shopper in the staged account series. Switch accounts to see gradual release behavior.',
+  expectedOutcome,
+  expectedReason,
+  businessFeature: 'Checkout experience' as const,
+  projectKey: 'demo-project',
+  flagKey: 'new-checkout',
+  context: {
+    targetingKey,
+    userId: targetingKey,
+    roles: ['user'],
+  },
+  presenterNote:
+    'Regular account in the deterministic rollout series. Re-evaluate the same account to show the result stays stable.',
+}));
+
 const demoScenarios: DemoScenario[] = [
   {
     id: 'global-toggle',
-    title: 'Global Toggle',
+    title: 'Global store preview',
+    customerLabel: 'Standard shopper',
+    accountGroup: 'Storewide release preview',
     scenarioSummary:
-      'Evaluates beta-dashboard for the optional customer insights panel. Toggle this flag in Admin, then retry evaluation here.',
+      'Shows the deployed storefront with the optional customer insights panel available when the storewide release is active.',
     expectedOutcome: 'Beta dashboard panel visible when beta-dashboard returns On.',
     expectedReason: 'GLOBAL_ON',
     businessFeature: 'Beta dashboard panel',
@@ -37,13 +80,15 @@ const demoScenarios: DemoScenario[] = [
       roles: ['user'],
     },
     presenterNote:
-      'Change beta-dashboard in Admin, then evaluate again. This flag never controls checkout.',
+      'Use Admin to change beta-dashboard, then refresh this preview. This does not control checkout.',
   },
   {
     id: 'role-targeting-on',
-    title: 'Role Targeting — Beta Tester',
+    title: 'Early-access customer',
+    customerLabel: 'Beta customer',
+    accountGroup: 'Role-based early access',
     scenarioSummary:
-      'Evaluates new-checkout for a beta tester who should match the role targeting rule.',
+      'Shows a customer segment that receives the newest checkout experience before general rollout.',
     expectedOutcome: 'New One-Page Checkout visible for this customer segment.',
     expectedReason: 'ROLE_MATCH',
     businessFeature: 'Checkout experience',
@@ -55,47 +100,16 @@ const demoScenarios: DemoScenario[] = [
       roles: ['beta-tester'],
       attributes: { plan: 'pro' },
     },
-    presenterNote: 'Expected reason: ROLE_MATCH.',
+    presenterNote: 'Expected technical reason: ROLE_MATCH.',
   },
-  {
-    id: 'percentage-on',
-    title: 'Percentage Rollout — Included User',
-    scenarioSummary:
-      'Evaluates new-checkout for a regular user who falls inside the deterministic rollout bucket.',
-    expectedOutcome: 'New One-Page Checkout visible for this stable rollout key.',
-    expectedReason: 'PERCENTAGE_ROLLOUT',
-    businessFeature: 'Checkout experience',
-    projectKey: 'demo-project',
-    flagKey: 'new-checkout',
-    context: {
-      targetingKey: 'demo-rollout-on',
-      userId: 'demo-rollout-on',
-      roles: ['user'],
-    },
-    presenterNote: 'Expected reason: PERCENTAGE_ROLLOUT.',
-  },
-  {
-    id: 'percentage-off',
-    title: 'Percentage Rollout — Excluded User',
-    scenarioSummary:
-      'Evaluates new-checkout for a regular user who falls outside the deterministic rollout bucket.',
-    expectedOutcome: 'Classic Checkout remains active for this stable rollout key.',
-    expectedReason: 'DEFAULT_OFF',
-    businessFeature: 'Checkout experience',
-    projectKey: 'demo-project',
-    flagKey: 'new-checkout',
-    context: {
-      targetingKey: 'demo-rollout-off',
-      userId: 'demo-rollout-off',
-      roles: ['user'],
-    },
-    presenterNote: 'Expected reason: DEFAULT_OFF.',
-  },
+  ...checkoutRolloutAccounts,
   {
     id: 'not-found',
-    title: 'Missing Project / Flag',
+    title: 'Unavailable preview settings',
+    customerLabel: 'Safe fallback preview',
+    accountGroup: 'Safety check',
     scenarioSummary:
-      'Demonstrates safe fallback when the requested project or flag does not exist.',
+      'Shows the safe customer fallback when preview settings are unavailable.',
     expectedOutcome: 'Classic Checkout remains active because missing config fails closed.',
     expectedReason: 'NOT_FOUND',
     businessFeature: 'Safe fallback',
@@ -106,7 +120,7 @@ const demoScenarios: DemoScenario[] = [
       userId: 'demo-missing-user',
       roles: ['user'],
     },
-    presenterNote: 'Expected reason: NOT_FOUND; fallback stays active.',
+    presenterNote: 'Expected technical reason: NOT_FOUND; fallback stays active.',
   },
 ];
 
@@ -171,7 +185,7 @@ function CartSummary({ scenario }: CartSummaryProps) {
   return (
     <section className="shop-card" aria-labelledby="cart-heading">
       <p className="eyebrow">Order summary</p>
-      <h2 id="cart-heading">Cart & customer segment</h2>
+      <h2 id="cart-heading">Cart & customer preview</h2>
       <dl className="summary-list">
         <div>
           <dt>Subtotal</dt>
@@ -186,16 +200,12 @@ function CartSummary({ scenario }: CartSummaryProps) {
           <dd>$129.00</dd>
         </div>
         <div>
-          <dt>Preview scenario</dt>
-          <dd>{scenario.title}</dd>
+          <dt>Preview customer</dt>
+          <dd>{scenario.customerLabel}</dd>
         </div>
         <div>
-          <dt>Targeting key</dt>
-          <dd>{scenario.context.targetingKey ?? 'None'}</dd>
-        </div>
-        <div>
-          <dt>Roles</dt>
-          <dd>{formatRoles(scenario.context.roles)}</dd>
+          <dt>Account group</dt>
+          <dd>{scenario.accountGroup}</dd>
         </div>
       </dl>
     </section>
@@ -205,18 +215,16 @@ function CartSummary({ scenario }: CartSummaryProps) {
 type CheckoutExperienceProps = {
   isNewCheckoutOn: boolean;
   result: SdkEvaluationResult | null;
-  selectedFlagKey: string;
 };
 
 function CheckoutExperience({
   isNewCheckoutOn,
   result,
-  selectedFlagKey,
 }: CheckoutExperienceProps) {
   const isClientFallback = result ? isClientEvaluationError(result) : false;
   const safeFallbackCopy = isClientFallback
-    ? 'Classic Checkout remains active because the SDK failed closed locally. This is not a backend evaluation decision.'
-    : 'Classic Checkout remains active because the feature flag did not return a safe On decision.';
+    ? 'Classic Checkout remains active while the checkout preview is unavailable.'
+    : 'Classic Checkout remains active while the new experience is not confirmed available for this customer.';
 
   return (
     <section
@@ -236,15 +244,15 @@ function CheckoutExperience({
           </h2>
         </div>
         <span className={isNewCheckoutOn ? 'status-pill status-on' : 'status-pill'}>
-          {isNewCheckoutOn ? 'new-checkout On' : 'Safe fallback'}
+          {isNewCheckoutOn ? 'New experience' : 'Classic active'}
         </span>
       </div>
 
       {isNewCheckoutOn ? (
         <>
           <p>
-            The SDK returned enabled=true for <strong>new-checkout</strong>, so
-            this customer sees the released one-page experience.
+            This customer sees the streamlined one-page checkout experience for
+            the current release preview.
           </p>
           <ul className="feature-list">
             <li>Smart discount recommendation</li>
@@ -279,31 +287,17 @@ function CheckoutExperience({
           </div>
         </>
       )}
-
-      <p className="decision-copy">
-        Checkout is controlled only by <strong>new-checkout</strong>. Selected
-        flag: <strong>{selectedFlagKey}</strong>.{' '}
-        {result ? (
-          <>
-            Returned reason: <strong>{result.reason}</strong>.
-          </>
-        ) : (
-          <>No SDK reason returned yet.</>
-        )}
-      </p>
     </section>
   );
 }
 
 type BetaDashboardPanelProps = {
   isBetaDashboardOn: boolean;
-  result: SdkEvaluationResult | null;
   selectedFlagKey: string;
 };
 
 function BetaDashboardPanel({
   isBetaDashboardOn,
-  result,
   selectedFlagKey,
 }: BetaDashboardPanelProps) {
   const isBetaScenario = selectedFlagKey === 'beta-dashboard';
@@ -320,19 +314,19 @@ function BetaDashboardPanel({
     >
       <div className="section-heading-row">
         <div>
-          <p className="eyebrow">Optional feature panel</p>
+          <p className="eyebrow">Optional store panel</p>
           <h2 id="beta-panel-heading">
             {isBetaDashboardOn
-              ? 'Beta Customer Insights Dashboard'
-              : 'Beta Dashboard hidden'}
+              ? 'Customer Insights Dashboard'
+              : 'Insights panel hidden'}
           </h2>
         </div>
         <span className={isBetaDashboardOn ? 'status-pill status-on' : 'status-pill'}>
-          {isBetaDashboardOn ? 'beta-dashboard On' : 'Hidden'}
+          {isBetaDashboardOn ? 'Insights available' : 'Hidden'}
         </span>
       </div>
       {isBetaDashboardOn ? (
-        <div className="insight-grid" aria-label="Beta dashboard preview">
+        <div className="insight-grid" aria-label="Customer insights preview">
           <span>
             <strong>18%</strong>
             cart recovery lift
@@ -342,28 +336,17 @@ function BetaDashboardPanel({
             saved checkouts
           </span>
           <span>
-            <strong>{result?.reason}</strong>
-            current reason
+            <strong>Live</strong>
+            store preview
           </span>
         </div>
       ) : (
         <p>
           {isBetaScenario
-            ? 'The optional dashboard is hidden until beta-dashboard returns enabled=true.'
-            : 'This scenario does not evaluate beta-dashboard, so no checkout result can reveal this panel.'}
+            ? 'The optional panel stays hidden until this preview customer is eligible.'
+            : 'This preview focuses on checkout, so the optional panel stays hidden.'}
         </p>
       )}
-      <p className="decision-copy">
-        Beta dashboard visibility is controlled only by <strong>beta-dashboard</strong>.
-        Selected flag: <strong>{selectedFlagKey}</strong>.{' '}
-        {result ? (
-          <>
-            Returned reason: <strong>{result.reason}</strong>.
-          </>
-        ) : (
-          <>No SDK reason returned yet.</>
-        )}
-      </p>
     </section>
   );
 }
@@ -385,13 +368,20 @@ function ScenarioSelector({
     <section className="shop-card scenario-panel" aria-labelledby="scenario-heading">
       <div className="section-heading-row">
         <div>
-          <p className="eyebrow">Release preview</p>
-          <h2 id="scenario-heading">Preview scenario</h2>
+          <p className="eyebrow">Customer preview</p>
+          <h2 id="scenario-heading">Switch customer accounts</h2>
         </div>
         <button disabled={isLoading} onClick={onEvaluate} type="button">
-          {isLoading ? 'Evaluating...' : 'Evaluate flag'}
+          {isLoading ? 'Refreshing...' : 'Refresh preview'}
         </button>
       </div>
+
+      <p className="account-series-note">
+        The staged rollout series contains 12 regular customer accounts. Switch
+        between them to show that some customers receive the new checkout while
+        others keep Classic Checkout, and refreshing the same account keeps the
+        same result.
+      </p>
 
       <div className="scenario-options" role="radiogroup" aria-labelledby="scenario-heading">
         {demoScenarios.map((scenario) => (
@@ -403,19 +393,11 @@ function ScenarioSelector({
               type="radio"
             />
             <span>
-              <strong>{scenario.title}</strong>
+              <strong>{scenario.customerLabel}</strong>
               <small>{scenario.scenarioSummary}</small>
-              <small>
-                Expected display-only metadata: {scenario.expectedReason} ·{' '}
-                {scenario.expectedOutcome}
-              </small>
             </span>
           </label>
         ))}
-      </div>
-
-      <div className="presenter-note">
-        <strong>Presenter note:</strong> {selectedScenario.presenterNote}
       </div>
     </section>
   );
@@ -442,9 +424,10 @@ function EvaluationDetails({
       : 'Not evaluated';
 
   return (
-    <section className="shop-card details-panel" aria-labelledby="details-heading">
+    <details className="shop-card details-panel">
+      <summary>Show technical diagnostics</summary>
       <p className="eyebrow">SDK evaluation details</p>
-      <h2 id="details-heading">Current SDK result</h2>
+      <h2>Current SDK result</h2>
       <dl className="result-grid" aria-label="Evaluation result">
         <div>
           <dt>Evaluation API</dt>
@@ -459,7 +442,7 @@ function EvaluationDetails({
           <dd>{environmentKey}</dd>
         </div>
         <div>
-          <dt>Selected scenario</dt>
+          <dt>Selected preview</dt>
           <dd>{selectedScenario.title}</dd>
         </div>
         <div>
@@ -500,7 +483,15 @@ function EvaluationDetails({
         </div>
         <div>
           <dt>Expected reason</dt>
-          <dd>{selectedScenario.expectedReason} (display only)</dd>
+          <dd>{selectedScenario.expectedReason} (presentation guide)</dd>
+        </div>
+        <div>
+          <dt>Expected customer outcome</dt>
+          <dd>{selectedScenario.expectedOutcome}</dd>
+        </div>
+        <div>
+          <dt>Presenter note</dt>
+          <dd>{selectedScenario.presenterNote}</dd>
         </div>
         <div>
           <dt>Decision source</dt>
@@ -517,7 +508,7 @@ function EvaluationDetails({
           <dd>{result?.matchedRuleId ?? 'None'}</dd>
         </div>
       </dl>
-    </section>
+    </details>
   );
 }
 
@@ -593,7 +584,7 @@ function App() {
 
       setResult(null);
       setErrorMessage(
-        'Could not prepare this scenario. Check the browser-safe SDK configuration and retry.',
+        'Could not prepare this preview. Check the browser-safe SDK configuration and retry.',
       );
     } finally {
       if (requestSequence.current === requestId) {
@@ -615,23 +606,23 @@ function App() {
   const isBetaDashboardOn =
     selectedScenario.flagKey === 'beta-dashboard' && currentResult?.enabled === true;
   const liveStatus = isLoading
-    ? `Evaluating ${selectedScenario.title}. Classic Checkout remains active while loading.`
+    ? `Refreshing ${selectedScenario.customerLabel}. Classic Checkout remains active while loading.`
     : currentResult
-      ? `${selectedScenario.title} returned enabled=${String(
-          currentResult.enabled,
-        )}, reason=${currentResult.reason}.`
-      : `${selectedScenario.title} has not been evaluated. Classic Checkout remains active.`;
+      ? `${selectedScenario.customerLabel} preview refreshed. Runtime state is ${
+          currentResult.enabled ? 'On' : 'Off'
+        }.`
+      : `${selectedScenario.customerLabel} has not been refreshed. Classic Checkout remains active.`;
 
   return (
     <main className="demo-shell">
       <section className="demo-card" aria-labelledby="app-heading">
         <header className="hero-section">
           <div>
-            <p className="eyebrow">Feature Flag Platform</p>
-            <h1 id="app-heading">FFP Shop — Feature Flag Checkout Demo</h1>
+            <p className="eyebrow">Premium Audio Store</p>
+            <h1 id="app-heading">ShopEase Checkout</h1>
             <p>
-              This is a deployed checkout application. Feature flags decide
-              which customer experience is visible at runtime, without a
+              Preview a deployed storefront where different customer accounts
+              can safely receive different checkout experiences without a
               frontend redeploy.
             </p>
           </div>
@@ -654,20 +645,23 @@ function App() {
 
         {errorMessage ? (
           <section className="error-panel" role="alert">
-            <h2>
-              {currentResult && isClientEvaluationError(currentResult)
-                ? 'SDK fallback active'
-                : 'Evaluation unavailable'}
-            </h2>
-            <p>{errorMessage}</p>
-            {currentResult && isClientEvaluationError(currentResult) ? (
-              <p>
-                The client failed closed, so Classic Checkout remains active.
-                This is not a backend evaluation decision.
-              </p>
-            ) : null}
+            <h2>Checkout preview unavailable</h2>
+            <p>
+              We could not refresh this checkout preview. Classic Checkout
+              remains active so the customer experience stays safe.
+            </p>
+            <details>
+              <summary>Show SDK fallback message</summary>
+              <p>{errorMessage}</p>
+              {currentResult && isClientEvaluationError(currentResult) ? (
+                <p>
+                  The client failed closed, so Classic Checkout remains active.
+                  This is not a backend evaluation decision.
+                </p>
+              ) : null}
+            </details>
             <button onClick={evaluateFlag} type="button">
-              Retry selected scenario
+              Retry preview
             </button>
           </section>
         ) : null}
@@ -678,15 +672,13 @@ function App() {
             <CheckoutExperience
               isNewCheckoutOn={isNewCheckoutOn}
               result={currentResult}
-              selectedFlagKey={selectedScenario.flagKey}
             />
             <BetaDashboardPanel
               isBetaDashboardOn={isBetaDashboardOn}
-              result={currentResult}
               selectedFlagKey={selectedScenario.flagKey}
             />
           </div>
-          <aside className="commerce-sidebar" aria-label="Order and evaluation summary">
+          <aside className="commerce-sidebar" aria-label="Order and diagnostics summary">
             <CartSummary scenario={selectedScenario} />
             <EvaluationDetails
               selectedScenario={selectedScenario}

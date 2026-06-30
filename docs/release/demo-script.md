@@ -94,13 +94,13 @@ Explain:
 
 ### 2. Show Global Toggle
 
-Open **FFP Shop — Feature Flag Checkout Demo** and select:
+Open **ShopEase Checkout** and select:
 
 ```text
-Global Toggle
+Standard shopper
 ```
 
-Click **Evaluate flag**.
+Click **Refresh preview**.
 
 Expected result with seed data:
 
@@ -187,7 +187,7 @@ Presenter point:
 Select:
 
 ```text
-Role Targeting — Beta Tester
+Beta customer
 ```
 
 Expected result:
@@ -208,45 +208,43 @@ Presenter point:
 
 ### 5. Show Percentage Rollout
 
-Select:
+In the demo app, use **Switch customer accounts** and select several regular
+accounts from the staged rollout series:
 
 ```text
-Percentage Rollout — Included User
+Customer account 01 through Customer account 12
 ```
 
-Expected result:
+With seed data, the 50% rollout is deterministic. Expected visible customer
+experience:
 
 ```text
-enabled: true
-reason: PERCENTAGE_ROLLOUT
+Customer accounts 02, 03, 05, 07, 09, and 11: New One-Page Checkout
+Customer accounts 01, 04, 06, 08, 10, and 12: Classic Checkout
 ```
 
-Then select:
+If you need to show the underlying feature-flag contract, expand **Show
+technical feature-flag diagnostics** for the selected account. Expected
+technical reasons are:
 
 ```text
-Percentage Rollout — Excluded User
-```
-
-Expected result:
-
-```text
-enabled: false
-reason: DEFAULT_OFF
+New One-Page Checkout: enabled=true, reason=PERCENTAGE_ROLLOUT
+Classic Checkout: enabled=false, reason=DEFAULT_OFF
 ```
 
 Presenter point:
 
-> Percentage rollout uses stable hashing. The same user context gets the same
-> result on repeated evaluations, so the user experience is stable. The included
-> rollout user sees New One-Page Checkout; the excluded rollout user stays on
-> Classic Checkout.
+> Percentage rollout uses stable hashing over a stable non-PII account key.
+> The same account gets the same result on repeated evaluations, so the user
+> experience is stable. A series of accounts makes the rollout behavior visible
+> better than only one included and one excluded user.
 
 ### 6. Show Safe Fallback
 
 Select:
 
 ```text
-Missing Project / Flag
+Safe fallback preview
 ```
 
 Expected result:
@@ -348,8 +346,8 @@ Privacy point:
 
 ### 10. Show JavaScript SDK Integration
 
-Return to the demo app and point out the **SDK client** and **Decision source**
-fields.
+Return to the demo app, expand **Show technical diagnostics**, and
+point out the **SDK client** and **Decision source** fields.
 
 Explain:
 
