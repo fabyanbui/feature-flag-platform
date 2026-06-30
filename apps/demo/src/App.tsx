@@ -678,15 +678,18 @@ function App() {
               selectedFlagKey={selectedScenario.flagKey}
             />
           </div>
-          <aside className="commerce-sidebar" aria-label="Order and diagnostics summary">
+          <aside className="commerce-sidebar" aria-label="Order summary">
             <CartSummary scenario={selectedScenario} />
-            <EvaluationDetails
-              selectedScenario={selectedScenario}
-              result={currentResult}
-              isLoading={isLoading}
-            />
           </aside>
         </div>
+
+        <footer className="technical-footer" aria-label="Technical diagnostics">
+          <EvaluationDetails
+            selectedScenario={selectedScenario}
+            result={currentResult}
+            isLoading={isLoading}
+          />
+        </footer>
       </section>
     </main>
   );

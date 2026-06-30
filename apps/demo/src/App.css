@@ -390,6 +390,14 @@ summary:focus-visible,
 }
 
 
+.technical-footer {
+  margin-top: 1rem;
+}
+
+.technical-footer .details-panel .result-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .details-panel {
   padding: 0;
   overflow: hidden;
@@ -507,7 +515,11 @@ dd {
   }
 
   .commerce-sidebar {
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: 1fr;
+  }
+
+  .technical-footer .details-panel .result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -537,6 +549,7 @@ dd {
 
   .scenario-options,
   .details-panel .result-grid,
+  .technical-footer .details-panel .result-grid,
   .insight-grid {
     grid-template-columns: 1fr;
   }

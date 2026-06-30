@@ -346,8 +346,8 @@ Privacy point:
 
 ### 10. Show JavaScript SDK Integration
 
-Return to the demo app, expand **Show technical diagnostics**, and
-point out the **SDK client** and **Decision source** fields.
+Return to the demo app, scroll to the footer, expand **Show technical
+diagnostics**, and point out the **SDK client** and **Decision source** fields.
 
 Explain:
 
