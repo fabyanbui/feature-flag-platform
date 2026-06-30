@@ -274,28 +274,61 @@ function ScenarioSelector({
         </button>
       </div>
 
-      <p className="account-series-note">
-        The staged rollout series contains 12 regular customer accounts. Switch
-        between them to show that some customers receive the new checkout while
-        others keep Classic Checkout, and refreshing the same account keeps the
-        same result.
-      </p>
+      <div className="customer-preview-grid">
+        <section
+          className="customer-info-card"
+          aria-labelledby="customer-info-heading"
+        >
+          <p className="eyebrow">Selected user</p>
+          <h3 id="customer-info-heading">{selectedScenario.customerLabel}</h3>
+          <p>{selectedScenario.scenarioSummary}</p>
+          <dl className="customer-context-list">
+            <div>
+              <dt>Role</dt>
+              <dd>{formatRoles(selectedScenario.context.roles)}</dd>
+            </div>
+            <div>
+              <dt>Targeting ID</dt>
+              <dd>{selectedScenario.context.targetingKey ?? 'None'}</dd>
+            </div>
+            <div>
+              <dt>User ID</dt>
+              <dd>{selectedScenario.context.userId ?? 'None'}</dd>
+            </div>
+            <div>
+              <dt>Account group</dt>
+              <dd>{selectedScenario.accountGroup}</dd>
+            </div>
+          </dl>
+        </section>
 
-      <div className="scenario-options" role="radiogroup" aria-labelledby="scenario-heading">
-        {demoScenarios.map((scenario) => (
-          <label className="scenario-option" key={scenario.id}>
-            <input
-              checked={selectedScenario.id === scenario.id}
-              name="preview-scenario"
-              onChange={() => onScenarioChange(scenario.id)}
-              type="radio"
-            />
-            <span>
-              <strong>{scenario.customerLabel}</strong>
-              <small>{scenario.scenarioSummary}</small>
-            </span>
+        <section
+          className="customer-select-card"
+          aria-labelledby="customer-select-heading"
+        >
+          <p className="eyebrow">User selection</p>
+          <h3 id="customer-select-heading">Choose demo user</h3>
+          <label className="customer-select-label" htmlFor="customer-select">
+            Demo user account
           </label>
-        ))}
+          <select
+            className="customer-select"
+            id="customer-select"
+            onChange={(event) => onScenarioChange(event.target.value)}
+            value={selectedScenario.id}
+          >
+            {demoScenarios.map((scenario) => (
+              <option key={scenario.id} value={scenario.id}>
+                {scenario.customerLabel}
+              </option>
+            ))}
+          </select>
+          <p className="account-series-note">
+            Select different accounts to show that rollout is deterministic:
+            some users receive New One-Page Checkout while others keep Classic
+            Checkout.
+          </p>
+        </section>
       </div>
     </section>
   );
@@ -472,7 +505,7 @@ function App() {
       if (isClientEvaluationError(evaluation)) {
         setErrorMessage(
           evaluation.errorMessage ??
-            'The SDK could not complete this evaluation safely.',
+          'The SDK could not complete this evaluation safely.',
         );
       }
     } catch {
@@ -504,9 +537,8 @@ function App() {
   const liveStatus = isLoading
     ? `Refreshing ${selectedScenario.customerLabel}. Classic Checkout remains active while loading.`
     : currentResult
-      ? `${selectedScenario.customerLabel} preview refreshed. Runtime state is ${
-          currentResult.enabled ? 'On' : 'Off'
-        }.`
+      ? `${selectedScenario.customerLabel} preview refreshed. Runtime state is ${currentResult.enabled ? 'On' : 'Off'
+      }.`
       : `${selectedScenario.customerLabel} has not been refreshed. Classic Checkout remains active.`;
 
   return (
@@ -521,10 +553,6 @@ function App() {
               can safely receive different checkout experiences without a
               frontend redeploy.
             </p>
-          </div>
-          <div className="hero-badge" aria-label="Runtime safety summary">
-            <span>Fail closed</span>
-            <strong>Classic Checkout by default</strong>
           </div>
         </header>
 

@@ -163,8 +163,8 @@ Presenter point:
 
 ### 4. Show Percentage Rollout
 
-In the demo app, use **Switch customer accounts** and select several regular
-accounts from the staged rollout series:
+In the demo app, use the **Switch customer accounts** dropdown and select
+several regular accounts from the staged rollout series:
 
 ```text
 Customer account 01 through Customer account 12
