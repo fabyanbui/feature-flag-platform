@@ -310,7 +310,8 @@ Then open `http://localhost:5555`. The `prisma-studio` service is in the
 optional `tools` profile so it does not start during the default demo workflow.
 It uses `COMPOSE_DATABASE_URL`, waits for migration and seed to complete, and
 publishes the UI through `PRISMA_STUDIO_HOST_PORT` when a different host port
-is needed.
+is needed. For npm-local development, use
+`npm run prisma:studio --workspace=@ffp/backend`.
 
 Stop the stack while preserving PostgreSQL data:
 
