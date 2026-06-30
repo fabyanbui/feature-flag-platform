@@ -75,6 +75,32 @@ npm run prisma:generate --workspace=@ffp/backend
 npm run prisma:migrate --workspace=@ffp/backend
 ```
 
+## Prisma Studio cannot open the Compose database
+
+Start the optional tools-profile service:
+
+```bash
+docker compose --profile tools up --build prisma-studio
+```
+
+Then open `http://localhost:5555`. If the port is already in use, set a
+different host port while keeping the container port unchanged:
+
+```bash
+PRISMA_STUDIO_HOST_PORT=5556 docker compose --profile tools up --build prisma-studio
+```
+
+The service uses `COMPOSE_DATABASE_URL` with the internal `postgres` hostname
+and waits for the one-shot `migrate` and `demo-seed` services to complete.
+Check startup logs if it does not become healthy:
+
+```bash
+docker compose ps -a
+docker compose logs migrate
+docker compose logs demo-seed
+docker compose logs prisma-studio
+```
+
 ## Demo data is missing
 
 Run:
