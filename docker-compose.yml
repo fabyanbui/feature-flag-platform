@@ -71,6 +71,7 @@ services:
     image: feature-flag-platform-backend:local
     profiles:
       - tools
+    working_dir: /workspace/apps/backend
     environment: *backend-environment
     ports:
       - "${PRISMA_STUDIO_HOST_PORT:-5555}:5555"
@@ -79,11 +80,13 @@ services:
         condition: service_completed_successfully
     command:
       [
-        "npm",
-        "run",
-        "prisma:studio",
-        "--workspace=@ffp/backend",
-        "--",
+        "npx",
+        "prisma",
+        "studio",
+        "--config",
+        "prisma.config.ts",
+        "--port",
+        "5555",
         "--browser",
         "none",
       ]
