@@ -15,17 +15,107 @@ import {
 } from "./services/commerceDb";
 import { listDemoAccounts } from "./services/demoAccountService";
 
-type ExperienceKey = "beta-dashboard" | "new-checkout";
-type ExperienceResultMap = Partial<Record<ExperienceKey, SdkEvaluationResult>>;
+type FeatureKey =
+  | "beta-dashboard"
+  | "new-checkout"
+  | "express-payment"
+  | "shipping-progress-meter"
+  | "personalized-recommendations"
+  | "trending-products"
+  | "holiday-promo-banner";
+type FeatureResultMap = Partial<Record<FeatureKey, SdkEvaluationResult>>;
+type FeatureGroupKey = "checkout" | "recommendations" | "standalone";
 
-type Experience = {
-  key: ExperienceKey;
+type DemoFeature = {
+  key: FeatureKey;
+  group: FeatureGroupKey;
   label: string;
+  description: string;
+  enabledCopy: string;
+  disabledCopy: string;
 };
 
-const experiences: Experience[] = [
-  { key: "beta-dashboard", label: "Account dashboard" },
-  { key: "new-checkout", label: "Checkout" },
+const demoFeatures: DemoFeature[] = [
+  {
+    key: "new-checkout",
+    group: "checkout",
+    label: "One-page checkout",
+    description: "Condenses cart, payment, and review into one flow.",
+    enabledCopy: "One-step payment is visible.",
+    disabledCopy: "Classic multi-step checkout stays active.",
+  },
+  {
+    key: "express-payment",
+    group: "checkout",
+    label: "Express payment",
+    description: "Shows a fast pay action for eligible customers.",
+    enabledCopy: "Express pay button is available.",
+    disabledCopy: "Standard payment action is shown.",
+  },
+  {
+    key: "shipping-progress-meter",
+    group: "checkout",
+    label: "Shipping progress",
+    description: "Shows how close the cart is to free shipping.",
+    enabledCopy: "Free-shipping meter is visible.",
+    disabledCopy: "Shipping is summarized only at checkout.",
+  },
+  {
+    key: "personalized-recommendations",
+    group: "recommendations",
+    label: "Personalized picks",
+    description: "Prioritizes products that match the selected customer.",
+    enabledCopy: "Personalized recommendation shelf is active.",
+    disabledCopy: "Default recommendation shelf is active.",
+  },
+  {
+    key: "trending-products",
+    group: "recommendations",
+    label: "Trending products",
+    description: "Adds a trending-now shelf to the storefront.",
+    enabledCopy: "Trending shelf is visible.",
+    disabledCopy: "Trending shelf is hidden.",
+  },
+  {
+    key: "holiday-promo-banner",
+    group: "standalone",
+    label: "Holiday promo banner",
+    description: "Shows a seasonal promotion outside any group.",
+    enabledCopy: "Standalone promo banner is visible.",
+    disabledCopy: "Standalone promo banner is hidden.",
+  },
+  {
+    key: "beta-dashboard",
+    group: "standalone",
+    label: "Priority dashboard",
+    description: "Upgrades the account dashboard for priority customers.",
+    enabledCopy: "Priority dashboard is active.",
+    disabledCopy: "Standard dashboard is active.",
+  },
+];
+
+const featureGroups: Array<{
+  key: FeatureGroupKey;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: "checkout",
+    label: "Checkout experience",
+    summary:
+      "Three independent checkout features grouped for a group kill-switch demo.",
+  },
+  {
+    key: "recommendations",
+    label: "Recommendations",
+    summary:
+      "Two merchandising features grouped for recommendation experiments.",
+  },
+  {
+    key: "standalone",
+    label: "Standalone features",
+    summary: "Individual features without a shared operational group.",
+  },
 ];
 
 const apiBaseUrl =
@@ -52,21 +142,42 @@ function getAccountInitials(label: string) {
 function isResultForExperience(
   result: SdkEvaluationResult | undefined,
   account: DemoAccount,
-  experience: Experience,
+  feature: DemoFeature,
 ) {
   return (
-    result?.projectKey === account.projectKey &&
-    result.flagKey === experience.key
+    result?.projectKey === account.projectKey && result.flagKey === feature.key
   );
 }
 
-function getExperienceResult(
-  results: ExperienceResultMap,
+function getFeatureResult(
+  results: FeatureResultMap,
   account: DemoAccount,
-  experience: Experience,
+  feature: DemoFeature,
 ) {
-  const result = results[experience.key];
-  return isResultForExperience(result, account, experience) ? result : null;
+  const result = results[feature.key];
+  return isResultForExperience(result, account, feature) ? result : null;
+}
+
+function getFeatureResultByKey(
+  results: FeatureResultMap,
+  account: DemoAccount | null,
+  key: FeatureKey,
+) {
+  if (!account) {
+    return null;
+  }
+
+  const feature = demoFeatures.find((item) => item.key === key);
+
+  return feature ? getFeatureResult(results, account, feature) : null;
+}
+
+function isFeatureEnabled(
+  results: FeatureResultMap,
+  account: DemoAccount | null,
+  key: FeatureKey,
+) {
+  return getFeatureResultByKey(results, account, key)?.enabled === true;
 }
 
 type AccountSwitcherProps = {
@@ -97,10 +208,15 @@ function AccountSwitcher({
       className="account-switcher"
       aria-labelledby="account-switcher-heading"
     >
-      <p className="eyebrow">Account</p>
-      <h2 id="account-switcher-heading">
-        {selectedAccount ? "Signed in as" : "Browsing as guest"}
-      </h2>
+      <div className="account-switcher-top">
+        <div>
+          <p className="eyebrow">Customer account</p>
+          <h2 id="account-switcher-heading">
+            {selectedAccount ? "Signed in" : "Guest browsing"}
+          </h2>
+        </div>
+        <span className="switcher-badge">Switch</span>
+      </div>
       <div className="account-card">
         <button
           aria-expanded={isOpen}
@@ -347,6 +463,8 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
 type CartPanelProps = {
   cart: CartView | null;
   isOnePageCheckout: boolean;
+  hasExpressPayment: boolean;
+  hasShippingProgress: boolean;
   selectedAccount: DemoAccount | null;
   onQuantityChange: (productId: string, quantity: number) => void;
   onCheckout: () => void;
@@ -355,10 +473,20 @@ type CartPanelProps = {
 function CartPanel({
   cart,
   isOnePageCheckout,
+  hasExpressPayment,
+  hasShippingProgress,
   selectedAccount,
   onQuantityChange,
   onCheckout,
 }: CartPanelProps) {
+  const freeShippingTarget = 100;
+  const shippingProgress = cart
+    ? Math.min(100, Math.round((cart.subtotal / freeShippingTarget) * 100))
+    : 0;
+  const freeShippingRemaining = cart
+    ? Math.max(0, freeShippingTarget - cart.subtotal)
+    : freeShippingTarget;
+
   return (
     <aside className="section-card cart-panel" aria-labelledby="cart-heading">
       <div className="cart-heading">
@@ -411,6 +539,21 @@ function CartPanel({
               </div>
             ))}
           </div>
+          {hasShippingProgress ? (
+            <div className="shipping-meter">
+              <div className="shipping-meter-copy">
+                <strong>Free shipping progress</strong>
+                <span>
+                  {freeShippingRemaining === 0
+                    ? "Free shipping unlocked"
+                    : `${formatCurrency(freeShippingRemaining)} away from free shipping`}
+                </span>
+              </div>
+              <div className="shipping-meter-track" aria-hidden="true">
+                <span style={{ width: `${shippingProgress}%` }} />
+              </div>
+            </div>
+          ) : null}
           <dl className="summary-list">
             <div>
               <dt>Subtotal</dt>
@@ -429,6 +572,15 @@ function CartPanel({
           </dl>
           <div className="checkout-footer">
             <p>Taxes calculated at payment. 30-day free returns included.</p>
+            {hasExpressPayment ? (
+              <button
+                className="express-pay-button"
+                onClick={onCheckout}
+                type="button"
+              >
+                Express Pay
+              </button>
+            ) : null}
             <button
               className="checkout-button"
               onClick={onCheckout}
@@ -444,6 +596,174 @@ function CartPanel({
         </p>
       )}
     </aside>
+  );
+}
+
+type PromoBannerProps = {
+  isVisible: boolean;
+};
+
+function PromoBanner({ isVisible }: PromoBannerProps) {
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <section className="promo-banner" aria-label="Seasonal promotion">
+      <div>
+        <p className="eyebrow">Limited offer</p>
+        <strong>Holiday audio bundle: save 15% on accessories</strong>
+      </div>
+      <span>Standalone store promotion</span>
+    </section>
+  );
+}
+
+type RecommendationPanelProps = {
+  products: Product[];
+  hasPersonalizedRecommendations: boolean;
+  hasTrendingProducts: boolean;
+  selectedAccount: DemoAccount | null;
+  onAddToCart: (productId: string) => void;
+};
+
+function RecommendationPanel({
+  products,
+  hasPersonalizedRecommendations,
+  hasTrendingProducts,
+  selectedAccount,
+  onAddToCart,
+}: RecommendationPanelProps) {
+  const recommendationProducts = hasPersonalizedRecommendations
+    ? products
+        .filter((product) => product.category === "Accessories")
+        .slice(0, 2)
+    : products.slice(0, 2);
+  const trendingProducts = products
+    .filter((product) => product.rating >= 4.7)
+    .slice(0, 3);
+
+  return (
+    <section
+      className="section-card recommendation-section"
+      aria-labelledby="recommendation-heading"
+    >
+      <div className="section-heading-row">
+        <div>
+          <p className="eyebrow">Recommendations</p>
+          <h2 id="recommendation-heading">
+            {hasPersonalizedRecommendations
+              ? "Picked for this customer"
+              : "Popular with shoppers"}
+          </h2>
+        </div>
+        <span
+          className={
+            hasPersonalizedRecommendations
+              ? "status-pill status-on"
+              : "status-pill"
+          }
+        >
+          {hasPersonalizedRecommendations ? "Personalized" : "Default"}
+        </span>
+      </div>
+      <div className="recommendation-grid">
+        {recommendationProducts.map((product) => (
+          <article className="recommendation-card" key={product.id}>
+            <span>{product.badge}</span>
+            <strong>{product.name}</strong>
+            <small>
+              {formatCurrency(product.price)} · ★ {product.rating}
+            </small>
+            <button
+              disabled={!selectedAccount}
+              onClick={() => onAddToCart(product.id)}
+              type="button"
+            >
+              Add
+            </button>
+          </article>
+        ))}
+      </div>
+      {hasTrendingProducts ? (
+        <div className="trending-shelf">
+          <strong>Trending now</strong>
+          <div>
+            {trendingProducts.map((product) => (
+              <span key={product.id}>{product.name}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+type FeatureShowcaseProps = {
+  account: DemoAccount | null;
+  results: FeatureResultMap;
+};
+
+function FeatureShowcase({ account, results }: FeatureShowcaseProps) {
+  if (!account) {
+    return null;
+  }
+
+  return (
+    <section
+      className="section-card feature-showcase"
+      aria-labelledby="feature-showcase-heading"
+    >
+      <div className="section-heading-row">
+        <div>
+          <p className="eyebrow">Experience coverage</p>
+          <h2 id="feature-showcase-heading">Demo feature matrix</h2>
+        </div>
+        <span className="soft-pill">{demoFeatures.length} features</span>
+      </div>
+      <div className="feature-group-grid">
+        {featureGroups.map((group) => {
+          const groupFeatures = demoFeatures.filter(
+            (feature) => feature.group === group.key,
+          );
+
+          return (
+            <article className="feature-group-card" key={group.key}>
+              <div>
+                <h3>{group.label}</h3>
+                <p>{group.summary}</p>
+              </div>
+              <div className="feature-pill-grid">
+                {groupFeatures.map((feature) => {
+                  const result = getFeatureResult(results, account, feature);
+                  const isEnabled = result?.enabled === true;
+
+                  return (
+                    <span
+                      className={
+                        isEnabled
+                          ? "feature-pill feature-pill-on"
+                          : "feature-pill"
+                      }
+                      key={feature.key}
+                    >
+                      <strong>{feature.label}</strong>
+                      <small>
+                        {result
+                          ? isEnabled
+                            ? feature.enabledCopy
+                            : feature.disabledCopy
+                          : "Loading account experience"}
+                      </small>
+                    </span>
+                  );
+                })}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -483,15 +803,15 @@ function DeveloperDiagnostics({
   isLoading,
 }: {
   account: DemoAccount | null;
-  results: ExperienceResultMap;
+  results: FeatureResultMap;
   isLoading: boolean;
 }) {
   if (!account) {
     return null;
   }
 
-  const evaluatedResults = experiences
-    .map((experience) => getExperienceResult(results, account, experience))
+  const evaluatedResults = demoFeatures
+    .map((experience) => getFeatureResult(results, account, experience))
     .filter((result): result is SdkEvaluationResult => result !== null);
 
   return (
@@ -508,8 +828,8 @@ function DeveloperDiagnostics({
                 : "Personalization service"}
           </dd>
         </div>
-        {experiences.map((experience) => {
-          const result = getExperienceResult(results, account, experience);
+        {demoFeatures.map((experience) => {
+          const result = getFeatureResult(results, account, experience);
 
           return (
             <div key={experience.key}>
@@ -534,7 +854,7 @@ function App() {
     null,
   );
   const [cart, setCart] = useState<CartView | null>(null);
-  const [results, setResults] = useState<ExperienceResultMap>({});
+  const [results, setResults] = useState<FeatureResultMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const requestSequence = useRef(0);
@@ -618,7 +938,7 @@ function App() {
       }
 
       const evaluations = await Promise.all(
-        experiences.map(async (experience) => {
+        demoFeatures.map(async (experience) => {
           const result = await client.evaluate(
             experience.key,
             selectedAccount.context,
@@ -632,13 +952,10 @@ function App() {
       }
 
       setResults(
-        evaluations.reduce<ExperienceResultMap>(
-          (nextResults, [key, result]) => {
-            nextResults[key] = result;
-            return nextResults;
-          },
-          {},
-        ),
+        evaluations.reduce<FeatureResultMap>((nextResults, [key, result]) => {
+          nextResults[key] = result;
+          return nextResults;
+        }, {}),
       );
 
       if (evaluations.some(([, result]) => isClientEvaluationError(result))) {
@@ -655,14 +972,41 @@ function App() {
     };
   }, [client, selectedAccount]);
 
-  const dashboardResult = selectedAccount
-    ? getExperienceResult(results, selectedAccount, experiences[0])
-    : null;
-  const checkoutResult = selectedAccount
-    ? getExperienceResult(results, selectedAccount, experiences[1])
-    : null;
-  const hasEnhancedDashboard = dashboardResult?.enabled === true;
-  const hasOnePageCheckout = checkoutResult?.enabled === true;
+  const hasEnhancedDashboard = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "beta-dashboard",
+  );
+  const hasOnePageCheckout = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "new-checkout",
+  );
+  const hasExpressPayment = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "express-payment",
+  );
+  const hasShippingProgress = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "shipping-progress-meter",
+  );
+  const hasPersonalizedRecommendations = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "personalized-recommendations",
+  );
+  const hasTrendingProducts = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "trending-products",
+  );
+  const hasHolidayPromoBanner = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "holiday-promo-banner",
+  );
 
   const handleAccountChange = (accountId: string | null) => {
     requestSequence.current += 1;
@@ -705,46 +1049,80 @@ function App() {
   return (
     <main className="demo-shell">
       <section className="app-frame" aria-labelledby="app-heading">
-        <header className="hero-section">
-          <div className="hero-copy">
-            <nav className="store-nav" aria-label="Store highlights">
-              <span className="brand-lockup">
-                <span className="brand-mark" aria-hidden="true">
-                  SE
-                </span>
-                Premium Audio Store
+        <header className="store-header">
+          <div className="store-navbar">
+            <a className="brand-lockup" href="#app-heading">
+              <span className="brand-mark" aria-hidden="true">
+                SE
               </span>
-              <span>Free shipping over $100</span>
-              <span>2-year warranty</span>
+              <span>ShopEase</span>
+            </a>
+            <label className="header-search">
+              <span className="search-icon" aria-hidden="true">
+                ⌕
+              </span>
+              <input
+                readOnly
+                value="Search headphones, speakers, and accessories"
+                aria-label="Search store products"
+              />
+            </label>
+            <nav className="header-links" aria-label="Store navigation">
+              <a href="#catalog-heading">Shop</a>
+              <a href="#cart-heading">Cart</a>
+              <a href="#guest-heading">Support</a>
             </nav>
-            <p className="eyebrow">Summer audio event</p>
-            <h1 id="app-heading">ShopEase Checkout</h1>
-            <p>
-              Shop premium audio gear with saved carts, member benefits, and a
-              checkout experience that adapts automatically to the selected
-              customer.
-            </p>
-            <div className="hero-actions" aria-label="Store assurances">
-              <span>Fast delivery</span>
-              <span>Secure checkout</span>
-              <span>Easy returns</span>
-            </div>
           </div>
-          <AccountSwitcher
-            accounts={accounts}
-            selectedAccount={selectedAccount}
-            isLoading={isLoading}
-            onAccountChange={handleAccountChange}
-          />
+
+          <div className="hero-section">
+            <div className="hero-copy">
+              <p className="eyebrow">Premium audio store</p>
+              <h1 id="app-heading">Upgrade your sound, checkout faster.</h1>
+              <p>
+                Discover premium audio gear with saved carts, member benefits,
+                and a checkout experience tailored to the selected customer.
+              </p>
+              <div className="hero-cta-row">
+                <a className="primary-link" href="#catalog-heading">
+                  Shop best sellers
+                </a>
+                <a className="secondary-link" href="#cart-heading">
+                  View cart
+                </a>
+              </div>
+              <div className="hero-actions" aria-label="Store assurances">
+                <span>Free shipping over $100</span>
+                <span>2-year warranty</span>
+                <span>30-day returns</span>
+              </div>
+            </div>
+            <AccountSwitcher
+              accounts={accounts}
+              selectedAccount={selectedAccount}
+              isLoading={isLoading}
+              onAccountChange={handleAccountChange}
+            />
+          </div>
         </header>
 
+        <PromoBanner isVisible={hasHolidayPromoBanner} />
+
         {message ? <div className="toast-message">{message}</div> : null}
+
+        <FeatureShowcase account={selectedAccount} results={results} />
 
         <div className="store-layout">
           <div className="store-main">
             <CustomerDashboard
               account={selectedAccount}
               isEnhanced={hasEnhancedDashboard}
+            />
+            <RecommendationPanel
+              products={products}
+              hasPersonalizedRecommendations={hasPersonalizedRecommendations}
+              hasTrendingProducts={hasTrendingProducts}
+              selectedAccount={selectedAccount}
+              onAddToCart={handleAddToCart}
             />
             <ProductCatalog
               products={products}
@@ -756,6 +1134,8 @@ function App() {
             <CartPanel
               cart={cart}
               isOnePageCheckout={hasOnePageCheckout}
+              hasExpressPayment={hasExpressPayment}
+              hasShippingProgress={hasShippingProgress}
               selectedAccount={selectedAccount}
               onQuantityChange={handleQuantityChange}
               onCheckout={handleCheckout}
