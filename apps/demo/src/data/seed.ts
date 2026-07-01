@@ -139,7 +139,7 @@ export const productSeed: readonly Product[] = [
     category: 'Accessories',
     description: 'Weighted desktop stand that keeps headphones displayed, protected, and easy to reach.',
     price: 39,
-    rating: 4.6,
+    rating: 4.7,
     badge: 'Desk setup',
     accent: 'blue',
   },

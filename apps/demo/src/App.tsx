@@ -27,6 +27,7 @@ type FeatureKey =
   | "live-support-widget";
 type FeatureResultMap = Partial<Record<FeatureKey, SdkEvaluationResult>>;
 type FeatureGroupKey = "checkout" | "recommendations" | "standalone";
+type RolloutUnit = "user" | "organization";
 
 type DemoFeature = {
   key: FeatureKey;
@@ -101,6 +102,18 @@ const demoFeatures: DemoFeature[] = [
     detailCopy: "Priority customers see member support and checkout preferences.",
   },
 ];
+
+const featureRolloutUnits: Record<FeatureKey, RolloutUnit> = {
+  "new-checkout": "user",
+  "express-payment": "user",
+  "shipping-progress-meter": "user",
+  "coupon-engine": "user",
+  "personalized-recommendations": "user",
+  "trending-products": "user",
+  "holiday-promo-banner": "user",
+  "live-support-widget": "organization",
+  "beta-dashboard": "user",
+};
 
 const featureGroups: Array<{
   key: FeatureGroupKey;
@@ -186,6 +199,25 @@ function isFeatureEnabled(
   key: FeatureKey,
 ) {
   return getFeatureResultByKey(results, account, key)?.enabled === true;
+}
+
+function getFeatureEvaluationContext(
+  featureKey: FeatureKey,
+  account: DemoAccount,
+) {
+  const rolloutUnit = featureRolloutUnits[featureKey];
+
+  return {
+    ...account.context,
+    targetingKey:
+      rolloutUnit === "organization"
+        ? account.organizationId
+        : account.targetingId,
+    attributes: {
+      ...account.context.attributes,
+      organizationId: account.organizationId,
+    },
+  };
 }
 
 type AccountSwitcherProps = {
@@ -1058,7 +1090,7 @@ function App() {
         demoFeatures.map(async (experience) => {
           const result = await client.evaluate(
             experience.key,
-            selectedAccount.context,
+            getFeatureEvaluationContext(experience.key, selectedAccount),
           );
           return [experience.key, result] as const;
         }),
