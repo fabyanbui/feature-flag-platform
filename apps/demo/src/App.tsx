@@ -31,8 +31,7 @@ type DemoFeature = {
   group: FeatureGroupKey;
   label: string;
   description: string;
-  enabledCopy: string;
-  disabledCopy: string;
+  detailCopy: string;
 };
 
 const demoFeatures: DemoFeature[] = [
@@ -41,56 +40,49 @@ const demoFeatures: DemoFeature[] = [
     group: "checkout",
     label: "One-page checkout",
     description: "Condenses cart, payment, and review into one flow.",
-    enabledCopy: "One-step payment is visible.",
-    disabledCopy: "Classic multi-step checkout stays active.",
+    detailCopy: "Cart, payment, and review are combined into one checkout flow.",
   },
   {
     key: "express-payment",
     group: "checkout",
     label: "Express payment",
-    description: "Shows a fast pay action for eligible customers.",
-    enabledCopy: "Express pay button is available.",
-    disabledCopy: "Standard payment action is shown.",
+    description: "Offers a fast pay action for eligible customers.",
+    detailCopy: "Eligible customers get a faster payment option.",
   },
   {
     key: "shipping-progress-meter",
     group: "checkout",
     label: "Shipping progress",
-    description: "Shows how close the cart is to free shipping.",
-    enabledCopy: "Free-shipping meter is visible.",
-    disabledCopy: "Shipping is summarized only at checkout.",
+    description: "Tracks how close the cart is to free shipping.",
+    detailCopy: "Customers can track progress toward free shipping.",
   },
   {
     key: "personalized-recommendations",
     group: "recommendations",
     label: "Personalized picks",
     description: "Prioritizes products that match the selected customer.",
-    enabledCopy: "Personalized recommendation shelf is active.",
-    disabledCopy: "Default recommendation shelf is active.",
+    detailCopy: "Product suggestions match the selected customer profile.",
   },
   {
     key: "trending-products",
     group: "recommendations",
     label: "Trending products",
     description: "Adds a trending-now shelf to the storefront.",
-    enabledCopy: "Trending shelf is visible.",
-    disabledCopy: "Trending shelf is hidden.",
+    detailCopy: "A storefront shelf highlights popular products.",
   },
   {
     key: "holiday-promo-banner",
     group: "standalone",
     label: "Holiday promo banner",
-    description: "Shows a seasonal promotion outside any group.",
-    enabledCopy: "Standalone promo banner is visible.",
-    disabledCopy: "Standalone promo banner is hidden.",
+    description: "Presents a seasonal promotion outside any group.",
+    detailCopy: "Seasonal promotion highlights accessory bundle savings.",
   },
   {
     key: "beta-dashboard",
     group: "standalone",
     label: "Priority dashboard",
     description: "Upgrades the account dashboard for priority customers.",
-    enabledCopy: "Priority dashboard is active.",
-    disabledCopy: "Standard dashboard is active.",
+    detailCopy: "Priority customers see member support and checkout preferences.",
   },
 ];
 
@@ -782,13 +774,7 @@ function FeatureShowcase({ account, results }: FeatureShowcaseProps) {
                       key={feature.key}
                     >
                       <strong>{feature.label}</strong>
-                      <small>
-                        {result
-                          ? isEnabled
-                            ? feature.enabledCopy
-                            : feature.disabledCopy
-                          : "Loading account experience"}
-                      </small>
+                      <small>{feature.detailCopy}</small>
                     </span>
                   );
                 })}
