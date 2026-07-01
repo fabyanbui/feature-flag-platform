@@ -1,34 +1,60 @@
-# Feature Flag Demo App
+# ShopEase Demo App
 
-This app demonstrates runtime feature flag evaluation through `@ffp/js-sdk`.
-It behaves like a real client application: it only evaluates flags and shows or
-hides UI based on the response.
-
-The original demo app was delivered in MVP Phase 8. Recommended Phase 15
-migrated its direct HTTP request to the JavaScript SDK.
+This app is a simple ecommerce storefront used to demonstrate customer-specific
+shopping experiences. It is intentionally independent from the platform backend
+for its ecommerce data: accounts, products, carts, and seeded state live in an
+in-memory demo database inside this app.
 
 ## Responsibility
 
-The demo app is a data-plane consumer.
+The demo app does:
 
-It does:
+- Keep a local in-memory ecommerce database under `src/data/` and `src/services/`.
+- Provide customer account switching without login or registration.
+- Show guest browsing when no account is selected.
+- Show products, saved carts, quantity changes, and checkout actions.
+- Call the personalization/evaluation service through `@ffp/js-sdk` to decide
+  which customer experience to display.
+- Fail safely to standard dashboard and checkout behavior if personalization is
+  unavailable.
 
-- Call `POST /v1/evaluate` through `@ffp/js-sdk`.
-- Display `projectKey`, `flagKey`, `enabled`, and `reason`.
-- Display whether a result came from the backend or an SDK-local safe fallback.
-- Show loading, client-fallback, error, and retry states.
-- Show or hide a demo feature based on `enabled`.
+The demo app does not:
 
-It does not:
+- Implement real authentication, login, registration, or sessions.
+- Store ecommerce data in PostgreSQL, Prisma, or browser storage.
+- Create or update platform projects, rules, or configuration.
+- Send admin tokens, database URLs, or secrets to the browser.
 
-- Create projects.
-- Create or update feature flags.
-- Create or update rules.
-- Write audit logs.
-- Send admin actor headers or secrets.
+## In-memory demo database
 
-Use the admin dashboard for control-plane changes, then use this app to evaluate
-the runtime result.
+The local demo data is split into:
+
+```text
+src/data/demoAccounts.ts        # ecommerce data types
+src/data/seed.ts                # seeded accounts, products, and carts
+src/services/commerceDb.ts      # in-memory database operations
+src/services/demoAccountService.ts
+```
+
+Seeded accounts contain the targeting fields needed by the personalization SDK:
+
+- `userId`
+- `targetingId`
+- one `role`
+
+The service maps those fields to the SDK context:
+
+```ts
+{
+  userId: account.userId,
+  targetingKey: account.targetingId,
+  roles: [account.role],
+}
+```
+
+Because this is an in-memory database, edits during runtime reset when the app
+reloads. That is acceptable for the demo because the ecommerce data is fixed
+presentation data.
 
 ## Local configuration
 
@@ -45,18 +71,11 @@ VITE_API_BASE_URL=http://localhost:3000/v1
 VITE_ENVIRONMENT_KEY=production
 ```
 
-Only browser-safe values should be placed in `apps/demo/.env`. Do not put
-database URLs, API secrets, admin tokens, or backend-only credentials in this
-file.
-
-The SDK uses a 1500 ms timeout in the demo. Timeout, network, unsuccessful HTTP,
-invalid JSON, and invalid response failures return a typed client fallback with
-`enabled=false`, `variant=off`, `reason=ERROR`, and `errorSource=CLIENT`.
-Backend decisions do not include `errorSource`.
+Only browser-safe values should be placed in `apps/demo/.env`.
 
 ## Run locally
 
-From the repository root, start the backend:
+From the repository root, start the backend service used for personalization:
 
 ```bash
 npm run dev:backend
@@ -74,32 +93,14 @@ Open:
 http://localhost:5174
 ```
 
-## Demo scenarios
+## Demo flow
 
-The app preserves these presentation scenarios through the SDK:
-
-| Scenario | Purpose | Expected result with seed data |
-| --- | --- | --- |
-| Global Toggle | Shows global serving behavior for `beta-dashboard` | `GLOBAL_ON` when globally enabled |
-| Role Targeting — Beta Tester | Shows role-based targeting for `new-checkout` | `ROLE_MATCH` |
-| Percentage Rollout — Included User | Shows deterministic percentage rollout | `PERCENTAGE_ROLLOUT` |
-| Percentage Rollout — Excluded User | Shows deterministic rollout fallback | `DEFAULT_OFF` |
-| Missing Project / Flag | Shows safe fallback for missing config | `enabled=false`, `reason=NOT_FOUND` |
-
-## Presentation flow
-
-1. Start the backend and demo app.
-2. Open the demo app.
-3. Evaluate the Global Toggle scenario.
-4. Use the admin dashboard to change the flag configuration.
-5. Return to the demo app and click **Evaluate flag**.
-6. Switch to Role Targeting and Percentage Rollout scenarios.
-7. End with the Missing Project / Flag scenario to show safe defaults.
-
-This demonstrates the separation between:
-
-- Control plane: admin dashboard configuration.
-- Data plane: `@ffp/js-sdk` calling the runtime evaluation API.
+1. Open the storefront in guest mode.
+2. Use the account switcher to select a customer.
+3. Show the customer's dashboard, product catalog, cart, and checkout mode.
+4. Add products to the cart and change quantities.
+5. Switch between beta, regular, admin preview, and rollout customer accounts.
+6. Optionally open **Developer diagnostics** for hidden technical evidence.
 
 ## Validation
 
@@ -108,13 +109,4 @@ Run:
 ```bash
 npm run build --workspace=@ffp/demo
 npm run lint --workspace=@ffp/demo
-npm run test --workspace=@ffp/js-sdk
-```
-
-For full project validation:
-
-```bash
-npm run build
-npm run test
-npm run diff:check
 ```
