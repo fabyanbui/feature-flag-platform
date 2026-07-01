@@ -128,6 +128,16 @@ export const productSeed: readonly Product[] = [
     badge: 'Add-on',
     accent: 'orange',
   },
+  {
+    id: 'studio-stand',
+    name: 'Adjustable Studio Stand',
+    category: 'Accessories',
+    description: 'Weighted desktop stand that keeps headphones displayed, protected, and easy to reach.',
+    price: 39,
+    rating: 4.6,
+    badge: 'Desk setup',
+    accent: 'blue',
+  },
 ];
 
 export const cartSeed: Record<string, CartLine[]> = {

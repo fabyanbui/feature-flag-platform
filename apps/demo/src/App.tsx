@@ -1235,7 +1235,6 @@ function App() {
         </header>
 
         <PromoBanner isVisible={hasHolidayPromoBanner} />
-        <LiveSupportWidget isVisible={hasLiveSupportWidget} />
 
         {message ? (
           <div className="toast-message" role="status" aria-live="polite">
@@ -1275,6 +1274,7 @@ function App() {
               onQuantityChange={handleQuantityChange}
               onCheckout={handleCheckout}
             />
+            <LiveSupportWidget isVisible={hasLiveSupportWidget} />
           </div>
         </div>
 
