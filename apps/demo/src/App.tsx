@@ -49,15 +49,15 @@ const demoFeatures: DemoFeature[] = [
     key: "express-payment",
     group: "checkout",
     label: "Express payment",
-    description: "Offers a fast pay action for eligible customers.",
-    detailCopy: "Eligible customers get a faster payment option.",
+    description: "Offers a fast pay action for eligible users.",
+    detailCopy: "Eligible users get a faster payment option.",
   },
   {
     key: "shipping-progress-meter",
     group: "checkout",
     label: "Shipping progress",
     description: "Tracks how close the cart is to free shipping.",
-    detailCopy: "Customers can track progress toward free shipping.",
+    detailCopy: "Users can track progress toward free shipping.",
   },
   {
     key: "coupon-engine",
@@ -70,8 +70,8 @@ const demoFeatures: DemoFeature[] = [
     key: "personalized-recommendations",
     group: "recommendations",
     label: "Personalized picks",
-    description: "Prioritizes products that match the selected customer.",
-    detailCopy: "Product suggestions match the selected customer profile.",
+    description: "Prioritizes products that match the selected user.",
+    detailCopy: "Product suggestions match the selected user profile.",
   },
   {
     key: "trending-products",
@@ -92,14 +92,14 @@ const demoFeatures: DemoFeature[] = [
     group: "standalone",
     label: "Live support widget",
     description: "Shows contextual help without joining a feature group.",
-    detailCopy: "Customers can reach a checkout specialist from the store.",
+    detailCopy: "Users can reach a checkout specialist from the store.",
   },
   {
     key: "beta-dashboard",
     group: "standalone",
     label: "Priority dashboard",
-    description: "Upgrades the account dashboard for priority customers.",
-    detailCopy: "Priority customers see member support and checkout preferences.",
+    description: "Upgrades the account dashboard for priority users.",
+    detailCopy: "Priority users see member support and checkout preferences.",
   },
 ];
 
@@ -235,7 +235,7 @@ function AccountSwitcher({
 }: AccountSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const initials = selectedAccount
-    ? getAccountInitials(selectedAccount.customerLabel)
+    ? getAccountInitials(selectedAccount.userLabel)
     : "GU";
   const menuId = useId();
 
@@ -251,7 +251,7 @@ function AccountSwitcher({
     >
       <div className="account-switcher-top">
         <div className="account-switcher-title">
-          <p className="eyebrow">Customer account</p>
+          <p className="eyebrow">User account</p>
           <h2 id="account-switcher-heading">
             {selectedAccount ? "Signed in" : "Guest browsing"}
           </h2>
@@ -284,16 +284,16 @@ function AccountSwitcher({
           </span>
           <span className="account-copy">
             <strong>
-              {selectedAccount?.customerLabel ?? "Guest customer"}
+              {selectedAccount?.userLabel ?? "Guest user"}
             </strong>
             <span>
               {selectedAccount?.accountGroup ??
-                "Choose an account to personalize the store"}
+                "Choose a user account to personalize the store"}
             </span>
             <small>
               {selectedAccount
-                ? "Saved cart and member preferences loaded"
-                : "No customer account selected"}
+                ? `Role: ${selectedAccount.role} · saved cart and member preferences loaded`
+                : "No user account selected"}
             </small>
           </span>
           <span className="account-chevron" aria-hidden="true" />
@@ -320,8 +320,10 @@ function AccountSwitcher({
                 role="option"
                 type="button"
               >
-                <span>{account.customerLabel}</span>
-                <small>{account.accountGroup}</small>
+                <span>{account.userLabel}</span>
+                <small>
+                  {account.accountGroup} · Role: {account.role}
+                </small>
               </button>
             ))}
           </div>
@@ -330,7 +332,7 @@ function AccountSwitcher({
       <p
         className={isOpen ? "account-hint account-hint-hidden" : "account-hint"}
       >
-        The storefront updates automatically for the selected account.
+        The storefront updates automatically for the selected user account.
       </p>
     </aside>
   );
@@ -427,12 +429,12 @@ function ProductCatalog({
   );
 }
 
-type CustomerDashboardProps = {
+type UserDashboardProps = {
   account: DemoAccount | null;
   isEnhanced: boolean;
 };
 
-function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
+function UserDashboard({ account, isEnhanced }: UserDashboardProps) {
   if (!account) {
     return (
       <section
@@ -443,7 +445,7 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
           <p className="eyebrow">Guest checkout preview</p>
           <h2 id="guest-heading">Welcome to ShopEase</h2>
           <p>
-            Browse freely now, then switch to a customer account to preview saved
+            Browse freely now, then switch to a user account to preview saved
             carts, member offers, and checkout preferences.
           </p>
         </div>
@@ -455,7 +457,7 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
           <span>
             <strong>No account selected</strong>
             <small>
-              Use the Switch account button in the customer card to load a saved
+              Use the Switch account button in the user card to load a saved
               basket and member profile.
             </small>
           </span>
@@ -474,7 +476,7 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
               02
             </small>
             <strong>Personalized dashboard</strong>
-            Customer-specific account view
+            User-specific account view
           </span>
           <span>
             <small className="benefit-icon" aria-hidden="true">
@@ -499,7 +501,7 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
     >
       <div className="section-heading-row">
         <div>
-          <p className="eyebrow">Customer dashboard</p>
+          <p className="eyebrow">User dashboard</p>
           <h2 id="dashboard-heading">
             {isEnhanced
               ? "Priority account dashboard"
@@ -518,7 +520,7 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
       </div>
       <div className="benefit-grid">
         <span>
-          <strong>{account.customerLabel}</strong>
+          <strong>{account.userLabel}</strong>
           {account.accountGroup}
         </span>
         <span>
@@ -773,7 +775,7 @@ function RecommendationPanel({
           <p className="eyebrow">Recommendations</p>
           <h2 id="recommendation-heading">
             {hasPersonalizedRecommendations
-              ? "Picked for this customer"
+              ? "Picked for this user"
               : "Popular with shoppers"}
           </h2>
         </div>
@@ -911,11 +913,11 @@ function AccountDetails({ account }: { account: DemoAccount | null }) {
 
   return (
     <details className="section-card details-panel account-details-panel">
-      <summary>View customer account details</summary>
+      <summary>View user account details</summary>
       <dl className="detail-grid">
         <div>
-          <dt>Customer</dt>
-          <dd>{account.customerLabel}</dd>
+          <dt>User</dt>
+          <dd>{account.userLabel}</dd>
         </div>
         <div>
           <dt>Role</dt>
@@ -1176,7 +1178,7 @@ function App() {
 
   const handleAddToCart = async (productId: string) => {
     if (!selectedAccount) {
-      setMessage("Choose a customer account before adding products to cart.");
+      setMessage("Choose a user account before adding products to cart.");
       return;
     }
 
@@ -1241,7 +1243,7 @@ function App() {
               <h1 id="app-heading">Upgrade your sound, checkout faster.</h1>
               <p>
                 Discover premium audio gear with saved carts, member benefits,
-                and a checkout experience tailored to the selected customer.
+                and a checkout experience tailored to the selected user.
               </p>
               <div className="hero-cta-row">
                 <a className="primary-link" href="#catalog-heading">
@@ -1276,7 +1278,7 @@ function App() {
         <PromoBanner isVisible={hasHolidayPromoBanner} />
 
         <div className="store-layout">
-          <CustomerDashboard
+          <UserDashboard
             account={selectedAccount}
             isEnhanced={hasEnhancedDashboard}
           />

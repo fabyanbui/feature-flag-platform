@@ -333,7 +333,13 @@ async function main() {
         priority: 10,
       },
     },
-    update: {},
+    update: {
+      type: 'USER_ALLOWLIST',
+      enabled: true,
+      parameters: {
+        userIds: ['demo-user-admin'],
+      },
+    },
     create: {
       flagConfigId: newCheckoutProductionConfig.id,
       type: 'USER_ALLOWLIST',
@@ -352,14 +358,20 @@ async function main() {
         priority: 20,
       },
     },
-    update: {},
+    update: {
+      type: 'ROLE_TARGETING',
+      enabled: true,
+      parameters: {
+        roles: ['beta-customer', 'shop-admin'],
+      },
+    },
     create: {
       flagConfigId: newCheckoutProductionConfig.id,
       type: 'ROLE_TARGETING',
       priority: 20,
       enabled: true,
       parameters: {
-        roles: ['beta-tester'],
+        roles: ['beta-customer', 'shop-admin'],
       },
     },
   });
@@ -371,7 +383,13 @@ async function main() {
         priority: 30,
       },
     },
-    update: {},
+    update: {
+      type: 'PERCENTAGE_ROLLOUT',
+      enabled: true,
+      parameters: {
+        percentage: 50,
+      },
+    },
     create: {
       flagConfigId: newCheckoutProductionConfig.id,
       type: 'PERCENTAGE_ROLLOUT',
@@ -463,7 +481,11 @@ async function main() {
             priority: rule.priority,
           },
         },
-        update: {},
+        update: {
+          type: rule.type,
+          enabled: rule.enabled ?? true,
+          parameters: rule.parameters,
+        },
         create: {
           flagConfigId: productionConfig.id,
           type: rule.type,
@@ -548,7 +570,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 20,
-        parameters: { roles: ['beta-tester'] },
+        parameters: { roles: ['beta-customer', 'shop-admin'] },
       },
     ],
   });
@@ -573,7 +595,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 10,
-        parameters: { roles: ['beta-tester', 'admin'] },
+        parameters: { roles: ['beta-customer', 'shop-admin'] },
       },
       {
         type: 'PERCENTAGE_ROLLOUT',
@@ -595,7 +617,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 10,
-        parameters: { roles: ['beta-tester', 'admin'] },
+        parameters: { roles: ['beta-customer', 'shop-admin'] },
       },
       {
         type: 'PERCENTAGE_ROLLOUT',
@@ -646,7 +668,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 10,
-        parameters: { roles: ['beta-tester', 'admin'] },
+        parameters: { roles: ['beta-customer', 'shop-admin'] },
       },
       {
         type: 'PERCENTAGE_ROLLOUT',
@@ -663,13 +685,18 @@ async function main() {
         targetingKey: 'demo-user-beta',
       },
     },
-    update: {},
+    update: {
+      displayName: 'Beta Customer',
+      userId: 'demo-user-beta',
+      roles: ['beta-customer'],
+      attributes: { plan: 'pro' },
+    },
     create: {
       projectId: project.id,
-      displayName: 'Beta User',
+      displayName: 'Beta Customer',
       targetingKey: 'demo-user-beta',
       userId: 'demo-user-beta',
-      roles: ['beta-tester'],
+      roles: ['beta-customer'],
       attributes: { plan: 'pro' },
     },
   });
@@ -681,13 +708,18 @@ async function main() {
         targetingKey: 'demo-user-regular',
       },
     },
-    update: {},
+    update: {
+      displayName: 'Regular Customer',
+      userId: 'demo-user-regular',
+      roles: ['regular-customer'],
+      attributes: { plan: 'free' },
+    },
     create: {
       projectId: project.id,
-      displayName: 'Regular User',
+      displayName: 'Regular Customer',
       targetingKey: 'demo-user-regular',
       userId: 'demo-user-regular',
-      roles: ['user'],
+      roles: ['regular-customer'],
       attributes: { plan: 'free' },
     },
   });
@@ -699,13 +731,18 @@ async function main() {
         targetingKey: 'demo-user-admin',
       },
     },
-    update: {},
+    update: {
+      displayName: 'Shop Admin',
+      userId: 'demo-user-admin',
+      roles: ['shop-admin'],
+      attributes: { plan: 'pro' },
+    },
     create: {
       projectId: project.id,
-      displayName: 'Admin User',
+      displayName: 'Shop Admin',
       targetingKey: 'demo-user-admin',
       userId: 'demo-user-admin',
-      roles: ['admin'],
+      roles: ['shop-admin'],
       attributes: { plan: 'pro' },
     },
   });
