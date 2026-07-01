@@ -1570,9 +1570,25 @@ dd {
 }
 
 .recommendation-section {
+  position: relative;
   background:
     linear-gradient(135deg, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.62)),
     rgba(15, 23, 42, 0.82);
+}
+
+.recommendation-section > .section-heading-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding-right: 9rem;
+  padding-left: 9rem;
+  text-align: center;
+}
+
+.recommendation-section > .section-heading-row .status-pill {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
 }
 
 .recommendation-grid {
@@ -1585,10 +1601,13 @@ dd {
 .recommendation-card {
   display: grid;
   gap: 0.45rem;
+  justify-items: center;
+  min-height: 11rem;
   padding: 0.9rem;
   border: 1px solid rgba(134, 239, 172, 0.16);
   border-radius: 0.95rem;
   background: rgba(15, 23, 42, 0.5);
+  text-align: center;
 }
 
 .recommendation-card > span {
@@ -1609,11 +1628,14 @@ dd {
 }
 
 .recommendation-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
   gap: 0.65rem;
   align-items: center;
   justify-content: space-between;
+  align-self: end;
   margin-top: 0.35rem;
+  width: 100%;
 }
 
 .recommendation-actions button {
@@ -1634,31 +1656,81 @@ dd {
 
 .trending-shelf {
   display: grid;
-  gap: 0.65rem;
+  grid-template-columns: minmax(14rem, 0.45fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
   margin-top: 1rem;
-  padding: 0.9rem;
-  border: 1px solid rgba(14, 165, 233, 0.24);
-  border-radius: 0.95rem;
-  background: rgba(8, 47, 73, 0.36);
+  padding: 1rem;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(8, 47, 73, 0.58), rgba(15, 23, 42, 0.52)),
+    rgba(8, 47, 73, 0.3);
 }
 
-.trending-shelf strong {
-  color: #e0f2fe;
-}
-
-.trending-shelf div {
+.trending-shelf-heading {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
 }
 
-.trending-shelf span {
-  padding: 0.35rem 0.6rem;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.62);
+.trending-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid rgba(56, 189, 248, 0.34);
+  border-radius: 0.8rem;
+  background: rgba(14, 165, 233, 0.14);
+  color: #7dd3fc;
+  font-weight: 950;
+}
+
+.trending-shelf-heading > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.trending-shelf-heading strong {
+  color: #e0f2fe;
+  font-size: 1rem;
+}
+
+.trending-shelf-heading small {
+  color: #bae6fd;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.trending-shelf > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.trending-shelf > div:last-child > span {
+  display: grid;
+  gap: 0.2rem;
+  min-height: 3.9rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 0.8rem;
+  background: rgba(15, 23, 42, 0.48);
   color: #bae6fd;
   font-size: 0.88rem;
   font-weight: 900;
+  line-height: 1.3;
+}
+
+.trending-shelf > div:last-child > span small {
+  color: #7dd3fc;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
 }
 
 .shipping-meter {
@@ -1777,6 +1849,16 @@ dd {
 }
 
 @media (max-width: 56rem) {
+  .recommendation-section > .section-heading-row {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .recommendation-section > .section-heading-row .status-pill {
+    position: static;
+    margin-top: 0.35rem;
+  }
+
   .promo-banner,
   .support-widget,
   .coupon-engine-card,
@@ -1792,6 +1874,11 @@ dd {
   }
 
   .recommendation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trending-shelf,
+  .trending-shelf > div:last-child {
     grid-template-columns: 1fr;
   }
 }

@@ -784,10 +784,21 @@ function RecommendationPanel({
       </div>
       {hasTrendingProducts ? (
         <div className="trending-shelf">
-          <strong>Trending now</strong>
+          <div className="trending-shelf-heading">
+            <span className="trending-icon" aria-hidden="true">
+              ↗
+            </span>
+            <div>
+              <strong>Trending now</strong>
+              <small>High-rating products gaining shopper attention</small>
+            </div>
+          </div>
           <div>
-            {trendingProducts.map((product) => (
-              <span key={product.id}>{product.name}</span>
+            {trendingProducts.map((product, index) => (
+              <span key={product.id}>
+                <small>{String(index + 1).padStart(2, "0")}</small>
+                {product.name}
+              </span>
             ))}
           </div>
         </div>
