@@ -1039,7 +1039,34 @@ code {
 }
 
 .cart-heading {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.cart-heading > div {
+  display: block;
+  min-width: 0;
+  text-align: left;
+}
+
+.cart-heading .eyebrow {
+  margin: 0 0 0.3rem;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.cart-heading h2 {
+  margin-bottom: 0;
+  line-height: 1.15;
+}
+
+.cart-heading .soft-pill {
+  justify-self: end;
+  align-self: center;
 }
 
 .checkout-steps {
@@ -1497,10 +1524,28 @@ dd {
   font-weight: 800;
 }
 
-.recommendation-card button {
-  justify-self: start;
+.recommendation-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+}
+
+.recommendation-actions button {
   min-height: 2.25rem;
   padding: 0 0.85rem;
+}
+
+.recommendation-details-button {
+  border: 1px solid rgba(134, 239, 172, 0.24);
+  background: rgba(15, 23, 42, 0.72);
+  color: #f0fdf4;
+}
+
+.recommendation-details-button:hover:not(:disabled) {
+  background: rgba(6, 95, 70, 0.58);
+  box-shadow: none;
 }
 
 .trending-shelf {

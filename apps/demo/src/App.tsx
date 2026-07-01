@@ -395,8 +395,8 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
           <p className="eyebrow">Guest checkout preview</p>
           <h2 id="guest-heading">Welcome to ShopEase</h2>
           <p>
-            Browse freely now, then switch to a customer account to preview how
-            feature flags personalize carts, offers, and checkout preferences.
+            Browse freely now, then switch to a customer account to preview saved
+            carts, member offers, and checkout preferences.
           </p>
         </div>
 
@@ -701,13 +701,22 @@ function RecommendationPanel({
             <small>
               {formatCurrency(product.price)} · ★ {product.rating}
             </small>
-            <button
-              disabled={!selectedAccount}
-              onClick={() => onAddToCart(product.id)}
-              type="button"
-            >
-              Add
-            </button>
+            <div className="recommendation-actions">
+              <button
+                disabled={!selectedAccount}
+                onClick={() => onAddToCart(product.id)}
+                type="button"
+              >
+                Add
+              </button>
+              <button
+                aria-label={`View mock details for ${product.name}`}
+                className="recommendation-details-button"
+                type="button"
+              >
+                Details
+              </button>
+            </div>
           </article>
         ))}
       </div>

@@ -27,7 +27,7 @@ const checkoutRolloutAccounts: DemoAccountRecord[] = checkoutRolloutAccountSeed.
     customerLabel: `Customer account ${accountNumber}`,
     accountGroup: 'Staged checkout rollout',
     scenarioSummary:
-      'Regular shopper in the staged account series. Switch accounts to see gradual release behavior.',
+      'Returning shopper with saved cart details and a familiar checkout setup.',
     expectedOutcome,
     expectedReason,
     userId: targetingId,
@@ -45,7 +45,7 @@ export const demoAccountSeed: readonly DemoAccountRecord[] = [
     customerLabel: 'Beta customer',
     accountGroup: 'Role-based early access',
     scenarioSummary:
-      'Shows a customer segment that receives the newest checkout experience before general rollout.',
+      'Priority shopper with early access to the newest checkout experience.',
     expectedOutcome: 'New One-Page Checkout visible for this customer segment.',
     expectedReason: 'ROLE_MATCH',
     userId: 'demo-user-beta',
@@ -59,7 +59,7 @@ export const demoAccountSeed: readonly DemoAccountRecord[] = [
     customerLabel: 'Regular customer',
     accountGroup: 'Standard customers',
     scenarioSummary:
-      'Shows a standard ecommerce customer with one user ID, one targeting ID, and one role.',
+      'Returning shopper with saved preferences, member rewards, and a familiar checkout setup.',
     expectedOutcome:
       'Checkout visibility depends on deterministic percentage rollout for this account.',
     expectedReason: 'DEFAULT_OFF or PERCENTAGE_ROLLOUT',
@@ -75,7 +75,7 @@ export const demoAccountSeed: readonly DemoAccountRecord[] = [
     customerLabel: 'Admin preview customer',
     accountGroup: 'Admin allowlist preview',
     scenarioSummary:
-      'Shows an ecommerce preview customer that is explicitly allowlisted by user ID.',
+      'Store preview shopper used to review the customer experience before launch.',
     expectedOutcome: 'New One-Page Checkout visible for the allowlisted preview account.',
     expectedReason: 'USER_ALLOWLIST',
     userId: 'demo-user-admin',
