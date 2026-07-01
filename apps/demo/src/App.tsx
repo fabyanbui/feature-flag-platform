@@ -1000,6 +1000,18 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!message) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setMessage(null);
+    }, 2800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [message]);
+
+  useEffect(() => {
     let isCancelled = false;
 
     void Promise.resolve().then(async () => {
@@ -1225,7 +1237,11 @@ function App() {
         <PromoBanner isVisible={hasHolidayPromoBanner} />
         <LiveSupportWidget isVisible={hasLiveSupportWidget} />
 
-        {message ? <div className="toast-message">{message}</div> : null}
+        {message ? (
+          <div className="toast-message" role="status" aria-live="polite">
+            {message}
+          </div>
+        ) : null}
 
         <FeatureShowcase account={selectedAccount} results={results} />
 

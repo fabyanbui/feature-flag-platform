@@ -335,8 +335,7 @@ code {
 }
 
 .account-switcher,
-.section-card,
-.toast-message {
+.section-card {
   border: 1px solid rgba(134, 239, 172, 0.22);
   border-radius: 1.35rem;
   background: rgba(15, 23, 42, 0.82);
@@ -541,9 +540,36 @@ code {
 }
 
 .toast-message {
-  margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
-  color: #f0fdf4;
+  position: fixed;
+  top: clamp(1rem, 2.5vw, 1.5rem);
+  left: 50%;
+  z-index: 200;
+  width: max-content;
+  max-width: min(90vw, 34rem);
+  padding: 1rem 1.8rem;
+  border: 1px solid rgba(134, 239, 172, 0.26);
+  border-radius: 0.9rem;
+  background: rgba(7, 13, 27, 0.96);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+  color: #f8fafc;
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+  transform: translateX(-50%);
+  animation: toast-pop 180ms ease-out;
+}
+
+@keyframes toast-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .store-layout {
