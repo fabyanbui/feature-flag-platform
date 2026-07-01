@@ -560,6 +560,11 @@ code {
   gap: 1rem;
 }
 
+.store-layout > .dashboard-card,
+.store-layout > .signed-out-panel {
+  grid-column: 1 / -1;
+}
+
 .footer-panels {
   margin-top: 1rem;
 }

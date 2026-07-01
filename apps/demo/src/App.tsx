@@ -1219,11 +1219,11 @@ function App() {
         <FeatureShowcase account={selectedAccount} results={results} />
 
         <div className="store-layout">
+          <CustomerDashboard
+            account={selectedAccount}
+            isEnhanced={hasEnhancedDashboard}
+          />
           <div className="store-main">
-            <CustomerDashboard
-              account={selectedAccount}
-              isEnhanced={hasEnhancedDashboard}
-            />
             <RecommendationPanel
               products={products}
               hasPersonalizedRecommendations={hasPersonalizedRecommendations}
