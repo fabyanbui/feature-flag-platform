@@ -1,11 +1,15 @@
 import {
   createFeatureFlagClient,
   isClientEvaluationError,
-  type EvaluationContext,
   type SdkEvaluationResult,
 } from '@ffp/js-sdk';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
+import {
+  fallbackDemoScenarios,
+  listDemoAccounts,
+  type DemoScenario,
+} from './services/demoAccountService';
 
 type DemoFlagKey = 'beta-dashboard' | 'new-checkout';
 
@@ -39,75 +43,6 @@ const demoFeatures: DemoFeature[] = [
     expectedReason: 'Scenario-specific',
     expectedOutcome: 'Checkout visibility depends on the selected customer context.',
   },
-];
-
-const demoProjectKey = 'demo-project';
-
-type DemoScenario = {
-  id: string;
-  title: string;
-  customerLabel: string;
-  accountGroup: string;
-  scenarioSummary: string;
-  expectedOutcome: string;
-  expectedReason: string;
-  projectKey: string;
-  context: EvaluationContext;
-  presenterNote: string;
-};
-
-const checkoutRolloutAccounts: DemoScenario[] = [
-  ['01', 'demo-rollout-01', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['02', 'demo-rollout-03', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['03', 'demo-rollout-06', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['04', 'demo-rollout-08', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['05', 'demo-rollout-11', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['06', 'demo-rollout-13', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['07', 'demo-rollout-17', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['08', 'demo-rollout-18', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['09', 'demo-rollout-20', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['10', 'demo-rollout-24', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['11', 'demo-rollout-32', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['12', 'demo-rollout-34', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-].map(([accountNumber, targetingKey, expectedReason, expectedOutcome]) => ({
-  id: `rollout-account-${accountNumber}`,
-  title: `Rollout account ${accountNumber}`,
-  customerLabel: `Customer account ${accountNumber}`,
-  accountGroup: 'Staged checkout rollout',
-  scenarioSummary:
-    'Regular shopper in the staged account series. Switch accounts to see gradual release behavior.',
-  expectedOutcome,
-  expectedReason,
-  projectKey: demoProjectKey,
-  context: {
-    targetingKey,
-    userId: targetingKey,
-    roles: ['user'],
-  },
-  presenterNote:
-    'Regular account in the deterministic rollout series. Re-evaluate the same account to show the result stays stable.',
-}));
-
-const demoScenarios: DemoScenario[] = [
-  {
-    id: 'role-targeting-on',
-    title: 'Early-access customer',
-    customerLabel: 'Beta customer',
-    accountGroup: 'Role-based early access',
-    scenarioSummary:
-      'Shows a customer segment that receives the newest checkout experience before general rollout.',
-    expectedOutcome: 'New One-Page Checkout visible for this customer segment.',
-    expectedReason: 'ROLE_MATCH',
-    projectKey: demoProjectKey,
-    context: {
-      targetingKey: 'demo-user-beta',
-      userId: 'demo-user-beta',
-      roles: ['beta-tester'],
-      attributes: { plan: 'pro' },
-    },
-    presenterNote: 'Expected technical reason: ROLE_MATCH.',
-  },
-  ...checkoutRolloutAccounts,
 ];
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
@@ -366,6 +301,8 @@ function AccountDashboardExperience({
 }
 
 type ScenarioSelectorProps = {
+  demoScenarios: DemoScenario[];
+  accountSource: string;
   selectedScenario: DemoScenario;
   isLoading: boolean;
   onScenarioChange: (scenarioId: string) => void;
@@ -373,6 +310,8 @@ type ScenarioSelectorProps = {
 };
 
 function ScenarioSelector({
+  demoScenarios,
+  accountSource,
   selectedScenario,
   isLoading,
   onScenarioChange,
@@ -401,15 +340,15 @@ function ScenarioSelector({
           <dl className="customer-context-list">
             <div>
               <dt>Role</dt>
-              <dd>{formatRoles(selectedScenario.context.roles)}</dd>
+              <dd>{selectedScenario.role}</dd>
             </div>
             <div>
               <dt>Targeting ID</dt>
-              <dd>{selectedScenario.context.targetingKey ?? 'None'}</dd>
+              <dd>{selectedScenario.targetingId}</dd>
             </div>
             <div>
               <dt>User ID</dt>
-              <dd>{selectedScenario.context.userId ?? 'None'}</dd>
+              <dd>{selectedScenario.userId}</dd>
             </div>
             <div>
               <dt>Account group</dt>
@@ -440,9 +379,13 @@ function ScenarioSelector({
             ))}
           </select>
           <p className="account-series-note">
+            <span className="account-source-pill">{accountSource}</span>
             Select different accounts to evaluate both demo flags at once:
             <code> beta-dashboard </code> stays global-on, while
             <code> new-checkout </code> changes by role or deterministic rollout.
+            The demo-app account database stores one <code>userId</code>, one{' '}
+            <code>targetingId</code>, and one <code>role</code> per ecommerce
+            customer. No login or registration is used.
           </p>
         </section>
       </div>
@@ -523,10 +466,18 @@ function EvaluationDetails({
         </div>
         <div>
           <dt>Targeting key</dt>
-          <dd>{selectedScenario.context.targetingKey ?? 'None'}</dd>
+          <dd>{selectedScenario.targetingId}</dd>
         </div>
         <div>
-          <dt>User roles</dt>
+          <dt>User ID</dt>
+          <dd>{selectedScenario.userId}</dd>
+        </div>
+        <div>
+          <dt>Single account role</dt>
+          <dd>{selectedScenario.role}</dd>
+        </div>
+        <div>
+          <dt>SDK roles array</dt>
           <dd>{formatRoles(selectedScenario.context.roles)}</dd>
         </div>
         <div>
@@ -583,8 +534,14 @@ function EvaluationDetails({
 }
 
 function App() {
+  const [demoScenarios, setDemoScenarios] = useState<DemoScenario[]>(
+    fallbackDemoScenarios,
+  );
+  const [accountSource, setAccountSource] = useState(
+    'Loading demo-app account database',
+  );
   const [selectedScenarioId, setSelectedScenarioId] = useState(
-    demoScenarios[0].id,
+    fallbackDemoScenarios[0].id,
   );
 
   const [results, setResults] = useState<EvaluationResultMap>({});
@@ -596,8 +553,39 @@ function App() {
     () =>
       demoScenarios.find((scenario) => scenario.id === selectedScenarioId) ??
       demoScenarios[0],
-    [selectedScenarioId],
+    [demoScenarios, selectedScenarioId],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    listDemoAccounts()
+      .then((accounts) => {
+        if (!isMounted || accounts.length === 0) {
+          return;
+        }
+
+        setDemoScenarios(accounts);
+        setSelectedScenarioId((currentId) =>
+          accounts.some((account) => account.id === currentId)
+            ? currentId
+            : accounts[0].id,
+        );
+        setAccountSource('Demo-app local account database');
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        setDemoScenarios(fallbackDemoScenarios);
+        setAccountSource('Local fallback account database');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const currentResults = useMemo(
     () =>
@@ -734,6 +722,8 @@ function App() {
         </p>
 
         <ScenarioSelector
+          demoScenarios={demoScenarios}
+          accountSource={accountSource}
           selectedScenario={selectedScenario}
           isLoading={isLoading}
           onScenarioChange={handleScenarioChange}

@@ -13,6 +13,8 @@ The demo app is a data-plane consumer.
 
 It does:
 
+- Keep a tiny demo-app account database under `src/data/` and expose it through
+  a local service under `src/services/`.
 - Call `POST /v1/evaluate` through `@ffp/js-sdk`.
 - Display `projectKey`, `flagKey`, `enabled`, and `reason`.
 - Display whether a result came from the backend or an SDK-local safe fallback.
@@ -21,6 +23,7 @@ It does:
 
 It does not:
 
+- Implement login, registration, sessions, or authentication.
 - Create projects.
 - Create or update feature flags.
 - Create or update rules.
@@ -29,6 +32,33 @@ It does not:
 
 Use the admin dashboard for control-plane changes, then use this app to evaluate
 the runtime result.
+
+## Demo-app account database
+
+The ecommerce demo owns a simple local account seed in
+`src/data/seed.ts`, with account types in `src/data/demoAccounts.ts`. This is
+the demo app's own BE-like data layer and is independent from the feature flag
+platform backend.
+
+Each account stores only the fields needed for feature flag targeting:
+
+- `userId`
+- `targetingId`
+- one `role`
+
+`src/services/demoAccountService.ts` maps each account to an SDK evaluation
+context:
+
+```ts
+{
+  userId: account.userId,
+  targetingKey: account.targetingId,
+  roles: [account.role],
+}
+```
+
+The UI then lets the presenter switch customer accounts from a dropdown. No
+login/register flow is involved.
 
 ## Local configuration
 
@@ -82,19 +112,18 @@ The app preserves these presentation scenarios through the SDK:
 | --- | --- | --- |
 | Global Toggle | Shows global serving behavior for `beta-dashboard` | `GLOBAL_ON` when globally enabled |
 | Role Targeting — Beta Tester | Shows role-based targeting for `new-checkout` | `ROLE_MATCH` |
+| User Allowlist — Admin Preview | Shows user-id allowlist targeting for `new-checkout` | `USER_ALLOWLIST` |
 | Percentage Rollout — Included User | Shows deterministic percentage rollout | `PERCENTAGE_ROLLOUT` |
 | Percentage Rollout — Excluded User | Shows deterministic rollout fallback | `DEFAULT_OFF` |
-| Missing Project / Flag | Shows safe fallback for missing config | `enabled=false`, `reason=NOT_FOUND` |
 
 ## Presentation flow
 
 1. Start the backend and demo app.
 2. Open the demo app.
-3. Evaluate the Global Toggle scenario.
+3. Switch customer accounts from the ecommerce account dropdown.
 4. Use the admin dashboard to change the flag configuration.
-5. Return to the demo app and click **Evaluate flag**.
-6. Switch to Role Targeting and Percentage Rollout scenarios.
-7. End with the Missing Project / Flag scenario to show safe defaults.
+5. Return to the demo app and click **Refresh all flags**.
+6. Show beta customer, admin preview customer, and rollout accounts.
 
 This demonstrates the separation between:
 
