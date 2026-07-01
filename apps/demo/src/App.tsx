@@ -317,6 +317,13 @@ function ScenarioSelector({
   onScenarioChange,
   onEvaluate,
 }: ScenarioSelectorProps) {
+  const selectedInitials = selectedScenario.customerLabel
+    .split(' ')
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+
   return (
     <section className="shop-card scenario-panel" aria-labelledby="scenario-heading">
       <div className="section-heading-row">
@@ -361,23 +368,38 @@ function ScenarioSelector({
           className="customer-select-card"
           aria-labelledby="customer-select-heading"
         >
-          <p className="eyebrow">User selection</p>
-          <h3 id="customer-select-heading">Choose demo user</h3>
-          <label className="customer-select-label" htmlFor="customer-select">
-            Demo user account
-          </label>
-          <select
-            className="customer-select"
-            id="customer-select"
-            onChange={(event) => onScenarioChange(event.target.value)}
-            value={selectedScenario.id}
-          >
-            {demoScenarios.map((scenario) => (
-              <option key={scenario.id} value={scenario.id}>
-                {scenario.customerLabel}
-              </option>
-            ))}
-          </select>
+          <p className="eyebrow">Account switcher</p>
+          <h3 id="customer-select-heading">Signed in preview</h3>
+          <div className="signed-in-account-card" aria-label="Current demo account">
+            <span className="account-avatar" aria-hidden="true">
+              {selectedInitials}
+            </span>
+            <div className="account-identity">
+              <strong>{selectedScenario.customerLabel}</strong>
+              <span>{selectedScenario.accountGroup}</span>
+              <small>
+                Role <code>{selectedScenario.role}</code> · User{' '}
+                <code>{selectedScenario.userId}</code>
+              </small>
+            </div>
+          </div>
+          <div className="account-switch-control">
+            <label className="customer-select-label" htmlFor="customer-select">
+              Switch account
+            </label>
+            <select
+              className="customer-select"
+              id="customer-select"
+              onChange={(event) => onScenarioChange(event.target.value)}
+              value={selectedScenario.id}
+            >
+              {demoScenarios.map((scenario) => (
+                <option key={scenario.id} value={scenario.id}>
+                  {scenario.customerLabel}
+                </option>
+              ))}
+            </select>
+          </div>
           <p className="account-series-note">
             <span className="account-source-pill">{accountSource}</span>
             Select different accounts to evaluate both demo flags at once:

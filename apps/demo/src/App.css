@@ -225,13 +225,72 @@ summary:focus-visible,
   text-transform: uppercase;
 }
 
+.signed-in-account-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(134, 239, 172, 0.22);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(6, 95, 70, 0.38), rgba(15, 23, 42, 0.72)),
+    rgba(15, 23, 42, 0.64);
+}
+
+.account-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 2px solid rgba(187, 247, 208, 0.82);
+  border-radius: 50%;
+  background: #22c55e;
+  color: #052e16;
+  font-size: 1rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
+.account-identity {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.account-identity strong {
+  color: #f8fafc;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.account-identity span,
+.account-identity small {
+  color: #d1fae5;
+  line-height: 1.45;
+}
+
+.account-identity small {
+  overflow-wrap: anywhere;
+}
+
+.account-switch-control {
+  margin-bottom: 1rem;
+}
+
 .customer-select {
   min-height: 3rem;
   width: 100%;
   padding: 0 2.5rem 0 1rem;
-  border: 1px solid rgba(134, 239, 172, 0.36);
-  border-radius: 0.85rem;
-  background: rgba(15, 23, 42, 0.88);
+  border: 2px solid rgba(187, 247, 208, 0.86);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.82)),
+    #0f172a;
+  box-shadow:
+    0 0 0 4px rgba(187, 247, 208, 0.16),
+    0 12px 28px rgba(0, 0, 0, 0.18);
   color: #f8fafc;
   font-weight: 800;
   cursor: pointer;
@@ -288,11 +347,23 @@ summary:focus-visible,
 .presenter-note {
   margin: 0;
   padding: 0.85rem 1rem;
-  border: 1px solid rgba(134, 239, 172, 0.18);
+  border: 1px solid rgba(134, 239, 172, 0.28);
   border-radius: 0.85rem;
-  background: rgba(6, 95, 70, 0.28);
-  color: #d1fae5;
+  background: rgba(6, 78, 59, 0.38);
+  color: #f0fdf4;
   line-height: 1.6;
+}
+
+.account-series-note code {
+  display: inline-flex;
+  margin: 0 0.1rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid rgba(134, 239, 172, 0.28);
+  border-radius: 0.35rem;
+  background: rgba(15, 23, 42, 0.82);
+  color: #dcfce7;
+  font-size: 0.92em;
+  font-weight: 900;
 }
 
 .account-source-pill {
