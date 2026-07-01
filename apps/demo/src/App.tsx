@@ -2,18 +2,18 @@ import {
   createFeatureFlagClient,
   isClientEvaluationError,
   type SdkEvaluationResult,
-} from '@ffp/js-sdk';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import './App.css';
+} from "@ffp/js-sdk";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import "./App.css";
 import {
   fallbackDemoScenarios,
   listDemoAccounts,
   type DemoScenario,
-} from './services/demoAccountService';
+} from "./services/demoAccountService";
 
-type DemoFlagKey = 'beta-dashboard' | 'new-checkout';
+type DemoFlagKey = "beta-dashboard" | "new-checkout";
 
-type BusinessFeature = 'Account dashboard' | 'Checkout experience';
+type BusinessFeature = "Account dashboard" | "Checkout experience";
 
 type DemoFeature = {
   flagKey: DemoFlagKey;
@@ -28,29 +28,34 @@ type EvaluationResultMap = Partial<Record<DemoFlagKey, SdkEvaluationResult>>;
 
 const demoFeatures: DemoFeature[] = [
   {
-    flagKey: 'beta-dashboard',
-    businessFeature: 'Account dashboard',
-    displayName: 'Beta Account Dashboard',
-    diagnosticSummary: 'Global business dashboard module controlled by the beta-dashboard flag.',
-    expectedReason: 'GLOBAL_ON',
-    expectedOutcome: 'Beta Account Dashboard is visible while the seeded global enablement is active.',
+    flagKey: "beta-dashboard",
+    businessFeature: "Account dashboard",
+    displayName: "Beta Account Dashboard",
+    diagnosticSummary:
+      "Global business dashboard module controlled by the beta-dashboard flag.",
+    expectedReason: "GLOBAL_ON",
+    expectedOutcome:
+      "Beta Account Dashboard is visible while the seeded global enablement is active.",
   },
   {
-    flagKey: 'new-checkout',
-    businessFeature: 'Checkout experience',
-    displayName: 'New One-Page Checkout',
-    diagnosticSummary: 'Targeted checkout module controlled by role and percentage rollout rules.',
-    expectedReason: 'Scenario-specific',
-    expectedOutcome: 'Checkout visibility depends on the selected customer context.',
+    flagKey: "new-checkout",
+    businessFeature: "Checkout experience",
+    displayName: "New One-Page Checkout",
+    diagnosticSummary:
+      "Targeted checkout module controlled by role and percentage rollout rules.",
+    expectedReason: "Scenario-specific",
+    expectedOutcome:
+      "Checkout visibility depends on the selected customer context.",
   },
 ];
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
-const environmentKey = import.meta.env.VITE_ENVIRONMENT_KEY ?? 'production';
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/v1";
+const environmentKey = import.meta.env.VITE_ENVIRONMENT_KEY ?? "production";
 const sdkTimeoutMs = 1500;
 
 function formatRoles(roles: string[] | undefined) {
-  return roles?.length ? roles.join(', ') : 'None';
+  return roles?.length ? roles.join(", ") : "None";
 }
 
 function isResultForFeature(
@@ -59,25 +64,23 @@ function isResultForFeature(
   feature: DemoFeature,
 ) {
   return (
-    result?.projectKey === scenario.projectKey && result.flagKey === feature.flagKey
+    result?.projectKey === scenario.projectKey &&
+    result.flagKey === feature.flagKey
   );
 }
 
-function getDecisionSource(
-  results: SdkEvaluationResult[],
-  isLoading: boolean,
-) {
+function getDecisionSource(results: SdkEvaluationResult[], isLoading: boolean) {
   if (isLoading) {
-    return 'Loading';
+    return "Loading";
   }
 
   if (results.length === 0) {
-    return 'Not evaluated';
+    return "Not evaluated";
   }
 
   return results.some((result) => isClientEvaluationError(result))
-    ? 'Client fallback for at least one flag'
-    : 'Backend evaluation for all flags';
+    ? "Client fallback for at least one experience"
+    : "Service response for all experiences";
 }
 
 function getFeatureResult(
@@ -90,9 +93,21 @@ function getFeatureResult(
   return isResultForFeature(result, scenario, feature) ? result : null;
 }
 
+function getAccountInitials(customerLabel: string) {
+  return customerLabel
+    .split(" ")
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 function ProductShowcase() {
   return (
-    <section className="shop-card product-card" aria-labelledby="product-heading">
+    <section
+      className="shop-card product-card"
+      aria-labelledby="product-heading"
+    >
       <p className="eyebrow">Today&apos;s cart</p>
       <h2 id="product-heading">Premium Wireless Headphones</h2>
       <p>
@@ -157,15 +172,15 @@ function CheckoutExperience({
 }: CheckoutExperienceProps) {
   const isClientFallback = result ? isClientEvaluationError(result) : false;
   const safeFallbackCopy = isClientFallback
-    ? 'Classic Checkout remains active while the checkout preview is unavailable.'
-    : 'Classic Checkout remains active while the new experience is not confirmed available for this customer.';
+    ? "Classic Checkout remains active while the checkout preview is unavailable."
+    : "Classic Checkout remains active while the new experience is not confirmed available for this customer.";
 
   return (
     <section
       className={
         isNewCheckoutOn
-          ? 'shop-card checkout-card checkout-card-on'
-          : 'shop-card checkout-card checkout-card-off'
+          ? "shop-card checkout-card checkout-card-on"
+          : "shop-card checkout-card checkout-card-off"
       }
       aria-labelledby="checkout-heading"
       aria-live="polite"
@@ -174,11 +189,13 @@ function CheckoutExperience({
         <div>
           <p className="eyebrow">Checkout experience</p>
           <h2 id="checkout-heading">
-            {isNewCheckoutOn ? 'New One-Page Checkout' : 'Classic Checkout'}
+            {isNewCheckoutOn ? "New One-Page Checkout" : "Classic Checkout"}
           </h2>
         </div>
-        <span className={isNewCheckoutOn ? 'status-pill status-on' : 'status-pill'}>
-          {isNewCheckoutOn ? 'New experience' : 'Classic active'}
+        <span
+          className={isNewCheckoutOn ? "status-pill status-on" : "status-pill"}
+        >
+          {isNewCheckoutOn ? "New experience" : "Classic active"}
         </span>
       </div>
 
@@ -236,15 +253,15 @@ function AccountDashboardExperience({
 }: AccountDashboardExperienceProps) {
   const isClientFallback = result ? isClientEvaluationError(result) : false;
   const safeFallbackCopy = isClientFallback
-    ? 'The beta dashboard is hidden while the dashboard flag preview is unavailable.'
-    : 'The beta dashboard is hidden until the beta-dashboard flag is confirmed on.';
+    ? "The upgraded dashboard is hidden while this customer preview is unavailable."
+    : "The standard account view remains active for this customer.";
 
   return (
     <section
       className={
         isDashboardOn
-          ? 'shop-card beta-panel beta-panel-on'
-          : 'shop-card beta-panel beta-panel-off'
+          ? "shop-card beta-panel beta-panel-on"
+          : "shop-card beta-panel beta-panel-off"
       }
       aria-labelledby="dashboard-heading"
       aria-live="polite"
@@ -253,19 +270,21 @@ function AccountDashboardExperience({
         <div>
           <p className="eyebrow">Account dashboard</p>
           <h2 id="dashboard-heading">
-            {isDashboardOn ? 'Beta Account Dashboard' : 'Standard Account View'}
+            {isDashboardOn ? "Beta Account Dashboard" : "Standard Account View"}
           </h2>
         </div>
-        <span className={isDashboardOn ? 'status-pill status-on' : 'status-pill'}>
-          {isDashboardOn ? 'Dashboard flag on' : 'Dashboard flag off'}
+        <span
+          className={isDashboardOn ? "status-pill status-on" : "status-pill"}
+        >
+          {isDashboardOn ? "Dashboard upgraded" : "Standard dashboard"}
         </span>
       </div>
 
       {isDashboardOn ? (
         <>
           <p>
-            The second admin flag unlocks account insights without changing the
-            checkout rollout flag.
+            This customer gets the upgraded account area with loyalty insights,
+            recent activity, and a saved express profile.
           </p>
           <div className="insight-grid" aria-label="Beta dashboard widgets">
             <span>
@@ -282,8 +301,8 @@ function AccountDashboardExperience({
             </span>
           </div>
           <p className="decision-copy">
-            Controlled by <code>beta-dashboard</code>; seeded as global-on so
-            every selected customer can see this separate demo feature.
+            This upgraded dashboard is part of the personalized shopping
+            experience for eligible demo customers.
           </p>
         </>
       ) : (
@@ -300,118 +319,102 @@ function AccountDashboardExperience({
   );
 }
 
-type ScenarioSelectorProps = {
+type AccountSwitcherProps = {
   demoScenarios: DemoScenario[];
-  accountSource: string;
   selectedScenario: DemoScenario;
   isLoading: boolean;
   onScenarioChange: (scenarioId: string) => void;
-  onEvaluate: () => void;
 };
 
-function ScenarioSelector({
+function AccountSwitcher({
   demoScenarios,
-  accountSource,
   selectedScenario,
   isLoading,
   onScenarioChange,
-  onEvaluate,
-}: ScenarioSelectorProps) {
-  const selectedInitials = selectedScenario.customerLabel
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
+}: AccountSwitcherProps) {
+  const selectedInitials = getAccountInitials(selectedScenario.customerLabel);
 
   return (
-    <section className="shop-card scenario-panel" aria-labelledby="scenario-heading">
-      <div className="section-heading-row">
-        <div>
-          <p className="eyebrow">Customer preview</p>
-          <h2 id="scenario-heading">Switch customer accounts</h2>
+    <aside
+      className="hero-account-switcher"
+      aria-labelledby="account-switcher-heading"
+    >
+      <p className="eyebrow">Account switcher</p>
+      <h2 id="account-switcher-heading">Signed in as</h2>
+      <div className="signed-in-account-card" aria-label="Current demo account">
+        <span className="account-avatar" aria-hidden="true">
+          {selectedInitials}
+        </span>
+        <div className="account-identity">
+          <strong>{selectedScenario.customerLabel}</strong>
+          <span>{selectedScenario.accountGroup}</span>
+          <small>
+            Role <code>{selectedScenario.role}</code> · User{" "}
+            <code>{selectedScenario.userId}</code>
+          </small>
         </div>
-        <button disabled={isLoading} onClick={onEvaluate} type="button">
-          {isLoading ? 'Refreshing flags...' : 'Refresh all flags'}
-        </button>
       </div>
+      <label className="customer-select-label" htmlFor="customer-select">
+        Switch customer account
+      </label>
+      <select
+        className="customer-select"
+        disabled={isLoading}
+        id="customer-select"
+        onChange={(event) => onScenarioChange(event.target.value)}
+        value={selectedScenario.id}
+      >
+        {demoScenarios.map((scenario) => (
+          <option key={scenario.id} value={scenario.id}>
+            {scenario.customerLabel}
+          </option>
+        ))}
+      </select>
+      <p className="account-switcher-copy">
+        The storefront updates automatically when you switch accounts.
+      </p>
+    </aside>
+  );
+}
 
-      <div className="customer-preview-grid">
-        <section
-          className="customer-info-card"
-          aria-labelledby="customer-info-heading"
-        >
-          <p className="eyebrow">Selected user</p>
-          <h3 id="customer-info-heading">{selectedScenario.customerLabel}</h3>
-          <p>{selectedScenario.scenarioSummary}</p>
-          <dl className="customer-context-list">
-            <div>
-              <dt>Role</dt>
-              <dd>{selectedScenario.role}</dd>
-            </div>
-            <div>
-              <dt>Targeting ID</dt>
-              <dd>{selectedScenario.targetingId}</dd>
-            </div>
-            <div>
-              <dt>User ID</dt>
-              <dd>{selectedScenario.userId}</dd>
-            </div>
-            <div>
-              <dt>Account group</dt>
-              <dd>{selectedScenario.accountGroup}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section
-          className="customer-select-card"
-          aria-labelledby="customer-select-heading"
-        >
-          <p className="eyebrow">Account switcher</p>
-          <h3 id="customer-select-heading">Signed in preview</h3>
-          <div className="signed-in-account-card" aria-label="Current demo account">
-            <span className="account-avatar" aria-hidden="true">
-              {selectedInitials}
-            </span>
-            <div className="account-identity">
-              <strong>{selectedScenario.customerLabel}</strong>
-              <span>{selectedScenario.accountGroup}</span>
-              <small>
-                Role <code>{selectedScenario.role}</code> · User{' '}
-                <code>{selectedScenario.userId}</code>
-              </small>
-            </div>
-          </div>
-          <div className="account-switch-control">
-            <label className="customer-select-label" htmlFor="customer-select">
-              Switch account
-            </label>
-            <select
-              className="customer-select"
-              id="customer-select"
-              onChange={(event) => onScenarioChange(event.target.value)}
-              value={selectedScenario.id}
-            >
-              {demoScenarios.map((scenario) => (
-                <option key={scenario.id} value={scenario.id}>
-                  {scenario.customerLabel}
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="account-series-note">
-            <span className="account-source-pill">{accountSource}</span>
-            Select different accounts to evaluate both demo flags at once:
-            <code> beta-dashboard </code> stays global-on, while
-            <code> new-checkout </code> changes by role or deterministic rollout.
-            The demo-app account database stores one <code>userId</code>, one{' '}
-            <code>targetingId</code>, and one <code>role</code> per ecommerce
-            customer. No login or registration is used.
-          </p>
-        </section>
-      </div>
-    </section>
+function AccountDetails({
+  accountSource,
+  selectedScenario,
+}: {
+  accountSource: string;
+  selectedScenario: DemoScenario;
+}) {
+  return (
+    <details className="shop-card details-panel account-details-panel">
+      <summary>View customer account details</summary>
+      <p className="eyebrow">Customer profile</p>
+      <h2>{selectedScenario.customerLabel}</h2>
+      <p>{selectedScenario.scenarioSummary}</p>
+      <p className="account-series-note">
+        <span className="account-source-pill">{accountSource}</span>
+        This demo account stores one <code>userId</code>, one{" "}
+        <code>targetingId</code>, and one <code>role</code>. No login or
+        registration is used.
+      </p>
+      <dl className="customer-context-list account-detail-grid">
+        <div>
+          <dt>Role</dt>
+          <dd>{selectedScenario.role}</dd>
+        </div>
+        <div>
+          <dt>Targeting ID</dt>
+          <dd>{selectedScenario.targetingId}</dd>
+        </div>
+        <div>
+          <dt>User ID</dt>
+          <dd>{selectedScenario.userId}</dd>
+        </div>
+        <div>
+          <dt>Account group</dt>
+          <dd>{selectedScenario.accountGroup}</dd>
+        </div>
+      </dl>
+    </details>
   );
 }
 
@@ -431,17 +434,21 @@ function EvaluationDetails({
     .filter((result): result is SdkEvaluationResult => result !== null);
   const decisionSource = getDecisionSource(evaluatedResults, isLoading);
   const runtimeState = isLoading
-    ? 'Loading...'
+    ? "Loading..."
     : evaluatedResults.length > 0
       ? demoFeatures
-        .map((feature) => {
-          const result = getFeatureResult(results, selectedScenario, feature);
-          const state = result ? (result.enabled ? 'On' : 'Off') : 'Not evaluated';
+          .map((feature) => {
+            const result = getFeatureResult(results, selectedScenario, feature);
+            const state = result
+              ? result.enabled
+                ? "On"
+                : "Off"
+              : "Not evaluated";
 
-          return `${feature.flagKey}: ${state}`;
-        })
-        .join(', ')
-      : 'Not evaluated';
+            return `${feature.flagKey}: ${state}`;
+          })
+          .join(", ")
+      : "Not evaluated";
 
   return (
     <details className="shop-card details-panel">
@@ -512,12 +519,14 @@ function EvaluationDetails({
         </div>
         {demoFeatures.map((feature) => {
           const result = getFeatureResult(results, selectedScenario, feature);
-          const expectedReason = feature.flagKey === 'new-checkout'
-            ? selectedScenario.expectedReason
-            : feature.expectedReason;
-          const expectedOutcome = feature.flagKey === 'new-checkout'
-            ? selectedScenario.expectedOutcome
-            : feature.expectedOutcome;
+          const expectedReason =
+            feature.flagKey === "new-checkout"
+              ? selectedScenario.expectedReason
+              : feature.expectedReason;
+          const expectedOutcome =
+            feature.flagKey === "new-checkout"
+              ? selectedScenario.expectedOutcome
+              : feature.expectedOutcome;
 
           return (
             <div className="flag-result-card" key={feature.flagKey}>
@@ -528,18 +537,25 @@ function EvaluationDetails({
                     Flag key: <code>{feature.flagKey}</code>
                   </li>
                   <li>{feature.diagnosticSummary}</li>
-                  <li>Enabled: {result ? String(result.enabled) : 'Not evaluated'}</li>
-                  <li>Runtime state: {result ? (result.enabled ? 'On' : 'Off') : 'Not evaluated'}</li>
-                  <li>Variant: {result?.variant ?? 'Not evaluated'}</li>
-                  <li>Reason: {result?.reason ?? 'Not evaluated'}</li>
-                  <li>Matched rule: {result?.matchedRuleId ?? 'None'}</li>
-                  <li>Expected reason: {expectedReason} (presentation guide)</li>
+                  <li>
+                    Enabled: {result ? String(result.enabled) : "Not evaluated"}
+                  </li>
+                  <li>
+                    Runtime state:{" "}
+                    {result ? (result.enabled ? "On" : "Off") : "Not evaluated"}
+                  </li>
+                  <li>Variant: {result?.variant ?? "Not evaluated"}</li>
+                  <li>Reason: {result?.reason ?? "Not evaluated"}</li>
+                  <li>Matched rule: {result?.matchedRuleId ?? "None"}</li>
+                  <li>
+                    Expected reason: {expectedReason} (presentation guide)
+                  </li>
                   <li>Expected outcome: {expectedOutcome}</li>
                   <li>
-                    Error source:{' '}
+                    Error source:{" "}
                     {result && isClientEvaluationError(result)
                       ? result.errorSource
-                      : 'None'}
+                      : "None"}
                   </li>
                 </ul>
               </dd>
@@ -560,7 +576,7 @@ function App() {
     fallbackDemoScenarios,
   );
   const [accountSource, setAccountSource] = useState(
-    'Loading demo-app account database',
+    "Loading demo-app account database",
   );
   const [selectedScenarioId, setSelectedScenarioId] = useState(
     fallbackDemoScenarios[0].id,
@@ -593,7 +609,7 @@ function App() {
             ? currentId
             : accounts[0].id,
         );
-        setAccountSource('Demo-app local account database');
+        setAccountSource("Demo-app local account database");
       })
       .catch(() => {
         if (!isMounted) {
@@ -601,7 +617,7 @@ function App() {
         }
 
         setDemoScenarios(fallbackDemoScenarios);
-        setAccountSource('Local fallback account database');
+        setAccountSource("Local fallback account database");
       });
 
     return () => {
@@ -623,8 +639,8 @@ function App() {
     [results, selectedScenario],
   );
 
-  const dashboardResult = currentResults['beta-dashboard'] ?? null;
-  const checkoutResult = currentResults['new-checkout'] ?? null;
+  const dashboardResult = currentResults["beta-dashboard"] ?? null;
+  const checkoutResult = currentResults["new-checkout"] ?? null;
 
   const handleScenarioChange = useCallback((scenarioId: string) => {
     requestSequence.current += 1;
@@ -684,13 +700,13 @@ function App() {
         .filter(isClientEvaluationError);
 
       if (failedEvaluations.length > 0) {
-        const failedFlagKeys = failedEvaluations
-          .map((evaluation) => evaluation.flagKey)
-          .join(', ');
-        const fallbackMessage = failedEvaluations[0].errorMessage ??
-          'The SDK could not complete one or more evaluations safely.';
+        const fallbackMessage =
+          failedEvaluations[0].errorMessage ??
+          "The customer preview could not complete safely.";
 
-        setErrorMessage(`${fallbackMessage} Failed flag(s): ${failedFlagKeys}.`);
+        setErrorMessage(
+          `${fallbackMessage} Some personalized experiences could not refresh.`,
+        );
       }
     } catch {
       if (requestSequence.current !== requestId) {
@@ -699,7 +715,7 @@ function App() {
 
       setResults({});
       setErrorMessage(
-        'Could not prepare this preview. Check the browser-safe SDK configuration and retry.',
+        "Could not prepare this customer preview. Check your connection and retry.",
       );
     } finally {
       if (requestSequence.current === requestId) {
@@ -721,7 +737,7 @@ function App() {
   const liveStatus = isLoading
     ? `Refreshing ${selectedScenario.customerLabel}. Safe default experiences remain active while loading.`
     : Object.keys(currentResults).length > 0
-      ? `${selectedScenario.customerLabel} preview refreshed. Dashboard is ${isDashboardOn ? 'On' : 'Off'} and checkout is ${isNewCheckoutOn ? 'On' : 'Off'}.`
+      ? `${selectedScenario.customerLabel} preview refreshed. Dashboard is ${isDashboardOn ? "On" : "Off"} and checkout is ${isNewCheckoutOn ? "On" : "Off"}.`
       : `${selectedScenario.customerLabel} has not been refreshed. Safe default experiences remain active.`;
 
   return (
@@ -732,47 +748,48 @@ function App() {
             <p className="eyebrow">Premium Audio Store</p>
             <h1 id="app-heading">ShopEase Checkout</h1>
             <p>
-              Preview a deployed storefront where multiple admin-managed flags
-              can safely control separate customer experiences without a
-              frontend redeploy.
+              Preview a storefront where switching customer accounts changes the
+              dashboard and checkout experience automatically.
             </p>
           </div>
+          <AccountSwitcher
+            demoScenarios={demoScenarios}
+            selectedScenario={selectedScenario}
+            isLoading={isLoading}
+            onScenarioChange={handleScenarioChange}
+          />
         </header>
 
         <p className="sr-only" aria-live="polite">
           {liveStatus}
         </p>
 
-        <ScenarioSelector
-          demoScenarios={demoScenarios}
+        <AccountDetails
           accountSource={accountSource}
           selectedScenario={selectedScenario}
-          isLoading={isLoading}
-          onScenarioChange={handleScenarioChange}
-          onEvaluate={evaluateFlags}
         />
 
         {errorMessage ? (
           <section className="error-panel" role="alert">
-            <h2>Feature preview unavailable</h2>
+            <h2>Storefront preview unavailable</h2>
             <p>
-              We could not refresh every flag preview. Each affected feature
-              fails closed so the customer experience stays safe.
+              We could not refresh this customer preview. The standard shopping
+              experience stays active.
             </p>
             <details>
-              <summary>Show SDK fallback message</summary>
+              <summary>Show connection details</summary>
               <p>{errorMessage}</p>
               {Object.values(currentResults).some((result) =>
                 result ? isClientEvaluationError(result) : false,
               ) ? (
                 <p>
-                  The client failed closed for at least one flag. This is not a
-                  backend evaluation decision for that flag.
+                  The preview could not confirm the upgraded experience, so the
+                  storefront kept the standard customer journey.
                 </p>
               ) : null}
             </details>
             <button onClick={evaluateFlags} type="button">
-              Retry all flags
+              Try again
             </button>
           </section>
         ) : null}

@@ -120,9 +120,10 @@ The app preserves these presentation scenarios through the SDK:
 
 1. Start the backend and demo app.
 2. Open the demo app.
-3. Switch customer accounts from the ecommerce account dropdown.
-4. Use the admin dashboard to change the flag configuration.
-5. Return to the demo app and click **Refresh all flags**.
+3. Switch customer accounts from the ecommerce account dropdown in the header.
+4. Watch the storefront update automatically for each selected account.
+5. Optionally expand **View customer account details** to explain user ID,
+   targeting ID, and role.
 6. Show beta customer, admin preview customer, and rollout accounts.
 
 This demonstrates the separation between:
