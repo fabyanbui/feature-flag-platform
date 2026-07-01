@@ -190,6 +190,8 @@ On a clean database it creates:
 - groups `customer-experience`, `checkout-experience`, and `recommendations`,
   with kill switches inactive when created,
 - core flags `beta-dashboard` and `new-checkout`,
+  where `beta-dashboard` is standalone and `new-checkout` belongs to the
+  checkout experience,
 - demo feature flags `express-payment`, `shipping-progress-meter`,
   `coupon-engine`, `personalized-recommendations`, `trending-products`,
   `holiday-promo-banner`, and `live-support-widget`,

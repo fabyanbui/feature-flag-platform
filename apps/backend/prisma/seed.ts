@@ -179,11 +179,21 @@ async function main() {
     update: {},
     create: {
       projectId: project.id,
-      groupId: customerExperienceGroup.id,
+      groupId: null,
       key: 'beta-dashboard',
       name: 'Beta Dashboard',
       description: 'Globally enabled demo flag.',
       lifecycleStatus: 'ACTIVE',
+    },
+  });
+
+  const betaDashboardGroupCorrection = await prisma.featureFlag.updateMany({
+    where: {
+      id: betaDashboard.id,
+      groupId: customerExperienceGroup.id,
+    },
+    data: {
+      groupId: null,
     },
   });
 
@@ -821,29 +831,32 @@ async function main() {
     requestId: 'seed_init',
   });
 
-  await createAuditIfMissing('audit_seed_beta_dashboard_group_assigned', {
-    projectId: project.id,
-    projectKey: project.key,
-    environmentId: production.id,
-    environmentKey: production.key,
-    targetType: 'FEATURE_FLAG',
-    targetId: betaDashboard.id,
-    targetKey: betaDashboard.key,
-    action: 'FEATURE_FLAG_GROUP_ASSIGNED',
-    actor: 'system',
-    before: {
-      flagKey: betaDashboard.key,
-      groupKey: null,
-    },
-    after: {
-      flagKey: betaDashboard.key,
-      groupKey: customerExperienceGroup.key,
-    },
-    metadata: {
-      source: 'seed',
-    },
-    requestId: 'seed_phase12',
-  });
+  if (betaDashboardGroupCorrection.count > 0) {
+    await createAuditIfMissing('audit_seed_beta_dashboard_group_unassigned', {
+      projectId: project.id,
+      projectKey: project.key,
+      environmentId: production.id,
+      environmentKey: production.key,
+      targetType: 'FEATURE_FLAG',
+      targetId: betaDashboard.id,
+      targetKey: betaDashboard.key,
+      action: 'FEATURE_FLAG_GROUP_UNASSIGNED',
+      actor: 'system',
+      before: {
+        flagKey: betaDashboard.key,
+        groupKey: customerExperienceGroup.key,
+      },
+      after: {
+        flagKey: betaDashboard.key,
+        groupKey: null,
+      },
+      metadata: {
+        source: 'seed',
+        correction: 'beta-dashboard-standalone',
+      },
+      requestId: 'seed_beta_dashboard_standalone',
+    });
+  }
 
   await createAuditIfMissing('audit_seed_new_checkout_created', {
     projectId: project.id,
@@ -978,9 +991,11 @@ async function main() {
       newCheckout.key,
       expressPayment.key,
       shippingProgressMeter.key,
+      couponEngine.key,
       personalizedRecommendations.key,
       trendingProducts.key,
       holidayPromoBanner.key,
+      liveSupportWidget.key,
     ],
     flagGroups: [
       customerExperienceGroup.key,

@@ -93,7 +93,8 @@ Explain:
 - checkout demo flags belong to the `checkout-experience` rollback group,
 - `coupon-engine` controls the demo app coupon discount in the checkout panel,
 - `live-support-widget` is a standalone flag with no group assignment,
-- `beta-dashboard` remains available in Admin as an additional seeded flag.
+- `beta-dashboard` remains available in Admin as an additional standalone seeded
+  flag with no group assignment.
 - the streamlined demo app focuses on `new-checkout` users for role targeting
   and percentage rollout.
 
