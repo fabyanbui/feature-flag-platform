@@ -1,4 +1,4 @@
-import type { DemoAccountRecord } from './demoAccounts';
+import type { CartLine, DemoAccountRecord, Product } from './demoAccounts';
 
 const checkoutRolloutAccountSeed: readonly [
   accountNumber: string,
@@ -22,20 +22,20 @@ const checkoutRolloutAccountSeed: readonly [
 
 const checkoutRolloutAccounts: DemoAccountRecord[] = checkoutRolloutAccountSeed.map(
   ([accountNumber, targetingId, expectedReason, expectedOutcome]) => ({
-  id: `rollout-account-${accountNumber}`,
-  title: `Rollout account ${accountNumber}`,
-  customerLabel: `Customer account ${accountNumber}`,
-  accountGroup: 'Staged checkout rollout',
-  scenarioSummary:
-    'Regular shopper in the staged account series. Switch accounts to see gradual release behavior.',
-  expectedOutcome,
-  expectedReason,
-  userId: targetingId,
-  targetingId,
-  role: 'user',
-  presenterNote:
-    'Regular account in the deterministic rollout series. Re-evaluate the same account to show the result stays stable.',
-}),
+    id: `rollout-account-${accountNumber}`,
+    title: `Rollout account ${accountNumber}`,
+    customerLabel: `Customer account ${accountNumber}`,
+    accountGroup: 'Staged checkout rollout',
+    scenarioSummary:
+      'Regular shopper in the staged account series. Switch accounts to see gradual release behavior.',
+    expectedOutcome,
+    expectedReason,
+    userId: targetingId,
+    targetingId,
+    role: 'user',
+    presenterNote:
+      'Regular account in the deterministic rollout series. Re-evaluate the same account to show the result stays stable.',
+  }),
 );
 
 export const demoAccountSeed: readonly DemoAccountRecord[] = [
@@ -86,3 +86,59 @@ export const demoAccountSeed: readonly DemoAccountRecord[] = [
   },
   ...checkoutRolloutAccounts,
 ];
+
+export const productSeed: readonly Product[] = [
+  {
+    id: 'headphones-pro',
+    name: 'Premium Wireless Headphones',
+    category: 'Audio',
+    description: 'Noise-cancelling audio, 40-hour battery life, and soft travel-ready ear cushions.',
+    price: 129,
+    rating: 4.8,
+    badge: 'Best seller',
+    accent: 'green',
+  },
+  {
+    id: 'speaker-mini',
+    name: 'Mini Bluetooth Speaker',
+    category: 'Audio',
+    description: 'Pocket-size speaker with rich bass and waterproof build for weekend trips.',
+    price: 59,
+    rating: 4.6,
+    badge: 'Travel pick',
+    accent: 'blue',
+  },
+  {
+    id: 'charging-dock',
+    name: '3-in-1 Charging Dock',
+    category: 'Accessories',
+    description: 'Fast wireless charging stand for phone, watch, and earbuds in one clean setup.',
+    price: 79,
+    rating: 4.7,
+    badge: 'New',
+    accent: 'purple',
+  },
+  {
+    id: 'audio-case',
+    name: 'Protective Audio Case',
+    category: 'Accessories',
+    description: 'Compact hard-shell case with cable storage and soft recycled lining.',
+    price: 24,
+    rating: 4.5,
+    badge: 'Add-on',
+    accent: 'orange',
+  },
+];
+
+export const cartSeed: Record<string, CartLine[]> = {
+  'role-targeting-on': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'charging-dock', quantity: 1 },
+  ],
+  'regular-customer': [{ productId: 'headphones-pro', quantity: 1 }],
+  'admin-preview-customer': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'speaker-mini', quantity: 1 },
+  ],
+  'rollout-account-06': [{ productId: 'audio-case', quantity: 2 }],
+};
