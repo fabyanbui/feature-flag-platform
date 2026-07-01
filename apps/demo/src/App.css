@@ -1433,17 +1433,59 @@ dd {
 
 .feature-showcase > .section-heading-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
   justify-items: center;
-  padding-right: 8rem;
-  padding-left: 8rem;
+  align-items: center;
+  gap: 1rem;
+  padding-right: 0;
+  padding-left: 0;
   text-align: center;
+  list-style: none;
+  cursor: pointer;
 }
 
-.feature-showcase > .section-heading-row .soft-pill {
-  position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
+.feature-showcase > .section-heading-row::-webkit-details-marker {
+  display: none;
+}
+
+.feature-showcase > .section-heading-row > div {
+  justify-self: center;
+  padding-left: 8rem;
+}
+
+.feature-showcase-actions {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-self: end;
+}
+
+.collapse-hint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid rgba(134, 239, 172, 0.22);
+  border-radius: 999px;
+  background: rgba(6, 78, 59, 0.28);
+  color: #bbf7d0;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.collapse-hint::before {
+  content: "Show matrix";
+}
+
+.feature-showcase[open] .collapse-hint::before {
+  content: "Hide matrix";
+}
+
+.feature-showcase > .section-heading-row:hover .collapse-hint {
+  border-color: rgba(134, 239, 172, 0.42);
+  background: rgba(6, 95, 70, 0.44);
 }
 
 .feature-group-grid {
@@ -1708,12 +1750,15 @@ dd {
 
 @media (max-width: 72rem) {
   .feature-showcase > .section-heading-row {
-    padding-right: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .feature-showcase > .section-heading-row > div {
     padding-left: 0;
   }
 
-  .feature-showcase > .section-heading-row .soft-pill {
-    position: static;
+  .feature-showcase-actions {
+    justify-self: center;
     margin-top: 0.35rem;
   }
 

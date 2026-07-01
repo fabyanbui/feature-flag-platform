@@ -807,17 +807,20 @@ function FeatureShowcase({ account, results }: FeatureShowcaseProps) {
   }
 
   return (
-    <section
+    <details
       className="section-card feature-showcase"
       aria-labelledby="feature-showcase-heading"
     >
-      <div className="section-heading-row">
+      <summary className="section-heading-row">
         <div>
           <p className="eyebrow">Experience coverage</p>
           <h2 id="feature-showcase-heading">Demo feature matrix</h2>
         </div>
-        <span className="soft-pill">{demoFeatures.length} features</span>
-      </div>
+        <span className="feature-showcase-actions">
+          <span className="soft-pill">{demoFeatures.length} features</span>
+          <span className="collapse-hint" aria-hidden="true" />
+        </span>
+      </summary>
       <div className="feature-group-grid">
         {featureGroups.map((group) => {
           const groupFeatures = demoFeatures.filter(
@@ -854,7 +857,7 @@ function FeatureShowcase({ account, results }: FeatureShowcaseProps) {
           );
         })}
       </div>
-    </section>
+    </details>
   );
 }
 
