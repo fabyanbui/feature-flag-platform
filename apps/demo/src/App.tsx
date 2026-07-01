@@ -3,7 +3,7 @@ import {
   isClientEvaluationError,
   type SdkEvaluationResult,
 } from "@ffp/js-sdk";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "./App.css";
 import type { CartView, DemoAccount, Product } from "./data/demoAccounts";
 import {
@@ -197,6 +197,7 @@ function AccountSwitcher({
   const initials = selectedAccount
     ? getAccountInitials(selectedAccount.customerLabel)
     : "GU";
+  const menuId = useId();
 
   const chooseAccount = (accountId: string | null) => {
     setIsOpen(false);
@@ -209,16 +210,28 @@ function AccountSwitcher({
       aria-labelledby="account-switcher-heading"
     >
       <div className="account-switcher-top">
-        <div>
+        <div className="account-switcher-title">
           <p className="eyebrow">Customer account</p>
           <h2 id="account-switcher-heading">
             {selectedAccount ? "Signed in" : "Guest browsing"}
           </h2>
         </div>
-        <span className="switcher-badge">Switch</span>
+        <button
+          aria-controls={menuId}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          className="switcher-button"
+          disabled={isLoading}
+          onClick={() => setIsOpen((current) => !current)}
+          type="button"
+        >
+          <span aria-hidden="true" className="switcher-button-dot" />
+          <span>Switch account</span>
+        </button>
       </div>
       <div className="account-card">
         <button
+          aria-controls={menuId}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           className="account-card-button"
@@ -247,7 +260,7 @@ function AccountSwitcher({
         </button>
 
         {isOpen ? (
-          <div className="account-menu" role="listbox">
+          <div className="account-menu" id={menuId} role="listbox">
             <button
               aria-selected={!selectedAccount}
               className="account-menu-item"
