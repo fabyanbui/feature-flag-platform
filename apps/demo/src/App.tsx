@@ -122,14 +122,9 @@ function AccountSwitcher({
                 "Choose an account to personalize the store"}
             </span>
             <small>
-              {selectedAccount ? (
-                <>
-                  Role <code>{selectedAccount.role}</code> · User{" "}
-                  <code>{selectedAccount.userId}</code>
-                </>
-              ) : (
-                "No customer account selected"
-              )}
+              {selectedAccount
+                ? "Saved cart and member preferences loaded"
+                : "No customer account selected"}
             </small>
           </span>
           <span className="account-chevron" aria-hidden="true" />
@@ -157,15 +152,15 @@ function AccountSwitcher({
                 type="button"
               >
                 <span>{account.customerLabel}</span>
-                <small>
-                  {account.accountGroup} · {account.role}
-                </small>
+                <small>{account.accountGroup}</small>
               </button>
             ))}
           </div>
         ) : null}
       </div>
-      <p className="account-hint">
+      <p
+        className={isOpen ? "account-hint account-hint-hidden" : "account-hint"}
+      >
         The storefront updates automatically for the selected account.
       </p>
     </aside>
@@ -188,35 +183,74 @@ function ProductCatalog({
       className="section-card catalog-section"
       aria-labelledby="catalog-heading"
     >
-      <div className="section-heading-row">
+      <div className="section-heading-row catalog-heading-row">
         <div>
-          <p className="eyebrow">Catalog</p>
-          <h2 id="catalog-heading">Recommended audio gear</h2>
+          <p className="eyebrow">Shop catalog</p>
+          <h2 id="catalog-heading">Popular picks for your setup</h2>
         </div>
-        <span className="soft-pill">{products.length} products</span>
+        <span className="soft-pill">{products.length} in stock</span>
       </div>
+
+      <div className="catalog-toolbar" aria-label="Catalog filters preview">
+        <label className="search-field">
+          <span>Search</span>
+          <input
+            readOnly
+            value="Wireless audio, speakers, accessories"
+            aria-label="Search products"
+          />
+        </label>
+        <div className="category-tabs" aria-label="Product categories">
+          <button className="category-tab active" type="button">
+            All
+          </button>
+          <button className="category-tab" type="button">
+            Audio
+          </button>
+          <button className="category-tab" type="button">
+            Accessories
+          </button>
+        </div>
+      </div>
+
       <div className="product-grid">
         {products.map((product) => (
           <article
             className={`product-card product-${product.accent}`}
             key={product.id}
           >
-            <span className="product-badge">{product.badge}</span>
-            <div className="product-art" aria-hidden="true" />
-            <p className="eyebrow">{product.category}</p>
-            <h3>{product.name}</h3>
-            <p>{product.description}</p>
-            <div className="product-meta">
-              <strong>{formatCurrency(product.price)}</strong>
-              <span>★ {product.rating}</span>
+            <div className="product-media">
+              <span className="product-badge">{product.badge}</span>
+              <div className="product-art" aria-hidden="true">
+                <span />
+              </div>
             </div>
-            <button
-              disabled={!selectedAccount}
-              onClick={() => onAddToCart(product.id)}
-              type="button"
-            >
-              {selectedAccount ? "Add to cart" : "Choose account to add"}
-            </button>
+            <div className="product-body">
+              <div className="product-kicker">
+                <span>{product.category}</span>
+                <span>In stock</span>
+              </div>
+              <h3>{product.name}</h3>
+              <p>{product.description}</p>
+              <div className="product-meta">
+                <strong>{formatCurrency(product.price)}</strong>
+                <span aria-label={`${product.rating} star rating`}>
+                  ★ {product.rating}
+                </span>
+              </div>
+            </div>
+            <div className="product-actions">
+              <button
+                disabled={!selectedAccount}
+                onClick={() => onAddToCart(product.id)}
+                type="button"
+              >
+                {selectedAccount ? "Add to cart" : "Sign in to add"}
+              </button>
+              <button className="ghost-button" type="button">
+                Details
+              </button>
+            </div>
           </article>
         ))}
       </div>
@@ -236,14 +270,16 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
         className="section-card signed-out-panel"
         aria-labelledby="guest-heading"
       >
-        <p className="eyebrow">Guest mode</p>
-        <h2 id="guest-heading">
-          Choose an account to load a customer storefront
-        </h2>
+        <p className="eyebrow">Guest checkout preview</p>
+        <h2 id="guest-heading">Welcome to ShopEase</h2>
         <p>
-          Browse products as a guest, or switch to a demo customer to load saved
-          cart, account benefits, and checkout preferences.
+          Browse the store freely. Choose a customer from the account menu to
+          unlock saved baskets, member offers, and checkout preferences.
         </p>
+        <div className="guest-callout">
+          <strong>No account selected</strong>
+          <span>Open the profile card in the header to switch customers.</span>
+        </div>
         <div className="benefit-grid">
           <span>
             <strong>Saved cart</strong>
@@ -285,6 +321,11 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
         </span>
       </div>
       <p>{account.scenarioSummary}</p>
+      <div className="member-strip">
+        <span>Member rewards active</span>
+        <span>Free returns</span>
+        <span>{isEnhanced ? "Priority support" : "Standard support"}</span>
+      </div>
       <div className="benefit-grid">
         <span>
           <strong>{account.customerLabel}</strong>
@@ -320,8 +361,18 @@ function CartPanel({
 }: CartPanelProps) {
   return (
     <aside className="section-card cart-panel" aria-labelledby="cart-heading">
-      <p className="eyebrow">Cart</p>
-      <h2 id="cart-heading">Order summary</h2>
+      <div className="cart-heading">
+        <div>
+          <p className="eyebrow">Cart</p>
+          <h2 id="cart-heading">Order summary</h2>
+        </div>
+        <span className="soft-pill">Secure</span>
+      </div>
+      <ol className="checkout-steps" aria-label="Checkout progress">
+        <li className="active">Cart</li>
+        <li className={isOnePageCheckout ? "active" : ""}>Payment</li>
+        <li>Done</li>
+      </ol>
       {!selectedAccount ? (
         <p className="empty-copy">
           Choose an account to load a saved cart and continue checkout.
@@ -376,13 +427,16 @@ function CartPanel({
               <dd>{formatCurrency(cart.total)}</dd>
             </div>
           </dl>
-          <button
-            className="checkout-button"
-            onClick={onCheckout}
-            type="button"
-          >
-            {isOnePageCheckout ? "Pay in one step" : "Continue to payment"}
-          </button>
+          <div className="checkout-footer">
+            <p>Taxes calculated at payment. 30-day free returns included.</p>
+            <button
+              className="checkout-button"
+              onClick={onCheckout}
+              type="button"
+            >
+              {isOnePageCheckout ? "Pay in one step" : "Continue to payment"}
+            </button>
+          </div>
         </>
       ) : (
         <p className="empty-copy">
@@ -653,12 +707,28 @@ function App() {
       <section className="app-frame" aria-labelledby="app-heading">
         <header className="hero-section">
           <div className="hero-copy">
-            <p className="eyebrow">Premium Audio Store</p>
+            <nav className="store-nav" aria-label="Store highlights">
+              <span className="brand-lockup">
+                <span className="brand-mark" aria-hidden="true">
+                  SE
+                </span>
+                Premium Audio Store
+              </span>
+              <span>Free shipping over $100</span>
+              <span>2-year warranty</span>
+            </nav>
+            <p className="eyebrow">Summer audio event</p>
             <h1 id="app-heading">ShopEase Checkout</h1>
             <p>
-              A simple ecommerce storefront with account switching, saved carts,
-              personalized dashboards, and checkout variants.
+              Shop premium audio gear with saved carts, member benefits, and a
+              checkout experience that adapts automatically to the selected
+              customer.
             </p>
+            <div className="hero-actions" aria-label="Store assurances">
+              <span>Fast delivery</span>
+              <span>Secure checkout</span>
+              <span>Easy returns</span>
+            </div>
           </div>
           <AccountSwitcher
             accounts={accounts}
