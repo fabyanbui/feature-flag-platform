@@ -1234,8 +1234,6 @@ function App() {
           </div>
         </header>
 
-        <PromoBanner isVisible={hasHolidayPromoBanner} />
-
         {message ? (
           <div className="toast-message" role="status" aria-live="polite">
             {message}
@@ -1243,6 +1241,7 @@ function App() {
         ) : null}
 
         <FeatureShowcase account={selectedAccount} results={results} />
+        <PromoBanner isVisible={hasHolidayPromoBanner} />
 
         <div className="store-layout">
           <CustomerDashboard
