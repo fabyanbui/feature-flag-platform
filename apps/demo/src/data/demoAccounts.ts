@@ -10,6 +10,7 @@ export type DemoAccountRecord = {
   scenarioSummary: string;
   expectedOutcome: string;
   expectedReason: string;
+  organizationId: string;
   userId: string;
   targetingId: string;
   role: DemoAccountRole;

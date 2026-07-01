@@ -40,6 +40,7 @@ Seeded accounts contain the targeting fields needed by the personalization SDK:
 
 - `userId`
 - `targetingId`
+- `organizationId`
 - one `role`
 
 The service maps those fields to the SDK context:
@@ -49,6 +50,9 @@ The service maps those fields to the SDK context:
   userId: account.userId,
   targetingKey: account.targetingId,
   roles: [account.role],
+  attributes: {
+    organizationId: account.organizationId,
+  },
 }
 ```
 

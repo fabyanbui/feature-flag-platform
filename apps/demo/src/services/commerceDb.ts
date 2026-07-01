@@ -26,6 +26,9 @@ function toDemoAccount(account: DemoAccountRecord): DemoAccount {
       targetingKey: account.targetingId,
       userId: account.userId,
       roles: [account.role],
+      attributes: {
+        organizationId: account.organizationId,
+      },
     },
   };
 }
@@ -36,6 +39,7 @@ function cloneAccount(account: DemoAccount): DemoAccount {
     context: {
       ...account.context,
       roles: [...(account.context.roles ?? [])],
+      attributes: { ...(account.context.attributes ?? {}) },
     },
   };
 }

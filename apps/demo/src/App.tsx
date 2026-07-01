@@ -894,8 +894,8 @@ function AccountDetails({ account }: { account: DemoAccount | null }) {
           <dd>{account.userId}</dd>
         </div>
         <div>
-          <dt>Targeting ID</dt>
-          <dd>{account.targetingId}</dd>
+          <dt>Organization ID</dt>
+          <dd>{account.organizationId}</dd>
         </div>
       </dl>
     </details>
