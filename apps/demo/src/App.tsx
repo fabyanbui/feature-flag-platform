@@ -399,26 +399,47 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
         className="section-card signed-out-panel"
         aria-labelledby="guest-heading"
       >
-        <p className="eyebrow">Guest checkout preview</p>
-        <h2 id="guest-heading">Welcome to ShopEase</h2>
-        <p>
-          Browse the store freely. Choose a customer from the account menu to
-          unlock saved baskets, member offers, and checkout preferences.
-        </p>
-        <div className="guest-callout">
-          <strong>No account selected</strong>
-          <span>Open the profile card in the header to switch customers.</span>
+        <div className="guest-panel-copy">
+          <p className="eyebrow">Guest checkout preview</p>
+          <h2 id="guest-heading">Welcome to ShopEase</h2>
+          <p>
+            Browse freely now, then switch to a customer account to preview how
+            feature flags personalize carts, offers, and checkout preferences.
+          </p>
         </div>
-        <div className="benefit-grid">
+
+        <div className="guest-callout" role="status">
+          <span className="guest-callout-icon" aria-hidden="true">
+            !
+          </span>
           <span>
+            <strong>No account selected</strong>
+            <small>
+              Use the Switch account button in the customer card to load a saved
+              basket and member profile.
+            </small>
+          </span>
+        </div>
+
+        <div className="benefit-grid guest-benefits">
+          <span>
+            <small className="benefit-icon" aria-hidden="true">
+              01
+            </small>
             <strong>Saved cart</strong>
             Account-specific basket
           </span>
           <span>
+            <small className="benefit-icon" aria-hidden="true">
+              02
+            </small>
             <strong>Personalized dashboard</strong>
             Customer-specific account view
           </span>
           <span>
+            <small className="benefit-icon" aria-hidden="true">
+              03
+            </small>
             <strong>Checkout preference</strong>
             Classic or one-page checkout
           </span>
