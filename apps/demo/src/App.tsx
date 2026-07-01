@@ -20,9 +20,11 @@ type FeatureKey =
   | "new-checkout"
   | "express-payment"
   | "shipping-progress-meter"
+  | "coupon-engine"
   | "personalized-recommendations"
   | "trending-products"
-  | "holiday-promo-banner";
+  | "holiday-promo-banner"
+  | "live-support-widget";
 type FeatureResultMap = Partial<Record<FeatureKey, SdkEvaluationResult>>;
 type FeatureGroupKey = "checkout" | "recommendations" | "standalone";
 
@@ -57,6 +59,13 @@ const demoFeatures: DemoFeature[] = [
     detailCopy: "Customers can track progress toward free shipping.",
   },
   {
+    key: "coupon-engine",
+    group: "checkout",
+    label: "Coupon engine",
+    description: "Applies eligible checkout savings before payment.",
+    detailCopy: "Eligible carts receive an automatic coupon discount.",
+  },
+  {
     key: "personalized-recommendations",
     group: "recommendations",
     label: "Personalized picks",
@@ -78,6 +87,13 @@ const demoFeatures: DemoFeature[] = [
     detailCopy: "Seasonal promotion highlights accessory bundle savings.",
   },
   {
+    key: "live-support-widget",
+    group: "standalone",
+    label: "Live support widget",
+    description: "Shows contextual help without joining a feature group.",
+    detailCopy: "Customers can reach a checkout specialist from the store.",
+  },
+  {
     key: "beta-dashboard",
     group: "standalone",
     label: "Priority dashboard",
@@ -95,7 +111,7 @@ const featureGroups: Array<{
     key: "checkout",
     label: "Checkout experience",
     summary:
-      "Three independent checkout features grouped for a group kill-switch demo.",
+      "Four independent checkout features grouped for a group kill-switch demo.",
   },
   {
     key: "recommendations",
@@ -491,6 +507,7 @@ type CartPanelProps = {
   isOnePageCheckout: boolean;
   hasExpressPayment: boolean;
   hasShippingProgress: boolean;
+  hasCouponEngine: boolean;
   selectedAccount: DemoAccount | null;
   onQuantityChange: (productId: string, quantity: number) => void;
   onCheckout: () => void;
@@ -501,6 +518,7 @@ function CartPanel({
   isOnePageCheckout,
   hasExpressPayment,
   hasShippingProgress,
+  hasCouponEngine,
   selectedAccount,
   onQuantityChange,
   onCheckout,
@@ -512,6 +530,9 @@ function CartPanel({
   const freeShippingRemaining = cart
     ? Math.max(0, freeShippingTarget - cart.subtotal)
     : freeShippingTarget;
+  const couponDiscount =
+    cart && hasCouponEngine ? Math.min(20, Math.round(cart.subtotal * 0.15)) : 0;
+  const adjustedTotal = cart ? Math.max(0, cart.total - couponDiscount) : 0;
 
   return (
     <aside className="section-card cart-panel" aria-labelledby="cart-heading">
@@ -580,6 +601,18 @@ function CartPanel({
               </div>
             </div>
           ) : null}
+          {hasCouponEngine ? (
+            <div className="coupon-engine-card" role="status">
+              <div>
+                <strong>Coupon engine active</strong>
+                <span>
+                  Demo code <code>AUDIO15</code> applied automatically before
+                  payment.
+                </span>
+              </div>
+              <small>{formatCurrency(couponDiscount)} saved</small>
+            </div>
+          ) : null}
           <dl className="summary-list">
             <div>
               <dt>Subtotal</dt>
@@ -591,9 +624,15 @@ function CartPanel({
                 {cart.shipping === 0 ? "Free" : formatCurrency(cart.shipping)}
               </dd>
             </div>
+            {couponDiscount > 0 ? (
+              <div>
+                <dt>Coupon discount</dt>
+                <dd>-{formatCurrency(couponDiscount)}</dd>
+              </div>
+            ) : null}
             <div className="summary-total">
               <dt>Total</dt>
-              <dd>{formatCurrency(cart.total)}</dd>
+              <dd>{formatCurrency(adjustedTotal)}</dd>
             </div>
           </dl>
           <div className="checkout-footer">
@@ -641,6 +680,29 @@ function PromoBanner({ isVisible }: PromoBannerProps) {
         <strong>Holiday audio bundle: save 15% on accessories</strong>
       </div>
       <span>Standalone store promotion</span>
+    </section>
+  );
+}
+
+type LiveSupportWidgetProps = {
+  isVisible: boolean;
+};
+
+function LiveSupportWidget({ isVisible }: LiveSupportWidgetProps) {
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <section className="support-widget" aria-label="Live support">
+      <div>
+        <p className="eyebrow">Live support</p>
+        <strong>Checkout specialist available</strong>
+        <span>
+          Ask about shipping, returns, or payment before placing an order.
+        </span>
+      </div>
+      <button type="button">Open chat</button>
     </section>
   );
 }
@@ -1021,6 +1083,11 @@ function App() {
     selectedAccount,
     "shipping-progress-meter",
   );
+  const hasCouponEngine = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "coupon-engine",
+  );
   const hasPersonalizedRecommendations = isFeatureEnabled(
     results,
     selectedAccount,
@@ -1035,6 +1102,11 @@ function App() {
     results,
     selectedAccount,
     "holiday-promo-banner",
+  );
+  const hasLiveSupportWidget = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "live-support-widget",
   );
 
   const handleAccountChange = (accountId: string | null) => {
@@ -1069,7 +1141,9 @@ function App() {
 
     setCart(await clearCart(selectedAccount.id));
     setMessage(
-      hasOnePageCheckout
+      hasCouponEngine
+        ? "Order placed with coupon savings applied."
+        : hasOnePageCheckout
         ? "Order placed with one-page checkout."
         : "Order is ready for the payment step.",
     );
@@ -1135,6 +1209,7 @@ function App() {
         </header>
 
         <PromoBanner isVisible={hasHolidayPromoBanner} />
+        <LiveSupportWidget isVisible={hasLiveSupportWidget} />
 
         {message ? <div className="toast-message">{message}</div> : null}
 
@@ -1165,6 +1240,7 @@ function App() {
               isOnePageCheckout={hasOnePageCheckout}
               hasExpressPayment={hasExpressPayment}
               hasShippingProgress={hasShippingProgress}
+              hasCouponEngine={hasCouponEngine}
               selectedAccount={selectedAccount}
               onQuantityChange={handleQuantityChange}
               onCheckout={handleCheckout}

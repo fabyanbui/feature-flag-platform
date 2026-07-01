@@ -187,9 +187,12 @@ On a clean database it creates:
 
 - project `demo-project`,
 - environments `production`, `staging`, and `development`,
-- group `customer-experience`, with its kill switch inactive when created,
-- flags `beta-dashboard` and `new-checkout`, assigned to
-  `customer-experience` when created,
+- groups `customer-experience`, `checkout-experience`, and `recommendations`,
+  with kill switches inactive when created,
+- core flags `beta-dashboard` and `new-checkout`,
+- demo feature flags `express-payment`, `shipping-progress-meter`,
+  `coupon-engine`, `personalized-recommendations`, `trending-products`,
+  `holiday-promo-banner`, and `live-support-widget`,
 - sample users for beta, regular, and admin scenarios,
 - audit entries for seeded setup.
 
@@ -435,9 +438,9 @@ Use the seeded data for a local presentation:
 
 1. Start PostgreSQL, backend, admin app, and demo app.
 2. Open the admin dashboard and inspect `demo-project`.
-3. Show flags `beta-dashboard` and `new-checkout`.
-4. Open **Groups**, activate the `customer-experience` production kill switch,
-   and confirm both assigned flags evaluate `Off` with
+3. Show flags `new-checkout`, `coupon-engine`, and `live-support-widget`.
+4. Open **Groups**, activate the `checkout-experience` production kill switch,
+   and confirm assigned checkout flags evaluate `Off` with
    `reason=GROUP_KILL_SWITCH`.
 5. Deactivate the group switch to restore normal evaluation.
 6. Open the demo app and evaluate:

@@ -1348,23 +1348,28 @@ dd {
   }
 }
 
-.promo-banner {
+.promo-banner,
+.support-widget {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   align-items: center;
   margin-bottom: 1rem;
   padding: 1.1rem 1.25rem;
-  border: 1px solid rgba(250, 204, 21, 0.34);
   border-radius: 1.25rem;
-  background:
-    linear-gradient(135deg, rgba(113, 63, 18, 0.68), rgba(6, 78, 59, 0.5)),
-    rgba(15, 23, 42, 0.86);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
   text-align: center;
 }
 
-.promo-banner > div {
+.promo-banner {
+  border: 1px solid rgba(250, 204, 21, 0.34);
+  background:
+    linear-gradient(135deg, rgba(113, 63, 18, 0.68), rgba(6, 78, 59, 0.5)),
+    rgba(15, 23, 42, 0.86);
+}
+
+.promo-banner > div,
+.support-widget > div {
   display: grid;
   gap: 0.35rem;
 }
@@ -1387,6 +1392,38 @@ dd {
   background: rgba(15, 23, 42, 0.3);
   color: #fef3c7;
   font-weight: 900;
+}
+
+.support-widget {
+  border: 1px solid rgba(14, 165, 233, 0.34);
+  background:
+    linear-gradient(135deg, rgba(8, 47, 73, 0.72), rgba(6, 78, 59, 0.46)),
+    rgba(15, 23, 42, 0.86);
+}
+
+.support-widget .eyebrow {
+  margin-bottom: 0;
+  color: #bae6fd;
+}
+
+.support-widget strong {
+  color: #f0f9ff;
+  font-size: 1.1rem;
+}
+
+.support-widget span {
+  color: #d1fae5;
+}
+
+.support-widget button {
+  justify-self: end;
+  min-width: 8.5rem;
+  background: #e0f2fe;
+  color: #0f172a;
+}
+
+.support-widget button:hover:not(:disabled) {
+  background: #bae6fd;
 }
 
 .feature-showcase {
@@ -1618,6 +1655,46 @@ dd {
   background: linear-gradient(90deg, #22c55e, #86efac);
 }
 
+.coupon-engine-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(14, 165, 233, 0.24);
+  border-radius: 0.9rem;
+  background: rgba(8, 47, 73, 0.32);
+}
+
+.coupon-engine-card > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.coupon-engine-card strong {
+  color: #f8fafc;
+}
+
+.coupon-engine-card span {
+  color: #bbf7d0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.coupon-engine-card small {
+  justify-self: end;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(14, 165, 233, 0.26);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.56);
+  color: #bae6fd;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .express-pay-button {
   width: 100%;
   margin-top: 0.85rem;
@@ -1651,9 +1728,17 @@ dd {
 
 @media (max-width: 56rem) {
   .promo-banner,
+  .support-widget,
+  .coupon-engine-card,
   .shipping-meter-copy {
+    grid-template-columns: 1fr;
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .support-widget button,
+  .coupon-engine-card small {
+    justify-self: stretch;
   }
 
   .recommendation-grid {

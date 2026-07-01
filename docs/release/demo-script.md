@@ -82,13 +82,17 @@ Open the admin dashboard.
 Show:
 
 - project `demo-project`,
-- group `customer-experience`,
+- groups `customer-experience`, `checkout-experience`, and `recommendations`,
 - flag `beta-dashboard`,
-- flag `new-checkout`.
+- flag `new-checkout`,
+- flag `coupon-engine`,
+- flag `live-support-widget`.
 
 Explain:
 
-- both demo flags belong to one operational rollback group,
+- checkout demo flags belong to the `checkout-experience` rollback group,
+- `coupon-engine` controls the demo app coupon discount in the checkout panel,
+- `live-support-widget` is a standalone flag with no group assignment,
 - `beta-dashboard` remains available in Admin as an additional seeded flag.
 - the streamlined demo app focuses on `new-checkout` users for role targeting
   and percentage rollout.
@@ -97,10 +101,11 @@ Explain:
 
 Return to the admin dashboard and open **Groups**.
 
-For group `customer-experience` in `production`, show:
+For group `checkout-experience` in `production`, show:
 
-- two assigned flags,
-- lifecycle status remains `Enabled` for both flags,
+- checkout flags such as `new-checkout`, `express-payment`,
+  `shipping-progress-meter`, and `coupon-engine`,
+- lifecycle status remains `Enabled` for assigned flags,
 - group kill switch starts `Inactive`.
 
 Activate the group kill switch and accept the confirmation. In the demo app,

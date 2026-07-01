@@ -552,6 +552,27 @@ async function main() {
     productionServingMode: 'GLOBAL_ON',
   });
 
+  const couponEngine = await upsertDemoFeatureFlag({
+    key: 'coupon-engine',
+    name: 'Coupon Engine',
+    description: 'Checkout group demo flag for automatic coupon savings.',
+    groupId: checkoutExperienceGroup.id,
+    groupKey: checkoutExperienceGroup.key,
+    productionServingMode: 'TARGETED',
+    rules: [
+      {
+        type: 'ROLE_TARGETING',
+        priority: 10,
+        parameters: { roles: ['beta-tester', 'admin'] },
+      },
+      {
+        type: 'PERCENTAGE_ROLLOUT',
+        priority: 20,
+        parameters: { percentage: 50 },
+      },
+    ],
+  });
+
   const personalizedRecommendations = await upsertDemoFeatureFlag({
     key: 'personalized-recommendations',
     name: 'Personalized Recommendations',
@@ -600,6 +621,27 @@ async function main() {
         type: 'PERCENTAGE_ROLLOUT',
         priority: 20,
         parameters: { percentage: 75 },
+      },
+    ],
+  });
+
+  const liveSupportWidget = await upsertDemoFeatureFlag({
+    key: 'live-support-widget',
+    name: 'Live Support Widget',
+    description: 'Standalone demo flag for contextual storefront help.',
+    groupId: null,
+    groupKey: null,
+    productionServingMode: 'TARGETED',
+    rules: [
+      {
+        type: 'ROLE_TARGETING',
+        priority: 10,
+        parameters: { roles: ['beta-tester', 'admin'] },
+      },
+      {
+        type: 'PERCENTAGE_ROLLOUT',
+        priority: 20,
+        parameters: { percentage: 25 },
       },
     ],
   });

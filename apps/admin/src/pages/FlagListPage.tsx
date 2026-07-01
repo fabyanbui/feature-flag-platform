@@ -26,6 +26,36 @@ type PendingAction = {
     flag: FeatureFlag;
 };
 
+type DemoAdminFeature = {
+    key: 'coupon-engine' | 'live-support-widget';
+    name: string;
+    surface: string;
+    adminScenario: string;
+    rollout: string;
+    groupLabel: string;
+};
+
+const demoAdminFeatures: DemoAdminFeature[] = [
+    {
+        key: 'coupon-engine',
+        name: 'Coupon Engine',
+        surface: 'Demo app cart checkout',
+        adminScenario:
+            'Controls the automatic AUDIO15 coupon card and checkout discount.',
+        rollout: 'Targeted to beta/admin roles plus deterministic percentage rollout.',
+        groupLabel: 'Checkout Experience group',
+    },
+    {
+        key: 'live-support-widget',
+        name: 'Live Support Widget',
+        surface: 'Demo app storefront banner',
+        adminScenario:
+            'Controls the standalone live support prompt shown above the store.',
+        rollout: 'Targeted to beta/admin roles plus a small deterministic rollout.',
+        groupLabel: 'Standalone flag (no group)',
+    },
+];
+
 export function FlagListPage({
     projectKey,
     onBackToProjects,
@@ -38,6 +68,7 @@ export function FlagListPage({
     const canManageRules = can('RULE_MANAGE');
     const canManageLifecycle = can('FLAG_LIFECYCLE_MANAGE');
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
+    const [demoFeatureFlags, setDemoFeatureFlags] = useState<FeatureFlag[]>([]);
     const [search, setSearch] = useState('');
     const [submittedSearch, setSubmittedSearch] = useState('');
     const [status, setStatus] = useState<FlagConfigStatus | ''>('');
@@ -53,16 +84,24 @@ export function FlagListPage({
 
     const loadFlags = useCallback(async () => {
         try {
-            const response = await adminApi.listFlags(projectKey, {
-                search: submittedSearch,
-                status: status || undefined,
-                lifecycleStatus: lifecycleStatus || undefined,
-                sort: 'updatedAt',
-                order: 'desc',
-                limit: 50,
-            });
+            const [response, demoFeatureResponse] = await Promise.all([
+                adminApi.listFlags(projectKey, {
+                    search: submittedSearch,
+                    status: status || undefined,
+                    lifecycleStatus: lifecycleStatus || undefined,
+                    sort: 'updatedAt',
+                    order: 'desc',
+                    limit: 50,
+                }),
+                adminApi.listFlags(projectKey, {
+                    sort: 'key',
+                    order: 'asc',
+                    limit: 100,
+                }),
+            ]);
 
             setFlags(response.items);
+            setDemoFeatureFlags(demoFeatureResponse.items);
         } catch (requestError) {
             setError(
                 requestError instanceof Error
@@ -151,6 +190,14 @@ export function FlagListPage({
                     </button>
                 </div>
             </header>
+
+            <DemoFeatureAdminPanel
+                flags={demoFeatureFlags}
+                canManageFlags={canManageFlags}
+                canManageRules={canManageRules}
+                onEditFlag={onEditFlag}
+                onEditRules={onEditRules}
+            />
 
             <section className="panel">
                 {!canManageFlags || !canManageLifecycle ? (
@@ -438,6 +485,107 @@ export function FlagListPage({
                 onCancel={() => setPendingAction(null)}
                 onConfirm={confirmPendingAction}
             />
+        </section>
+    );
+}
+
+type DemoFeatureAdminPanelProps = {
+    flags: FeatureFlag[];
+    canManageFlags: boolean;
+    canManageRules: boolean;
+    onEditFlag: (flagKey: string) => void;
+    onEditRules: (flagKey: string) => void;
+};
+
+function DemoFeatureAdminPanel({
+    flags,
+    canManageFlags,
+    canManageRules,
+    onEditFlag,
+    onEditRules,
+}: DemoFeatureAdminPanelProps) {
+    const flagsByKey = new Map(flags.map((flag) => [flag.key, flag]));
+
+    return (
+        <section className="panel demo-feature-admin-panel">
+            <div className="section-header">
+                <div>
+                    <p className="eyebrow">Demo features</p>
+                    <h2>Checkout and standalone showcase</h2>
+                    <p>
+                        These seeded flags connect the admin control plane to
+                        visible demo-app features for live presentations.
+                    </p>
+                </div>
+            </div>
+
+            <div className="demo-feature-admin-grid">
+                {demoAdminFeatures.map((feature) => {
+                    const flag = flagsByKey.get(feature.key);
+
+                    return (
+                        <article
+                            className="demo-feature-admin-card"
+                            key={feature.key}
+                        >
+                            <div className="demo-feature-admin-heading">
+                                <div>
+                                    <h3>{feature.name}</h3>
+                                    <code>{feature.key}</code>
+                                </div>
+                                <span className="soft-tag">
+                                    {feature.surface}
+                                </span>
+                            </div>
+
+                            <p>{feature.adminScenario}</p>
+
+                            <dl className="meta-list">
+                                <div>
+                                    <dt>Grouping</dt>
+                                    <dd>{feature.groupLabel}</dd>
+                                </div>
+                                <div>
+                                    <dt>Rollout</dt>
+                                    <dd>{feature.rollout}</dd>
+                                </div>
+                            </dl>
+
+                            {flag ? (
+                                <>
+                                    <div className="badge-row">
+                                        <StatusBadge flag={flag} />
+                                        <RuntimeStateBadge flag={flag} />
+                                    </div>
+                                    <div className="row-actions">
+                                        <button
+                                            type="button"
+                                            className="button button-secondary"
+                                            onClick={() => onEditFlag(flag.key)}
+                                            disabled={!canManageFlags}
+                                        >
+                                            Edit flag
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="button button-secondary"
+                                            onClick={() => onEditRules(flag.key)}
+                                            disabled={!canManageRules}
+                                        >
+                                            Edit rules
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="permission-notice">
+                                    Seed this project to create{' '}
+                                    <code>{feature.key}</code> before editing.
+                                </p>
+                            )}
+                        </article>
+                    );
+                })}
+            </div>
         </section>
     );
 }
