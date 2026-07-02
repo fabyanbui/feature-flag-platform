@@ -141,6 +141,7 @@ Check backend CORS values in root `.env`:
 ```env
 ADMIN_ORIGIN=http://localhost:5173
 DEMO_ORIGIN=http://localhost:5174
+DEMO_STAGING_ORIGIN=http://localhost:5175
 ```
 
 Restart the backend after changing CORS settings:
@@ -153,13 +154,18 @@ For Compose, rebuild frontend images after changing any `VITE_*` value because
 Vite embeds these values during the image build:
 
 ```bash
-docker compose build admin demo
-docker compose up -d admin demo
+docker compose build admin demo demo-staging
+docker compose up -d admin demo demo-staging
 ```
 
 Do not set `VITE_API_BASE_URL` to `http://backend:3000/v1`. That hostname is
 only resolvable between containers, while frontend API requests originate in
 the user's browser.
+
+The staging demo app is a separate frontend build. It should call the same
+browser-facing backend URL as production, but its request payload should contain
+`"environmentKey": "staging"`. Confirm this in browser DevTools Network tab by
+inspecting a `POST /v1/evaluate` request from `http://localhost:5175`.
 
 ## Admin control-plane request is unauthorized
 

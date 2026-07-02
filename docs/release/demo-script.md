@@ -31,6 +31,7 @@ demo-seed  exited 0
 backend    healthy
 admin      healthy
 demo       healthy
+demo-staging healthy
 ```
 
 Open:
@@ -38,7 +39,8 @@ Open:
 ```text
 Backend Swagger: http://localhost:3000/docs
 Admin app:       http://localhost:5173
-Demo app:        http://localhost:5174
+Demo app:        http://localhost:5174  (production)
+Staging demo:    http://localhost:5175  (staging)
 ```
 
 The npm-local workflow remains available if Docker Compose is not used:
@@ -52,6 +54,7 @@ npm run db:seed --workspace=@ffp/backend
 npm run dev:backend
 npm run dev:admin
 npm run dev:demo
+npm run dev:demo:staging
 ```
 
 ## Main Story
@@ -67,10 +70,12 @@ The demo has two planes:
 Recommended live sequence:
 
 1. Show SDK-backed role targeting and percentage rollout in the demo app.
-2. Activate and deactivate the group kill switch to prove fast rollback.
-3. Show Viewer RBAC disabled controls and backend-protected mutations.
-4. Show flag history, audit logs, and statistics as supporting evidence.
-5. Mention optional Redis only as a completed provider/fallback enhancement,
+2. Open the production and staging demo apps side-by-side to prove environment
+   scoped evaluation with the same flags and user context.
+3. Activate and deactivate the group kill switch to prove fast rollback.
+4. Show Viewer RBAC disabled controls and backend-protected mutations.
+5. Show flag history, audit logs, and statistics as supporting evidence.
+6. Mention optional Redis only as a completed provider/fallback enhancement,
    not as a dependency for the stable demo.
 
 ## Demo Flow

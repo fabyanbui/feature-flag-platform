@@ -7,6 +7,7 @@ x-backend-environment: &backend-environment
   API_PORT: 3000
   ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:5173}
   DEMO_ORIGIN: ${DEMO_ORIGIN:-http://localhost:5174}
+  DEMO_STAGING_ORIGIN: ${DEMO_STAGING_ORIGIN:-http://localhost:5175}
   EVALUATION_CACHE_PROVIDER: ${EVALUATION_CACHE_PROVIDER:-memory}
   EVALUATION_CACHE_TTL_MS: ${EVALUATION_CACHE_TTL_MS:-30000}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -162,6 +163,26 @@ services:
         VITE_ENVIRONMENT_KEY: ${VITE_ENVIRONMENT_KEY:-production}
     ports:
       - "${DEMO_HOST_PORT:-5174}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  demo-staging:
+    build:
+      context: .
+      dockerfile: apps/demo/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_ENVIRONMENT_KEY: staging
+    ports:
+      - "${DEMO_STAGING_HOST_PORT:-5175}:80"
     depends_on:
       backend:
         condition: service_healthy
