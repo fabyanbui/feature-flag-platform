@@ -223,7 +223,7 @@ export function AuditLogPage({
                                     actor: event.target.value,
                                 }))
                             }
-                            placeholder="demo-admin, demo-developer, or system"
+                            placeholder="demo-admin or demo-developer"
                         />
                     </label>
 

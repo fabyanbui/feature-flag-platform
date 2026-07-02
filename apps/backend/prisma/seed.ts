@@ -14,6 +14,8 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+const SEED_AUDIT_ACTOR = 'demo-admin';
+
 async function createAuditIfMissing(
   id: string,
   data: Omit<Prisma.AuditLogEntryUncheckedCreateInput, 'id'>,
@@ -505,7 +507,7 @@ async function main() {
       targetId: flag.id,
       targetKey: flag.key,
       action: 'FEATURE_FLAG_CREATED',
-      actor: 'system',
+      actor: SEED_AUDIT_ACTOR,
       before: Prisma.DbNull,
       after: {
         key: flag.key,
@@ -529,7 +531,7 @@ async function main() {
       targetId: productionConfig.id,
       targetKey: flag.key,
       action: 'FLAG_CONFIG_UPDATED',
-      actor: 'system',
+      actor: SEED_AUDIT_ACTOR,
       before: Prisma.DbNull,
       after: {
         flagKey: flag.key,
@@ -754,7 +756,7 @@ async function main() {
     targetId: project.id,
     targetKey: project.key,
     action: 'PROJECT_CREATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       key: project.key,
@@ -775,7 +777,7 @@ async function main() {
     targetId: production.id,
     targetKey: production.key,
     action: 'ENVIRONMENT_CREATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       key: production.key,
@@ -797,7 +799,7 @@ async function main() {
     targetId: customerExperienceGroup.id,
     targetKey: customerExperienceGroup.key,
     action: 'FLAG_GROUP_CREATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       id: customerExperienceGroup.id,
@@ -831,7 +833,7 @@ async function main() {
       targetId: groupAudit.group.id,
       targetKey: groupAudit.group.key,
       action: 'FLAG_GROUP_CREATED',
-      actor: 'system',
+      actor: SEED_AUDIT_ACTOR,
       before: Prisma.DbNull,
       after: {
         id: groupAudit.group.id,
@@ -855,7 +857,7 @@ async function main() {
     targetId: betaDashboard.id,
     targetKey: betaDashboard.key,
     action: 'FEATURE_FLAG_CREATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       key: betaDashboard.key,
@@ -878,7 +880,7 @@ async function main() {
       targetId: betaDashboard.id,
       targetKey: betaDashboard.key,
       action: 'FEATURE_FLAG_GROUP_UNASSIGNED',
-      actor: 'system',
+      actor: SEED_AUDIT_ACTOR,
       before: {
         flagKey: betaDashboard.key,
         groupKey: customerExperienceGroup.key,
@@ -902,7 +904,7 @@ async function main() {
     targetId: newCheckout.id,
     targetKey: newCheckout.key,
     action: 'FEATURE_FLAG_CREATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       key: newCheckout.key,
@@ -924,7 +926,7 @@ async function main() {
     targetId: newCheckout.id,
     targetKey: newCheckout.key,
     action: 'FEATURE_FLAG_GROUP_ASSIGNED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: {
       flagKey: newCheckout.key,
       groupKey: null,
@@ -948,7 +950,7 @@ async function main() {
     targetId: newCheckoutProductionConfig.id,
     targetKey: newCheckout.key,
     action: 'FLAG_CONFIG_UPDATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       flagKey: newCheckout.key,
@@ -972,7 +974,7 @@ async function main() {
     targetId: newCheckoutProductionConfig.id,
     targetKey: newCheckout.key,
     action: 'FLAG_RULES_REPLACED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       flagKey: newCheckout.key,
@@ -1008,7 +1010,7 @@ async function main() {
     targetId: project.id,
     targetKey: 'demo-sample-users',
     action: 'SAMPLE_USER_CREATED',
-    actor: 'system',
+    actor: SEED_AUDIT_ACTOR,
     before: Prisma.DbNull,
     after: {
       sampleUsers: ['demo-user-beta', 'demo-user-regular', 'demo-user-admin'],

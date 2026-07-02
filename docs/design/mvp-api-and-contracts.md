@@ -68,8 +68,8 @@ The backend maps the token to a fixed actor and one of `ADMIN`, `DEVELOPER`, or
 `VIEWER`, then applies a centralized permission matrix. Missing or invalid
 credentials return `UNAUTHORIZED`; insufficient permissions return
 `FORBIDDEN`. Client-provided `X-Actor` or `X-Actor-Role` values are not trusted
-for authorization or audit attribution. Seed scripts may continue to use the
-internal `system` actor.
+for authorization or audit attribution. Seed scripts use the presentation admin
+actor `demo-admin` so seeded audit entries match the demo identity model.
 
 This is a local, presentation-grade identity model rather than OAuth or a
 production identity provider. Health and `POST /v1/evaluate` remain public.
