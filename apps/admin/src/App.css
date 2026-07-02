@@ -243,6 +243,17 @@ h3 {
   gap: 6px;
 }
 
+.rules-section-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, max-content);
+  align-items: start;
+}
+
+.rules-section-actions {
+  justify-self: end;
+  width: min(100%, 16rem);
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -831,6 +842,15 @@ dd {
   .rule-card-footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .rules-section-header {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-section-actions {
+    justify-self: stretch;
+    width: 100%;
   }
 
   .group-card-heading {

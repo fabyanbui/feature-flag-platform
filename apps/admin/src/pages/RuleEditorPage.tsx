@@ -301,7 +301,7 @@ export function RuleEditorPage({
                         but evaluation testing remains available.
                     </p>
                 ) : null}
-                <div className="section-header">
+                <div className="section-header rules-section-header">
                     <div>
                         <h2>Rules</h2>
                         <p>
@@ -311,7 +311,7 @@ export function RuleEditorPage({
                         </p>
                     </div>
 
-                    <div className="header-actions">
+                    <div className="header-actions rules-section-actions">
                         <button
                             type="button"
                             className="button button-secondary"
