@@ -355,12 +355,6 @@ export function AuditLogPage({
                                         <p>
                                             <span className="audit-actor-pill">{entry.actor}</span>{' '}
                                             changed {formatStatusForDisplay(entry.targetType)}
-                                            {entry.targetKey ? (
-                                                <>
-                                                    {' '}
-                                                    <code>{entry.targetKey}</code>
-                                                </>
-                                            ) : null}
                                         </p>
                                     </div>
 
@@ -387,15 +381,13 @@ export function AuditLogPage({
                                         <dd>{entry.environmentKey ?? 'None'}</dd>
                                     </div>
                                     <div>
-                                        <dt>Request ID</dt>
+                                        <dt>Target key</dt>
                                         <dd>
-                                            <code>{entry.requestId}</code>
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt>Target ID</dt>
-                                        <dd>
-                                            <code>{entry.targetId}</code>
+                                            {entry.targetKey ? (
+                                                <code>{entry.targetKey}</code>
+                                            ) : (
+                                                'None'
+                                            )}
                                         </dd>
                                     </div>
                                 </dl>

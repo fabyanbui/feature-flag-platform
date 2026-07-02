@@ -87,39 +87,21 @@ describe('ProjectsService', () => {
   });
 
   describe('list', () => {
-    it('builds search filter across key and name', async () => {
+    it('lists projects without search filtering', async () => {
       const project = createProject();
 
       projectsRepository.findMany.mockResolvedValue([project]);
       projectsRepository.count.mockResolvedValue(1);
 
       const result = await service.list({
-        search: 'demo',
         limit: 20,
         offset: 0,
         sort: 'name',
         order: 'asc',
       });
 
-      const expectedWhere = {
-        OR: [
-          {
-            key: {
-              contains: 'demo',
-              mode: 'insensitive',
-            },
-          },
-          {
-            name: {
-              contains: 'demo',
-              mode: 'insensitive',
-            },
-          },
-        ],
-      };
-
       expect(projectsRepository.findMany).toHaveBeenCalledWith(
-        expectedWhere,
+        {},
         {
           name: 'asc',
         },
@@ -127,7 +109,7 @@ describe('ProjectsService', () => {
         0,
       );
 
-      expect(projectsRepository.count).toHaveBeenCalledWith(expectedWhere);
+      expect(projectsRepository.count).toHaveBeenCalledWith({});
 
       expect(result).toEqual({
         items: [

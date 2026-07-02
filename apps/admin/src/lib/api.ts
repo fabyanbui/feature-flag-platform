@@ -121,7 +121,6 @@ function flagPath(projectKey: string, flagKey: string): string {
 }
 
 export type ListProjectsQuery = {
-    search?: string;
     limit?: number;
     offset?: number;
     sort?: string;
@@ -136,7 +135,7 @@ export type CreateProjectInput = {
 
 export type UpdateProjectInput = {
     name?: string;
-    description?: string;
+    description?: string | null;
 };
 
 export type ListFlagsQuery = {

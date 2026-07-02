@@ -31,24 +31,7 @@ export class ProjectsService {
   ) {}
 
   async list(query: ProjectQueryDto) {
-    const where: Prisma.ProjectWhereInput = query.search
-      ? {
-          OR: [
-            {
-              key: {
-                contains: query.search,
-                mode: 'insensitive',
-              },
-            },
-            {
-              name: {
-                contains: query.search,
-                mode: 'insensitive',
-              },
-            },
-          ],
-        }
-      : {};
+    const where: Prisma.ProjectWhereInput = {};
 
     const orderBy = this.buildOrderBy(query);
 

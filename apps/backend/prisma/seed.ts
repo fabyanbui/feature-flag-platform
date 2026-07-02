@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from 'dotenv';
+import { createHash } from 'node:crypto';
 
 config({ path: '../../.env' });
 config({ path: '.env', override: true });
@@ -16,22 +17,46 @@ const prisma = new PrismaClient({ adapter });
 
 const SEED_AUDIT_ACTOR = 'demo-admin';
 
+function seedRequestId(auditId: string): string {
+  const bytes = createHash('sha256')
+    .update(`feature-flag-platform:${auditId}`)
+    .digest()
+    .subarray(0, 16);
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = bytes.toString('hex');
+
+  return [
+    `req_${hex.slice(0, 8)}`,
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-');
+}
+
 async function createAuditIfMissing(
   id: string,
-  data: Omit<Prisma.AuditLogEntryUncheckedCreateInput, 'id'>,
+  data: Omit<Prisma.AuditLogEntryUncheckedCreateInput, 'id' | 'requestId'>,
 ) {
+  const requestId = seedRequestId(id);
   const existing = await prisma.auditLogEntry.findUnique({
     where: { id },
   });
 
-  if (!existing) {
-    await prisma.auditLogEntry.create({
-      data: {
-        id,
-        ...data,
-      },
-    });
+  if (existing) {
+    return;
   }
+
+  await prisma.auditLogEntry.create({
+    data: {
+      id,
+      ...data,
+      requestId,
+    },
+  });
 }
 
 async function main() {
@@ -519,7 +544,6 @@ async function main() {
         source: 'seed',
         demoFeatureMatrix: true,
       },
-      requestId: 'seed_demo_feature_matrix',
     });
 
     await createAuditIfMissing(`audit_seed_${auditKey}_production_configured`, {
@@ -550,7 +574,6 @@ async function main() {
         source: 'seed',
         demoFeatureMatrix: true,
       },
-      requestId: 'seed_demo_feature_matrix',
     });
 
     return flag;
@@ -765,7 +788,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   await createAuditIfMissing('audit_seed_production_environment_created', {
@@ -787,7 +809,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   await createAuditIfMissing('audit_seed_customer_experience_group_created', {
@@ -811,7 +832,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_phase12',
   });
 
   for (const groupAudit of [
@@ -846,7 +866,6 @@ async function main() {
         source: 'seed',
         demoFeatureMatrix: true,
       },
-      requestId: 'seed_demo_feature_matrix',
     });
   }
 
@@ -867,7 +886,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   if (betaDashboardGroupCorrection.count > 0) {
@@ -893,7 +911,6 @@ async function main() {
         source: 'seed',
         correction: 'beta-dashboard-standalone',
       },
-      requestId: 'seed_beta_dashboard_standalone',
     });
   }
 
@@ -914,7 +931,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   await createAuditIfMissing('audit_seed_new_checkout_group_assigned', {
@@ -938,7 +954,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_phase12',
   });
 
   await createAuditIfMissing('audit_seed_new_checkout_production_configured', {
@@ -962,7 +977,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   await createAuditIfMissing('audit_seed_new_checkout_rules_replaced', {
@@ -1000,7 +1014,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   await createAuditIfMissing('audit_seed_sample_users_created', {
@@ -1018,7 +1031,6 @@ async function main() {
     metadata: {
       source: 'seed',
     },
-    requestId: 'seed_init',
   });
 
   console.log('Seed data is present.');

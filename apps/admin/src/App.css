@@ -959,6 +959,10 @@ dd {
   background: #0f172a;
 }
 
+.dialog-form {
+  align-items: stretch;
+}
+
 .toast {
   position: fixed;
   right: 1rem;

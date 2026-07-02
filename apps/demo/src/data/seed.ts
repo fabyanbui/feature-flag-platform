@@ -5,26 +5,96 @@ import type {
   Product,
 } from './demoAccounts';
 
-const checkoutRolloutAccountSeed: readonly [
+type OrganizationAccountPlan = {
+  organizationId: string;
+  organizationName: string;
+  shopAdmins: number;
+  betaCustomers: number;
+  regularCustomers: number;
+};
+
+type CheckoutRolloutAccountSeedRow = [
   accountNumber: string,
   targetingId: string,
   organizationId: string,
   organizationName: string,
   role: DemoAccountRole,
-][] = [
-  ['01', 'demo-rollout-01', 'demo-org-rollout-01', 'Northstar Audio', 'shop-admin'],
-  ['02', 'demo-rollout-03', 'demo-org-rollout-02', 'Beta Retail Lab', 'beta-customer'],
-  ['03', 'demo-rollout-06', 'demo-org-rollout-03', 'Harbor Electronics', 'regular-customer'],
-  ['04', 'demo-rollout-08', 'demo-org-rollout-04', 'Summit Sound Co.', 'regular-customer'],
-  ['05', 'demo-rollout-11', 'demo-org-rollout-05', 'Metro Audio Supply', 'regular-customer'],
-  ['06', 'demo-rollout-13', 'demo-org-rollout-06', 'Cedar Tech Market', 'regular-customer'],
-  ['07', 'demo-rollout-17', 'demo-org-rollout-07', 'Bluewave Retail', 'regular-customer'],
-  ['08', 'demo-rollout-18', 'demo-org-rollout-08', 'Pine Street Audio', 'regular-customer'],
-  ['09', 'demo-rollout-20', 'demo-org-rollout-09', 'Urban Gear House', 'regular-customer'],
-  ['10', 'demo-rollout-24', 'demo-org-rollout-10', 'Lakeside Electronics', 'regular-customer'],
-  ['11', 'demo-rollout-32', 'demo-org-rollout-11', 'Oak & Audio', 'regular-customer'],
-  ['12', 'demo-rollout-34', 'demo-org-rollout-12', 'Riverfront Devices', 'regular-customer'],
 ];
+
+const organizationAccountPlans: readonly OrganizationAccountPlan[] = [
+  {
+    organizationId: 'org-alpha',
+    organizationName: 'Alpha Audio Collective',
+    shopAdmins: 1,
+    betaCustomers: 8,
+    regularCustomers: 21,
+  },
+  {
+    organizationId: 'org-beta',
+    organizationName: 'Beta Retail Lab',
+    shopAdmins: 1,
+    betaCustomers: 5,
+    regularCustomers: 19,
+  },
+  {
+    organizationId: 'org-gamma',
+    organizationName: 'Gamma Gadget Market',
+    shopAdmins: 1,
+    betaCustomers: 4,
+    regularCustomers: 15,
+  },
+  {
+    organizationId: 'org-delta',
+    organizationName: 'Delta Digital Supply',
+    shopAdmins: 1,
+    betaCustomers: 2,
+    regularCustomers: 12,
+  },
+  {
+    organizationId: 'org-epsilon',
+    organizationName: 'Epsilon Electronics',
+    shopAdmins: 1,
+    betaCustomers: 1,
+    regularCustomers: 8,
+  },
+];
+
+function createCheckoutRolloutAccountSeed(): CheckoutRolloutAccountSeedRow[] {
+  let nextAccountNumber = 1;
+
+  return organizationAccountPlans.flatMap((organization) => {
+    const roles: DemoAccountRole[] = [
+      ...Array.from(
+        { length: organization.shopAdmins },
+        () => 'shop-admin' as const,
+      ),
+      ...Array.from(
+        { length: organization.betaCustomers },
+        () => 'beta-customer' as const,
+      ),
+      ...Array.from(
+        { length: organization.regularCustomers },
+        () => 'regular-customer' as const,
+      ),
+    ];
+
+    return roles.map((role): CheckoutRolloutAccountSeedRow => {
+      const accountNumber = String(nextAccountNumber).padStart(3, '0');
+      nextAccountNumber += 1;
+
+      return [
+        accountNumber,
+        `demo-rollout-${accountNumber}`,
+        organization.organizationId,
+        organization.organizationName,
+        role,
+      ];
+    });
+  });
+}
+
+const checkoutRolloutAccountSeed: readonly CheckoutRolloutAccountSeedRow[] =
+  createCheckoutRolloutAccountSeed();
 
 const checkoutRolloutAccounts: DemoAccountRecord[] = checkoutRolloutAccountSeed.map(
   ([accountNumber, targetingId, organizationId, organizationName, role]) => ({
@@ -98,5 +168,5 @@ export const productSeed: readonly Product[] = [
 ];
 
 export const cartSeed: Record<string, CartLine[]> = {
-  'rollout-account-06': [{ productId: 'audio-case', quantity: 2 }],
+  'rollout-account-006': [{ productId: 'audio-case', quantity: 2 }],
 };
