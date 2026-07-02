@@ -216,6 +216,7 @@ function getFeatureEvaluationContext(
     attributes: {
       ...account.context.attributes,
       organizationId: account.organizationId,
+      organizationName: account.organizationName,
     },
   };
 }
@@ -288,7 +289,7 @@ function AccountSwitcher({
             </strong>
             <span>
               {selectedAccount
-                ? `Role: ${selectedAccount.role}`
+                ? `${selectedAccount.organizationName} · Role: ${selectedAccount.role}`
                 : "Choose a user account to personalize the store"}
             </span>
             <small>
@@ -322,7 +323,9 @@ function AccountSwitcher({
                 type="button"
               >
                 <span>{account.userLabel}</span>
-                <small>Role: {account.role}</small>
+                <small>
+                  {account.organizationName} · Role: {account.role}
+                </small>
               </button>
             ))}
           </div>
@@ -520,7 +523,7 @@ function UserDashboard({ account, isEnhanced }: UserDashboardProps) {
       <div className="benefit-grid">
         <span>
           <strong>{account.userLabel}</strong>
-          Role: {account.role}
+          {account.organizationName}
         </span>
         <span>
           <strong>{isEnhanced ? "Gold tier" : "Member"}</strong>
@@ -929,6 +932,10 @@ function AccountDetails({ account }: { account: DemoAccount | null }) {
         <div>
           <dt>Organization ID</dt>
           <dd>{account.organizationId}</dd>
+        </div>
+        <div>
+          <dt>Organization</dt>
+          <dd>{account.organizationName}</dd>
         </div>
       </dl>
     </details>

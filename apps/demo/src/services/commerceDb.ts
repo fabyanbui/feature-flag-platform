@@ -28,6 +28,7 @@ function toDemoAccount(account: DemoAccountRecord): DemoAccount {
       roles: [account.role],
       attributes: {
         organizationId: account.organizationId,
+        organizationName: account.organizationName,
       },
     },
   };
