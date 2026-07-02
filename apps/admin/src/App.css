@@ -440,7 +440,7 @@ textarea {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 16px;
 }
 
@@ -470,19 +470,53 @@ textarea {
 }
 
 .group-card {
-  min-height: 300px;
+  grid-template-rows: 104px auto auto auto;
+  align-content: start;
+  gap: 12px;
+  min-height: 420px;
 }
 
 .group-card-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0.75rem 1rem;
 }
 
-.group-card-heading > div {
-  display: grid;
-  gap: 0.35rem;
+.group-card-heading h3 {
+  display: -webkit-box;
+  min-height: 2.3em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.group-card-heading .badge {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.group-key-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, 18rem);
+  min-height: 2.35rem;
+  max-width: none;
+  margin: 0;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(147, 197, 253, 0.24);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.5);
+  color: #bfdbfe;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .group-switch-active {
@@ -528,11 +562,67 @@ textarea {
   gap: 0.6rem;
 }
 
+.group-meta-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
 .meta-list div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.group-meta-list div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(9, 17, 31, 0.28);
+}
+
+.group-meta-list dd {
+  text-align: left;
+}
+
+.group-name-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.group-name-field > span {
+  color: var(--admin-muted-strong);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.group-card-actions {
+  display: grid;
+  align-self: end;
+  gap: 0.55rem;
+}
+
+.group-primary-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 0.75rem;
+}
+
+.group-primary-actions .button,
+.group-delete-action .button {
+  width: 100%;
+}
+
+.group-delete-action {
+  display: grid;
+  justify-items: stretch;
+}
+
+.group-delete-action .button {
+  justify-self: center;
+  width: min(100%, 11rem);
 }
 
 dt {
@@ -855,7 +945,44 @@ dd {
 
   .group-card-heading {
     align-items: stretch;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .group-card {
+    grid-template-rows: auto;
+    min-height: 0;
+  }
+
+  .group-card-heading .badge {
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .group-card-heading h3 {
+    min-height: 0;
+  }
+
+  .group-key-pill {
+    min-height: 0;
+    max-width: 100%;
+  }
+
+  .group-primary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .group-delete-action {
+    justify-items: stretch;
+  }
+
+  .group-delete-action .button {
+    max-width: none;
+  }
+
+  .group-delete-action small {
+    max-width: none;
+    text-align: left;
   }
 
   .form-grid,
@@ -924,6 +1051,10 @@ dd {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .group-meta-list {
+    grid-template-columns: 1fr;
   }
 
   dd {
