@@ -337,8 +337,7 @@ summary:focus-visible {
 }
 
 .filter-bar {
-  grid-template-columns: minmax(16rem, 1fr) minmax(12rem, 0.45fr) minmax(12rem,
-      0.45fr) auto;
+  grid-template-columns: minmax(16rem, 1.6fr) repeat(2, minmax(12rem, 0.72fr));
 }
 
 .form-grid-full {
@@ -547,6 +546,20 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.audit-actor-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.65rem;
+  padding: 0.18rem 0.58rem;
+  border: 1px solid rgba(147, 197, 253, 0.34);
+  border-radius: 999px;
+  background: rgba(30, 64, 175, 0.22);
+  color: #bfdbfe;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 .muted {
   color: var(--admin-muted);
 }
@@ -631,6 +644,7 @@ dd {
   color: var(--admin-heading);
   font-weight: 800;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .state-card {
@@ -1255,13 +1269,15 @@ dd {
 }
 
 .stats-filter-grid .filter-actions,
-.audit-filter-grid .filter-actions {
+.audit-filter-grid .filter-actions,
+.filter-bar .filter-actions {
   grid-column: 1 / -1;
   justify-content: flex-end;
 }
 
 .stats-filter-grid .filter-actions,
-.audit-filter-grid .filter-actions {
+.audit-filter-grid .filter-actions,
+.filter-bar .filter-actions {
   padding-top: 0.25rem;
 }
 
@@ -1325,6 +1341,7 @@ input[type='datetime-local'] {
   .section-toolbar-actions,
   .stats-filter-grid .filter-actions,
   .audit-filter-grid .filter-actions,
+  .filter-bar .filter-actions,
   .time-range-shortcuts>div {
     justify-content: flex-start;
   }

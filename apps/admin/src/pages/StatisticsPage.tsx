@@ -23,15 +23,19 @@ const initialFilters: StatisticsFilters = {
     to: '',
 };
 
+function createInitialFilters(): StatisticsFilters {
+    return { ...initialFilters };
+}
+
 export function StatisticsPage({
     projectKey,
     onBackToFlags,
 }: StatisticsPageProps) {
     const [items, setItems] = useState<FlagStatsSummary[]>([]);
     const [filters, setFilters] =
-        useState<StatisticsFilters>(initialFilters);
+        useState<StatisticsFilters>(createInitialFilters);
     const [submittedFilters, setSubmittedFilters] =
-        useState<StatisticsFilters>(initialFilters);
+        useState<StatisticsFilters>(createInitialFilters);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -94,12 +98,14 @@ export function StatisticsPage({
     function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setLoading(true);
-        setSubmittedFilters(filters);
+        setError(null);
+        setSubmittedFilters({ ...filters });
     }
 
     function resetFilters() {
-        setFilters(initialFilters);
-        setSubmittedFilters(initialFilters);
+        const nextFilters = createInitialFilters();
+        setFilters(nextFilters);
+        setSubmittedFilters({ ...nextFilters });
         setLoading(true);
         setError(null);
     }

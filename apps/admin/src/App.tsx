@@ -3,6 +3,7 @@ import './App.css';
 import { AuthProvider } from './auth/AuthContext';
 import { useAuth } from './auth/useAuth';
 import { AuditLogPage } from './pages/AuditLogPage';
+import type { AuditLogInitialFilters } from './pages/AuditLogPage';
 import { FlagForm } from './pages/FlagForm';
 import { FlagListPage } from './pages/FlagListPage';
 import { FlagGroupPage } from './pages/FlagGroupPage';
@@ -26,6 +27,8 @@ function AdminApp() {
     null,
   );
   const [selectedFlagKey, setSelectedFlagKey] = useState<string | null>(null);
+  const [auditInitialFilters, setAuditInitialFilters] =
+    useState<AuditLogInitialFilters | null>(null);
 
   function openProject(projectKey: string) {
     setSelectedProjectKey(projectKey);
@@ -36,7 +39,13 @@ function AdminApp() {
   function openProjects() {
     setSelectedProjectKey(null);
     setSelectedFlagKey(null);
+    setAuditInitialFilters(null);
     setView('projects');
+  }
+
+  function openAuditLogs(initialFilters?: AuditLogInitialFilters) {
+    setAuditInitialFilters(initialFilters ?? null);
+    setView('audit');
   }
 
   function openCreateFlag() {
@@ -140,7 +149,7 @@ function AdminApp() {
               <button
                 type="button"
                 className="button button-secondary"
-                onClick={() => setView('audit')}
+                onClick={() => openAuditLogs()}
               >
                 Audit logs
               </button>
@@ -187,6 +196,9 @@ function AdminApp() {
           key={identity.key}
           projectKey={selectedProjectKey}
           onBackToFlags={() => setView('flags')}
+          onOpenAuditLogs={() =>
+            openAuditLogs({ targetType: 'FLAG_GROUP' })
+          }
         />
       ) : null}
 
@@ -196,14 +208,21 @@ function AdminApp() {
           projectKey={selectedProjectKey}
           flagKey={selectedFlagKey}
           onBackToFlags={() => setView('flags')}
-          onOpenAuditLogs={() => setView('audit')}
+          onOpenAuditLogs={() => openAuditLogs()}
         />
       ) : null}
 
       {view === 'audit' && selectedProjectKey ? (
         <AuditLogPage
-          key={identity.key}
+          key={`${identity.key}:${selectedProjectKey}:${
+            auditInitialFilters?.targetType ?? 'all'
+          }:${auditInitialFilters?.targetKey ?? ''}:${
+            auditInitialFilters?.action ?? ''
+          }:${
+            auditInitialFilters?.actor ?? ''
+          }`}
           projectKey={selectedProjectKey}
+          initialFilters={auditInitialFilters ?? undefined}
           onBackToFlags={() => setView('flags')}
         />
       ) : null}

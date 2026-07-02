@@ -10,6 +10,7 @@ import { validateKey, validateRequired } from '../lib/validation';
 type FlagGroupPageProps = {
     projectKey: string;
     onBackToFlags: () => void;
+    onOpenAuditLogs: () => void;
 };
 
 type PendingSwitch = {
@@ -29,6 +30,7 @@ const initialCreateForm = {
 export function FlagGroupPage({
     projectKey,
     onBackToFlags,
+    onOpenAuditLogs,
 }: FlagGroupPageProps) {
     const { can } = useAuth();
     const canManageGroups = can('GROUP_MANAGE');
@@ -221,6 +223,14 @@ export function FlagGroupPage({
                 </div>
 
                 <div className="header-actions">
+                    <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={onOpenAuditLogs}
+                    >
+                        View group audit logs
+                    </button>
+
                     <button
                         type="button"
                         className="button button-secondary"

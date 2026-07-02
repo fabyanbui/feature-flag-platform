@@ -26,6 +26,22 @@ type PendingAction = {
     flag: FeatureFlag;
 };
 
+type FlagFilters = {
+    search: string;
+    status: FlagConfigStatus | '';
+    lifecycleStatus: FeatureFlagLifecycleStatus | '';
+};
+
+const initialFlagFilters: FlagFilters = {
+    search: '',
+    status: '',
+    lifecycleStatus: '',
+};
+
+function createInitialFlagFilters(): FlagFilters {
+    return { ...initialFlagFilters };
+}
+
 export function FlagListPage({
     projectKey,
     onBackToProjects,
@@ -39,12 +55,12 @@ export function FlagListPage({
     const canManageLifecycle = can('FLAG_LIFECYCLE_MANAGE');
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
     const [deletedFlags, setDeletedFlags] = useState<FeatureFlag[]>([]);
-    const [search, setSearch] = useState('');
-    const [submittedSearch, setSubmittedSearch] = useState('');
-    const [status, setStatus] = useState<FlagConfigStatus | ''>('');
-    const [lifecycleStatus, setLifecycleStatus] = useState<
-        FeatureFlagLifecycleStatus | ''
-    >('');
+    const [filters, setFilters] = useState<FlagFilters>(
+        createInitialFlagFilters,
+    );
+    const [submittedFilters, setSubmittedFilters] = useState<FlagFilters>(
+        createInitialFlagFilters,
+    );
     const [loading, setLoading] = useState(true);
     const [actionBusy, setActionBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -56,17 +72,19 @@ export function FlagListPage({
         try {
             const [response, deletedResponse] = await Promise.all([
                 adminApi.listFlags(projectKey, {
-                    search: submittedSearch,
-                    status: status || undefined,
-                    lifecycleStatus: lifecycleStatus || undefined,
+                    search: submittedFilters.search,
+                    status: submittedFilters.status || undefined,
+                    lifecycleStatus:
+                        submittedFilters.lifecycleStatus || undefined,
                     sort: 'updatedAt',
                     order: 'desc',
                     limit: 50,
                 }),
                 adminApi.listDeletedFlags(projectKey, {
-                    search: submittedSearch,
-                    status: status || undefined,
-                    lifecycleStatus: lifecycleStatus || undefined,
+                    search: submittedFilters.search,
+                    status: submittedFilters.status || undefined,
+                    lifecycleStatus:
+                        submittedFilters.lifecycleStatus || undefined,
                     sort: 'updatedAt',
                     order: 'desc',
                     limit: 50,
@@ -85,7 +103,7 @@ export function FlagListPage({
         } finally {
             setLoading(false);
         }
-    }, [projectKey, submittedSearch, status, lifecycleStatus]);
+    }, [projectKey, submittedFilters]);
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
@@ -99,15 +117,18 @@ export function FlagListPage({
         event.preventDefault();
         setLoading(true);
         setError(null);
+        setSubmittedFilters({
+            ...filters,
+            search: filters.search.trim(),
+        });
+    }
 
-        const nextSearch = search.trim();
-
-        if (nextSearch === submittedSearch) {
-            void loadFlags();
-            return;
-        }
-
-        setSubmittedSearch(nextSearch);
+    function resetFilters() {
+        const nextFilters = createInitialFlagFilters();
+        setFilters(nextFilters);
+        setSubmittedFilters({ ...nextFilters });
+        setLoading(true);
+        setError(null);
     }
 
     async function confirmPendingAction() {
@@ -204,8 +225,13 @@ export function FlagListPage({
                     <label>
                         Search
                         <input
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
+                            value={filters.search}
+                            onChange={(event) =>
+                                setFilters((current) => ({
+                                    ...current,
+                                    search: event.target.value,
+                                }))
+                            }
                             placeholder="Search by flag name or key..."
                         />
                     </label>
@@ -213,11 +239,14 @@ export function FlagListPage({
                     <label>
                         Status label
                         <select
-                            value={status}
+                            value={filters.status}
                             onChange={(event) =>
-                                setStatus(
-                                    event.target.value as FlagConfigStatus | '',
-                                )
+                                setFilters((current) => ({
+                                    ...current,
+                                    status: event.target.value as
+                                        | FlagConfigStatus
+                                        | '',
+                                }))
                             }
                         >
                             <option value="">All statuses</option>
@@ -229,13 +258,14 @@ export function FlagListPage({
                     <label>
                         Lifecycle
                         <select
-                            value={lifecycleStatus}
+                            value={filters.lifecycleStatus}
                             onChange={(event) =>
-                                setLifecycleStatus(
-                                    event.target.value as
+                                setFilters((current) => ({
+                                    ...current,
+                                    lifecycleStatus: event.target.value as
                                         | FeatureFlagLifecycleStatus
                                         | '',
-                                )
+                                }))
                             }
                         >
                             <option value="">All lifecycle states</option>
@@ -245,11 +275,16 @@ export function FlagListPage({
                     </label>
 
                     <div className="filter-actions">
-                        <button
-                            type="submit"
-                            className="button button-secondary"
-                        >
+                        <button type="submit" className="button button-primary">
                             Apply filters
+                        </button>
+
+                        <button
+                            type="button"
+                            className="button button-secondary"
+                            onClick={resetFilters}
+                        >
+                            Reset
                         </button>
                     </div>
                 </form>
