@@ -287,12 +287,13 @@ function AccountSwitcher({
               {selectedAccount?.userLabel ?? "Guest user"}
             </strong>
             <span>
-              {selectedAccount?.accountGroup ??
-                "Choose a user account to personalize the store"}
+              {selectedAccount
+                ? `Role: ${selectedAccount.role}`
+                : "Choose a user account to personalize the store"}
             </span>
             <small>
               {selectedAccount
-                ? `Role: ${selectedAccount.role} · saved cart and member preferences loaded`
+                ? "Saved cart and member preferences loaded"
                 : "No user account selected"}
             </small>
           </span>
@@ -321,9 +322,7 @@ function AccountSwitcher({
                 type="button"
               >
                 <span>{account.userLabel}</span>
-                <small>
-                  {account.accountGroup} · Role: {account.role}
-                </small>
+                <small>Role: {account.role}</small>
               </button>
             ))}
           </div>
@@ -521,7 +520,7 @@ function UserDashboard({ account, isEnhanced }: UserDashboardProps) {
       <div className="benefit-grid">
         <span>
           <strong>{account.userLabel}</strong>
-          {account.accountGroup}
+          Role: {account.role}
         </span>
         <span>
           <strong>{isEnhanced ? "Gold tier" : "Member"}</strong>

@@ -10,39 +10,31 @@ const checkoutRolloutAccountSeed: readonly [
   targetingId: string,
   organizationId: string,
   role: DemoAccountRole,
-  expectedReason: string,
-  expectedOutcome: string,
 ][] = [
-  ['01', 'demo-rollout-01', 'demo-org-rollout-01', 'shop-admin', 'ROLE_MATCH', 'New One-Page Checkout is visible for this shop-admin user.'],
-  ['02', 'demo-rollout-03', 'demo-org-rollout-02', 'beta-customer', 'ROLE_MATCH', 'New One-Page Checkout is visible for this beta-customer user.'],
-  ['03', 'demo-rollout-06', 'demo-org-rollout-03', 'regular-customer', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['04', 'demo-rollout-08', 'demo-org-rollout-04', 'regular-customer', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['05', 'demo-rollout-11', 'demo-org-rollout-05', 'regular-customer', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['06', 'demo-rollout-13', 'demo-org-rollout-06', 'regular-customer', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['07', 'demo-rollout-17', 'demo-org-rollout-07', 'regular-customer', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['08', 'demo-rollout-18', 'demo-org-rollout-08', 'regular-customer', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['09', 'demo-rollout-20', 'demo-org-rollout-09', 'regular-customer', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['10', 'demo-rollout-24', 'demo-org-rollout-10', 'regular-customer', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['11', 'demo-rollout-32', 'demo-org-rollout-11', 'regular-customer', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['12', 'demo-rollout-34', 'demo-org-rollout-12', 'regular-customer', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  ['01', 'demo-rollout-01', 'demo-org-rollout-01', 'shop-admin'],
+  ['02', 'demo-rollout-03', 'demo-org-rollout-02', 'beta-customer'],
+  ['03', 'demo-rollout-06', 'demo-org-rollout-03', 'regular-customer'],
+  ['04', 'demo-rollout-08', 'demo-org-rollout-04', 'regular-customer'],
+  ['05', 'demo-rollout-11', 'demo-org-rollout-05', 'regular-customer'],
+  ['06', 'demo-rollout-13', 'demo-org-rollout-06', 'regular-customer'],
+  ['07', 'demo-rollout-17', 'demo-org-rollout-07', 'regular-customer'],
+  ['08', 'demo-rollout-18', 'demo-org-rollout-08', 'regular-customer'],
+  ['09', 'demo-rollout-20', 'demo-org-rollout-09', 'regular-customer'],
+  ['10', 'demo-rollout-24', 'demo-org-rollout-10', 'regular-customer'],
+  ['11', 'demo-rollout-32', 'demo-org-rollout-11', 'regular-customer'],
+  ['12', 'demo-rollout-34', 'demo-org-rollout-12', 'regular-customer'],
 ];
 
 const checkoutRolloutAccounts: DemoAccountRecord[] = checkoutRolloutAccountSeed.map(
-  ([accountNumber, targetingId, organizationId, role, expectedReason, expectedOutcome]) => ({
+  ([accountNumber, targetingId, organizationId, role]) => ({
     id: `rollout-account-${accountNumber}`,
-    title: `Rollout account ${accountNumber}`,
     userLabel: `User account ${accountNumber}`,
-    accountGroup: 'Staged checkout rollout',
     scenarioSummary:
       'Returning shopper with saved cart details and a familiar checkout setup.',
-    expectedOutcome,
-    expectedReason,
     organizationId,
     userId: targetingId,
     targetingId,
     role,
-    presenterNote:
-      'Regular account in the deterministic rollout series. Re-evaluate the same account to show the result stays stable.',
   }),
 );
 

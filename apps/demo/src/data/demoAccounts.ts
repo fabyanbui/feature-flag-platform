@@ -7,17 +7,12 @@ export type DemoAccountRole =
 
 export type DemoAccountRecord = {
   id: string;
-  title: string;
   userLabel: string;
-  accountGroup: string;
   scenarioSummary: string;
-  expectedOutcome: string;
-  expectedReason: string;
   organizationId: string;
   userId: string;
   targetingId: string;
   role: DemoAccountRole;
-  presenterNote: string;
 };
 
 export type DemoAccount = DemoAccountRecord & {
