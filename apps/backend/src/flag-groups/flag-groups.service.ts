@@ -314,6 +314,69 @@ export class FlagGroupsService {
     );
   }
 
+  async delete(projectKey: string, groupKey: string): Promise<void> {
+    const actor = this.getRequiredActor();
+    const requestId = this.requestContext.getRequestId();
+
+    await this.transactionService.run(async (tx) => {
+      const project = await this.projectsRepository.findByKey(projectKey, tx);
+
+      if (!project) {
+        throw notFoundError(`Project "${projectKey}" was not found.`);
+      }
+
+      const existing =
+        await this.flagGroupsRepository.findByProjectIdAndKeyWithConfigs(
+          project.id,
+          groupKey,
+          tx,
+        );
+
+      if (!existing) {
+        throw notFoundError(
+          `Flag group "${groupKey}" was not found in project "${projectKey}".`,
+        );
+      }
+
+      if (existing._count.flags > 0) {
+        throw conflictError(
+          `Flag group "${groupKey}" cannot be deleted while ${existing._count.flags} flag(s) are assigned. Unassign all flags first.`,
+        );
+      }
+
+      const defaultEnvironment =
+        await this.environmentsRepository.findDefaultByProjectId(
+          project.id,
+          tx,
+        );
+
+      await this.flagGroupsRepository.deleteByProjectIdAndKey(
+        project.id,
+        groupKey,
+        tx,
+      );
+
+      await this.auditLogService.record(tx, {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: defaultEnvironment?.id ?? null,
+        environmentKey: defaultEnvironment?.key ?? null,
+        targetType: AuditTargetType.FLAG_GROUP,
+        targetId: existing.id,
+        targetKey: existing.key,
+        action: AuditAction.FLAG_GROUP_DELETED,
+        actor,
+        before: this.deletedGroupSnapshot(existing),
+        after: null,
+        metadata: {
+          source: 'api',
+          cascadedConfigCount: existing.configs.length,
+        },
+        requestId,
+      });
+    });
+  }
+
   async updateConfig(
     projectKey: string,
     groupKey: string,
@@ -688,6 +751,28 @@ export class FlagGroupsService {
       groupKey,
       environmentKey,
       killSwitch,
+    });
+  }
+
+  private deletedGroupSnapshot(group: {
+    id: string;
+    key: string;
+    name: string;
+    configs: Array<{
+      killSwitch: boolean;
+      environment: { key: string };
+    }>;
+    _count: { flags: number };
+  }) {
+    return cleanAuditSnapshot({
+      id: group.id,
+      key: group.key,
+      name: group.name,
+      assignedFlagCount: group._count.flags,
+      configs: group.configs.map((config) => ({
+        environmentKey: config.environment.key,
+        killSwitch: config.killSwitch,
+      })),
     });
   }
 

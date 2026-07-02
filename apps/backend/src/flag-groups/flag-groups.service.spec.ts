@@ -110,6 +110,7 @@ describe('FlagGroupsService', () => {
     findByProjectIdAndKeyWithConfigs: jest.fn(),
     create: jest.fn(),
     updateByProjectIdAndKey: jest.fn(),
+    deleteByProjectIdAndKey: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
   };
@@ -382,6 +383,91 @@ describe('FlagGroupsService', () => {
     });
 
     expect(flagGroupsRepository.updateByProjectIdAndKey).not.toHaveBeenCalled();
+    expect(auditLogService.record).not.toHaveBeenCalled();
+  });
+
+  it('deletes an unassigned group and audits the cascaded configs', async () => {
+    const group = createGroup({
+      _count: { flags: 0 },
+      configs: [
+        createGroup().configs[0],
+        {
+          ...createGroup().configs[0],
+          id: 'group-config-2',
+          environmentId: 'environment-2',
+          killSwitch: true,
+          environment: createEnvironment({
+            id: 'environment-2',
+            key: 'staging',
+            name: 'Staging',
+            isDefault: false,
+          }),
+        },
+      ],
+    });
+
+    projectsRepository.findByKey.mockResolvedValue(createProject());
+    flagGroupsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+      group,
+    );
+    environmentsRepository.findDefaultByProjectId.mockResolvedValue(
+      createEnvironment(),
+    );
+    flagGroupsRepository.deleteByProjectIdAndKey.mockResolvedValue(group);
+
+    await service.delete('demo-project', 'checkout');
+
+    expect(flagGroupsRepository.deleteByProjectIdAndKey).toHaveBeenCalledWith(
+      'project-1',
+      'checkout',
+      tx,
+    );
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        targetType: AuditTargetType.FLAG_GROUP,
+        action: AuditAction.FLAG_GROUP_DELETED,
+        targetKey: 'checkout',
+        before: {
+          id: 'group-1',
+          key: 'checkout',
+          name: 'Checkout flags',
+          assignedFlagCount: 0,
+          configs: [
+            {
+              environmentKey: 'production',
+              killSwitch: false,
+            },
+            {
+              environmentKey: 'staging',
+              killSwitch: true,
+            },
+          ],
+        },
+        after: null,
+        metadata: {
+          source: 'api',
+          cascadedConfigCount: 2,
+        },
+      }),
+    );
+  });
+
+  it('rejects deleting a group with assigned flags', async () => {
+    projectsRepository.findByKey.mockResolvedValue(createProject());
+    flagGroupsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+      createGroup({ _count: { flags: 2 } }),
+    );
+
+    await expect(
+      service.delete('demo-project', 'checkout'),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: ApiErrorCode.CONFLICT,
+      }),
+    });
+
+    expect(flagGroupsRepository.deleteByProjectIdAndKey).not.toHaveBeenCalled();
     expect(auditLogService.record).not.toHaveBeenCalled();
   });
 

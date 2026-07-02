@@ -17,6 +17,10 @@ type PendingSwitch = {
     nextValue: boolean;
 };
 
+type PendingDelete = {
+    group: FlagGroup;
+};
+
 const initialCreateForm = {
     key: '',
     name: '',
@@ -40,6 +44,9 @@ export function FlagGroupPage({
     const [error, setError] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | null>(
+        null,
+    );
+    const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
         null,
     );
 
@@ -171,6 +178,30 @@ export function FlagGroupPage({
                     : 'Failed to update the group kill switch.',
             );
             setPendingSwitch(null);
+        } finally {
+            setBusyGroupKey(null);
+        }
+    }
+
+    async function confirmDelete() {
+        if (!pendingDelete) {
+            return;
+        }
+
+        setBusyGroupKey(pendingDelete.group.key);
+        setError(null);
+
+        try {
+            await adminApi.deleteFlagGroup(projectKey, pendingDelete.group.key);
+            setPendingDelete(null);
+            await loadGroups();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : 'Failed to delete flag group.',
+            );
+            setPendingDelete(null);
         } finally {
             setBusyGroupKey(null);
         }
@@ -411,6 +442,28 @@ export function FlagGroupPage({
                                                 ? 'Deactivate switch'
                                                 : 'Activate kill switch'}
                                         </button>
+
+                                        <button
+                                            type="button"
+                                            className="button button-danger"
+                                            onClick={() =>
+                                                setPendingDelete({ group })
+                                            }
+                                            disabled={
+                                                busy ||
+                                                !canManageGroups ||
+                                                group.assignedFlagCount > 0
+                                            }
+                                            title={
+                                                group.assignedFlagCount > 0
+                                                    ? 'Unassign all flags before deleting this group.'
+                                                    : !canManageGroups
+                                                      ? 'Only administrators can delete groups.'
+                                                      : undefined
+                                            }
+                                        >
+                                            Delete group
+                                        </button>
                                     </div>
                                 </article>
                             );
@@ -442,6 +495,21 @@ export function FlagGroupPage({
                 busy={busyGroupKey !== null}
                 onCancel={() => setPendingSwitch(null)}
                 onConfirm={confirmSwitchChange}
+            />
+
+            <ConfirmDialog
+                open={pendingDelete !== null}
+                title="Delete flag group?"
+                description={
+                    pendingDelete
+                        ? `Delete "${pendingDelete.group.name}" and cascade-delete its environment-specific group configs. This is only allowed because no flags are assigned.`
+                        : ''
+                }
+                confirmLabel="Delete group"
+                destructive
+                busy={busyGroupKey !== null}
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
             />
         </section>
     );

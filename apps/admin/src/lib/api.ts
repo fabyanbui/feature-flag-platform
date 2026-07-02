@@ -301,6 +301,15 @@ export const adminApi = {
         );
     },
 
+    deleteFlagGroup(projectKey: string, groupKey: string) {
+        return apiRequest<void>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}`,
+            {
+                method: 'DELETE',
+            },
+        );
+    },
+
     updateFlagGroupConfig(
         projectKey: string,
         groupKey: string,
