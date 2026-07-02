@@ -5,6 +5,7 @@ describe('FlagGroupsController', () => {
     list: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
     updateConfig: jest.fn(),
   };
 
@@ -103,6 +104,21 @@ describe('FlagGroupsController', () => {
       'demo-project',
       'checkout',
       body,
+    );
+  });
+
+  it('delegates delete to the service', async () => {
+    const params = {
+      projectKey: 'demo-project',
+      groupKey: 'checkout',
+    };
+    flagGroupsService.delete.mockResolvedValue(undefined);
+
+    await expect(controller.delete(params)).resolves.toBeUndefined();
+
+    expect(flagGroupsService.delete).toHaveBeenCalledWith(
+      'demo-project',
+      'checkout',
     );
   });
 });

@@ -3,7 +3,7 @@ import {
   isClientEvaluationError,
   type SdkEvaluationResult,
 } from "@ffp/js-sdk";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "./App.css";
 import type { CartView, DemoAccount, Product } from "./data/demoAccounts";
 import {
@@ -15,17 +15,128 @@ import {
 } from "./services/commerceDb";
 import { listDemoAccounts } from "./services/demoAccountService";
 
-type ExperienceKey = "beta-dashboard" | "new-checkout";
-type ExperienceResultMap = Partial<Record<ExperienceKey, SdkEvaluationResult>>;
+type FeatureKey =
+  | "beta-dashboard"
+  | "new-checkout"
+  | "express-payment"
+  | "shipping-progress-meter"
+  | "coupon-engine"
+  | "personalized-recommendations"
+  | "trending-products"
+  | "holiday-promo-banner"
+  | "live-support-widget";
+type FeatureResultMap = Partial<Record<FeatureKey, SdkEvaluationResult>>;
+type FeatureGroupKey = "checkout" | "recommendations" | "standalone";
+type RolloutUnit = "user" | "organization";
 
-type Experience = {
-  key: ExperienceKey;
+type DemoFeature = {
+  key: FeatureKey;
+  group: FeatureGroupKey;
   label: string;
+  description: string;
+  detailCopy: string;
 };
 
-const experiences: Experience[] = [
-  { key: "beta-dashboard", label: "Account dashboard" },
-  { key: "new-checkout", label: "Checkout" },
+const demoFeatures: DemoFeature[] = [
+  {
+    key: "new-checkout",
+    group: "checkout",
+    label: "One-page checkout",
+    description: "Condenses cart, payment, and review into one flow.",
+    detailCopy: "Cart, payment, and review are combined into one checkout flow.",
+  },
+  {
+    key: "express-payment",
+    group: "checkout",
+    label: "Express payment",
+    description: "Offers a fast pay action for eligible users.",
+    detailCopy: "Eligible users get a faster payment option.",
+  },
+  {
+    key: "shipping-progress-meter",
+    group: "checkout",
+    label: "Shipping progress",
+    description: "Tracks how close the cart is to free shipping.",
+    detailCopy: "Users can track progress toward free shipping.",
+  },
+  {
+    key: "coupon-engine",
+    group: "checkout",
+    label: "Coupon engine",
+    description: "Applies eligible checkout savings before payment.",
+    detailCopy: "Eligible carts receive an automatic coupon discount.",
+  },
+  {
+    key: "personalized-recommendations",
+    group: "recommendations",
+    label: "Personalized picks",
+    description: "Prioritizes products that match the selected user.",
+    detailCopy: "Product suggestions match the selected user profile.",
+  },
+  {
+    key: "trending-products",
+    group: "recommendations",
+    label: "Trending products",
+    description: "Adds a trending-now shelf to the storefront.",
+    detailCopy: "A storefront shelf highlights popular products.",
+  },
+  {
+    key: "holiday-promo-banner",
+    group: "standalone",
+    label: "Holiday promo banner",
+    description: "Presents a seasonal promotion outside any group.",
+    detailCopy: "Seasonal promotion highlights accessory bundle savings.",
+  },
+  {
+    key: "live-support-widget",
+    group: "standalone",
+    label: "Live support widget",
+    description: "Shows contextual help without joining a feature group.",
+    detailCopy: "Users can reach a checkout specialist from the store.",
+  },
+  {
+    key: "beta-dashboard",
+    group: "standalone",
+    label: "Priority dashboard",
+    description: "Upgrades the account dashboard for priority users.",
+    detailCopy: "Priority users see member support and checkout preferences.",
+  },
+];
+
+const featureRolloutUnits: Record<FeatureKey, RolloutUnit> = {
+  "new-checkout": "user",
+  "express-payment": "user",
+  "shipping-progress-meter": "user",
+  "coupon-engine": "user",
+  "personalized-recommendations": "user",
+  "trending-products": "user",
+  "holiday-promo-banner": "user",
+  "live-support-widget": "organization",
+  "beta-dashboard": "user",
+};
+
+const featureGroups: Array<{
+  key: FeatureGroupKey;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: "checkout",
+    label: "Checkout experience",
+    summary:
+      "Four independent checkout features grouped for a group kill-switch demo.",
+  },
+  {
+    key: "recommendations",
+    label: "Recommendations",
+    summary:
+      "Two merchandising features grouped for recommendation experiments.",
+  },
+  {
+    key: "standalone",
+    label: "Standalone features",
+    summary: "Individual features without a shared operational group.",
+  },
 ];
 
 const apiBaseUrl =
@@ -52,21 +163,62 @@ function getAccountInitials(label: string) {
 function isResultForExperience(
   result: SdkEvaluationResult | undefined,
   account: DemoAccount,
-  experience: Experience,
+  feature: DemoFeature,
 ) {
   return (
-    result?.projectKey === account.projectKey &&
-    result.flagKey === experience.key
+    result?.projectKey === account.projectKey && result.flagKey === feature.key
   );
 }
 
-function getExperienceResult(
-  results: ExperienceResultMap,
+function getFeatureResult(
+  results: FeatureResultMap,
   account: DemoAccount,
-  experience: Experience,
+  feature: DemoFeature,
 ) {
-  const result = results[experience.key];
-  return isResultForExperience(result, account, experience) ? result : null;
+  const result = results[feature.key];
+  return isResultForExperience(result, account, feature) ? result : null;
+}
+
+function getFeatureResultByKey(
+  results: FeatureResultMap,
+  account: DemoAccount | null,
+  key: FeatureKey,
+) {
+  if (!account) {
+    return null;
+  }
+
+  const feature = demoFeatures.find((item) => item.key === key);
+
+  return feature ? getFeatureResult(results, account, feature) : null;
+}
+
+function isFeatureEnabled(
+  results: FeatureResultMap,
+  account: DemoAccount | null,
+  key: FeatureKey,
+) {
+  return getFeatureResultByKey(results, account, key)?.enabled === true;
+}
+
+function getFeatureEvaluationContext(
+  featureKey: FeatureKey,
+  account: DemoAccount,
+) {
+  const rolloutUnit = featureRolloutUnits[featureKey];
+
+  return {
+    ...account.context,
+    targetingKey:
+      rolloutUnit === "organization"
+        ? account.organizationId
+        : account.targetingId,
+    attributes: {
+      ...account.context.attributes,
+      organizationId: account.organizationId,
+      organizationName: account.organizationName,
+    },
+  };
 }
 
 type AccountSwitcherProps = {
@@ -84,8 +236,9 @@ function AccountSwitcher({
 }: AccountSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const initials = selectedAccount
-    ? getAccountInitials(selectedAccount.customerLabel)
+    ? getAccountInitials(selectedAccount.userLabel)
     : "GU";
+  const menuId = useId();
 
   const chooseAccount = (accountId: string | null) => {
     setIsOpen(false);
@@ -97,12 +250,29 @@ function AccountSwitcher({
       className="account-switcher"
       aria-labelledby="account-switcher-heading"
     >
-      <p className="eyebrow">Account</p>
-      <h2 id="account-switcher-heading">
-        {selectedAccount ? "Signed in as" : "Browsing as guest"}
-      </h2>
+      <div className="account-switcher-top">
+        <div className="account-switcher-title">
+          <p className="eyebrow">User account</p>
+          <h2 id="account-switcher-heading">
+            {selectedAccount ? "Signed in" : "Guest browsing"}
+          </h2>
+        </div>
+        <button
+          aria-controls={menuId}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          className="switcher-button"
+          disabled={isLoading}
+          onClick={() => setIsOpen((current) => !current)}
+          type="button"
+        >
+          <span aria-hidden="true" className="switcher-button-dot" />
+          <span>Switch account</span>
+        </button>
+      </div>
       <div className="account-card">
         <button
+          aria-controls={menuId}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           className="account-card-button"
@@ -115,23 +285,24 @@ function AccountSwitcher({
           </span>
           <span className="account-copy">
             <strong>
-              {selectedAccount?.customerLabel ?? "Guest customer"}
+              {selectedAccount?.userLabel ?? "Guest user"}
             </strong>
             <span>
-              {selectedAccount?.accountGroup ??
-                "Choose an account to personalize the store"}
+              {selectedAccount
+                ? `${selectedAccount.organizationName} · Role: ${selectedAccount.role}`
+                : "Choose a user account to personalize the store"}
             </span>
             <small>
               {selectedAccount
                 ? "Saved cart and member preferences loaded"
-                : "No customer account selected"}
+                : "No user account selected"}
             </small>
           </span>
           <span className="account-chevron" aria-hidden="true" />
         </button>
 
         {isOpen ? (
-          <div className="account-menu" role="listbox">
+          <div className="account-menu" id={menuId} role="listbox">
             <button
               aria-selected={!selectedAccount}
               className="account-menu-item"
@@ -151,8 +322,10 @@ function AccountSwitcher({
                 role="option"
                 type="button"
               >
-                <span>{account.customerLabel}</span>
-                <small>{account.accountGroup}</small>
+                <span>{account.userLabel}</span>
+                <small>
+                  {account.organizationName} · Role: {account.role}
+                </small>
               </button>
             ))}
           </div>
@@ -161,7 +334,7 @@ function AccountSwitcher({
       <p
         className={isOpen ? "account-hint account-hint-hidden" : "account-hint"}
       >
-        The storefront updates automatically for the selected account.
+        The storefront updates automatically for the selected user account.
       </p>
     </aside>
   );
@@ -258,38 +431,59 @@ function ProductCatalog({
   );
 }
 
-type CustomerDashboardProps = {
+type UserDashboardProps = {
   account: DemoAccount | null;
   isEnhanced: boolean;
 };
 
-function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
+function UserDashboard({ account, isEnhanced }: UserDashboardProps) {
   if (!account) {
     return (
       <section
         className="section-card signed-out-panel"
         aria-labelledby="guest-heading"
       >
-        <p className="eyebrow">Guest checkout preview</p>
-        <h2 id="guest-heading">Welcome to ShopEase</h2>
-        <p>
-          Browse the store freely. Choose a customer from the account menu to
-          unlock saved baskets, member offers, and checkout preferences.
-        </p>
-        <div className="guest-callout">
-          <strong>No account selected</strong>
-          <span>Open the profile card in the header to switch customers.</span>
+        <div className="guest-panel-copy">
+          <p className="eyebrow">Guest checkout preview</p>
+          <h2 id="guest-heading">Welcome to ShopEase</h2>
+          <p>
+            Browse freely now, then switch to a user account to preview saved
+            carts, member offers, and checkout preferences.
+          </p>
         </div>
-        <div className="benefit-grid">
+
+        <div className="guest-callout" role="status">
+          <span className="guest-callout-icon" aria-hidden="true">
+            !
+          </span>
           <span>
+            <strong>No account selected</strong>
+            <small>
+              Use the Switch account button in the user card to load a saved
+              basket and member profile.
+            </small>
+          </span>
+        </div>
+
+        <div className="benefit-grid guest-benefits">
+          <span>
+            <small className="benefit-icon" aria-hidden="true">
+              01
+            </small>
             <strong>Saved cart</strong>
             Account-specific basket
           </span>
           <span>
+            <small className="benefit-icon" aria-hidden="true">
+              02
+            </small>
             <strong>Personalized dashboard</strong>
-            Customer-specific account view
+            User-specific account view
           </span>
           <span>
+            <small className="benefit-icon" aria-hidden="true">
+              03
+            </small>
             <strong>Checkout preference</strong>
             Classic or one-page checkout
           </span>
@@ -309,7 +503,7 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
     >
       <div className="section-heading-row">
         <div>
-          <p className="eyebrow">Customer dashboard</p>
+          <p className="eyebrow">User dashboard</p>
           <h2 id="dashboard-heading">
             {isEnhanced
               ? "Priority account dashboard"
@@ -328,8 +522,8 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
       </div>
       <div className="benefit-grid">
         <span>
-          <strong>{account.customerLabel}</strong>
-          {account.accountGroup}
+          <strong>{account.userLabel}</strong>
+          {account.organizationName}
         </span>
         <span>
           <strong>{isEnhanced ? "Gold tier" : "Member"}</strong>
@@ -347,6 +541,9 @@ function CustomerDashboard({ account, isEnhanced }: CustomerDashboardProps) {
 type CartPanelProps = {
   cart: CartView | null;
   isOnePageCheckout: boolean;
+  hasExpressPayment: boolean;
+  hasShippingProgress: boolean;
+  hasCouponEngine: boolean;
   selectedAccount: DemoAccount | null;
   onQuantityChange: (productId: string, quantity: number) => void;
   onCheckout: () => void;
@@ -355,10 +552,24 @@ type CartPanelProps = {
 function CartPanel({
   cart,
   isOnePageCheckout,
+  hasExpressPayment,
+  hasShippingProgress,
+  hasCouponEngine,
   selectedAccount,
   onQuantityChange,
   onCheckout,
 }: CartPanelProps) {
+  const freeShippingTarget = 100;
+  const shippingProgress = cart
+    ? Math.min(100, Math.round((cart.subtotal / freeShippingTarget) * 100))
+    : 0;
+  const freeShippingRemaining = cart
+    ? Math.max(0, freeShippingTarget - cart.subtotal)
+    : freeShippingTarget;
+  const couponDiscount =
+    cart && hasCouponEngine ? Math.min(20, Math.round(cart.subtotal * 0.15)) : 0;
+  const adjustedTotal = cart ? Math.max(0, cart.total - couponDiscount) : 0;
+
   return (
     <aside className="section-card cart-panel" aria-labelledby="cart-heading">
       <div className="cart-heading">
@@ -411,6 +622,33 @@ function CartPanel({
               </div>
             ))}
           </div>
+          {hasShippingProgress ? (
+            <div className="shipping-meter">
+              <div className="shipping-meter-copy">
+                <strong>Free shipping progress</strong>
+                <span>
+                  {freeShippingRemaining === 0
+                    ? "Free shipping unlocked"
+                    : `${formatCurrency(freeShippingRemaining)} away from free shipping`}
+                </span>
+              </div>
+              <div className="shipping-meter-track" aria-hidden="true">
+                <span style={{ width: `${shippingProgress}%` }} />
+              </div>
+            </div>
+          ) : null}
+          {hasCouponEngine ? (
+            <div className="coupon-engine-card" role="status">
+              <div>
+                <strong>Coupon engine active</strong>
+                <span>
+                  Demo code <code>AUDIO15</code> applied automatically before
+                  payment.
+                </span>
+              </div>
+              <small>{formatCurrency(couponDiscount)} saved</small>
+            </div>
+          ) : null}
           <dl className="summary-list">
             <div>
               <dt>Subtotal</dt>
@@ -422,13 +660,28 @@ function CartPanel({
                 {cart.shipping === 0 ? "Free" : formatCurrency(cart.shipping)}
               </dd>
             </div>
+            {couponDiscount > 0 ? (
+              <div>
+                <dt>Coupon discount</dt>
+                <dd>-{formatCurrency(couponDiscount)}</dd>
+              </div>
+            ) : null}
             <div className="summary-total">
               <dt>Total</dt>
-              <dd>{formatCurrency(cart.total)}</dd>
+              <dd>{formatCurrency(adjustedTotal)}</dd>
             </div>
           </dl>
           <div className="checkout-footer">
             <p>Taxes calculated at payment. 30-day free returns included.</p>
+            {hasExpressPayment ? (
+              <button
+                className="express-pay-button"
+                onClick={onCheckout}
+                type="button"
+              >
+                Express Pay
+              </button>
+            ) : null}
             <button
               className="checkout-button"
               onClick={onCheckout}
@@ -447,6 +700,214 @@ function CartPanel({
   );
 }
 
+type PromoBannerProps = {
+  isVisible: boolean;
+};
+
+function PromoBanner({ isVisible }: PromoBannerProps) {
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <section className="promo-banner" aria-label="Seasonal promotion">
+      <div>
+        <p className="eyebrow">Limited offer</p>
+        <strong>Holiday audio bundle: save 15% on accessories</strong>
+      </div>
+      <span>Standalone store promotion</span>
+    </section>
+  );
+}
+
+type LiveSupportWidgetProps = {
+  isVisible: boolean;
+};
+
+function LiveSupportWidget({ isVisible }: LiveSupportWidgetProps) {
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <section className="support-widget" aria-label="Live support">
+      <div>
+        <p className="eyebrow">Live support</p>
+        <strong>Checkout specialist available</strong>
+        <span>
+          Ask about shipping, returns, or payment before placing an order.
+        </span>
+      </div>
+      <button type="button">Open chat</button>
+    </section>
+  );
+}
+
+type RecommendationPanelProps = {
+  products: Product[];
+  hasPersonalizedRecommendations: boolean;
+  hasTrendingProducts: boolean;
+  selectedAccount: DemoAccount | null;
+  onAddToCart: (productId: string) => void;
+};
+
+function RecommendationPanel({
+  products,
+  hasPersonalizedRecommendations,
+  hasTrendingProducts,
+  selectedAccount,
+  onAddToCart,
+}: RecommendationPanelProps) {
+  const recommendationProducts = hasPersonalizedRecommendations
+    ? products
+        .filter((product) => product.category === "Accessories")
+        .slice(0, 2)
+    : products.slice(0, 2);
+  const trendingProducts = products
+    .filter((product) => product.rating >= 4.7)
+    .slice(0, 3);
+
+  return (
+    <section
+      className="section-card recommendation-section"
+      aria-labelledby="recommendation-heading"
+    >
+      <div className="section-heading-row">
+        <div>
+          <p className="eyebrow">Recommendations</p>
+          <h2 id="recommendation-heading">
+            {hasPersonalizedRecommendations
+              ? "Picked for this user"
+              : "Popular with shoppers"}
+          </h2>
+        </div>
+        <span
+          className={
+            hasPersonalizedRecommendations
+              ? "status-pill status-on"
+              : "status-pill"
+          }
+        >
+          {hasPersonalizedRecommendations ? "Personalized" : "Default"}
+        </span>
+      </div>
+      <div className="recommendation-grid">
+        {recommendationProducts.map((product) => (
+          <article className="recommendation-card" key={product.id}>
+            <span>{product.badge}</span>
+            <strong>{product.name}</strong>
+            <small>
+              {formatCurrency(product.price)} · ★ {product.rating}
+            </small>
+            <div className="recommendation-actions">
+              <button
+                disabled={!selectedAccount}
+                onClick={() => onAddToCart(product.id)}
+                type="button"
+              >
+                Add
+              </button>
+              <button
+                aria-label={`View mock details for ${product.name}`}
+                className="recommendation-details-button"
+                type="button"
+              >
+                Details
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+      {hasTrendingProducts ? (
+        <div className="trending-shelf">
+          <div className="trending-shelf-heading">
+            <span className="trending-icon" aria-hidden="true">
+              ↗
+            </span>
+            <div>
+              <strong>Trending now</strong>
+              <small>High-rating products gaining shopper attention</small>
+            </div>
+          </div>
+          <div>
+            {trendingProducts.map((product, index) => (
+              <span key={product.id}>
+                <small>{String(index + 1).padStart(2, "0")}</small>
+                {product.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+type FeatureShowcaseProps = {
+  account: DemoAccount | null;
+  results: FeatureResultMap;
+};
+
+function FeatureShowcase({ account, results }: FeatureShowcaseProps) {
+  if (!account) {
+    return null;
+  }
+
+  return (
+    <details
+      className="section-card feature-showcase"
+      aria-labelledby="feature-showcase-heading"
+    >
+      <summary className="section-heading-row">
+        <div>
+          <p className="eyebrow">Experience coverage</p>
+          <h2 id="feature-showcase-heading">Demo feature matrix</h2>
+        </div>
+        <span className="feature-showcase-actions">
+          <span className="soft-pill">{demoFeatures.length} features</span>
+          <span className="collapse-hint" aria-hidden="true" />
+        </span>
+      </summary>
+      <div className="feature-group-grid">
+        {featureGroups.map((group) => {
+          const groupFeatures = demoFeatures.filter(
+            (feature) => feature.group === group.key,
+          );
+
+          return (
+            <article className="feature-group-card" key={group.key}>
+              <div>
+                <h3>{group.label}</h3>
+                <p>{group.summary}</p>
+              </div>
+              <div className="feature-pill-grid">
+                {groupFeatures.map((feature) => {
+                  const result = getFeatureResult(results, account, feature);
+                  const isEnabled = result?.enabled === true;
+
+                  return (
+                    <span
+                      className={
+                        isEnabled
+                          ? "feature-pill feature-pill-on"
+                          : "feature-pill"
+                      }
+                      key={feature.key}
+                    >
+                      <strong>{feature.label}</strong>
+                      <small>{feature.detailCopy}</small>
+                    </span>
+                  );
+                })}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 function AccountDetails({ account }: { account: DemoAccount | null }) {
   if (!account) {
     return null;
@@ -454,11 +915,11 @@ function AccountDetails({ account }: { account: DemoAccount | null }) {
 
   return (
     <details className="section-card details-panel account-details-panel">
-      <summary>View customer account details</summary>
+      <summary>View user account details</summary>
       <dl className="detail-grid">
         <div>
-          <dt>Customer</dt>
-          <dd>{account.customerLabel}</dd>
+          <dt>User</dt>
+          <dd>{account.userLabel}</dd>
         </div>
         <div>
           <dt>Role</dt>
@@ -469,8 +930,12 @@ function AccountDetails({ account }: { account: DemoAccount | null }) {
           <dd>{account.userId}</dd>
         </div>
         <div>
-          <dt>Targeting ID</dt>
-          <dd>{account.targetingId}</dd>
+          <dt>Organization ID</dt>
+          <dd>{account.organizationId}</dd>
+        </div>
+        <div>
+          <dt>Organization</dt>
+          <dd>{account.organizationName}</dd>
         </div>
       </dl>
     </details>
@@ -483,15 +948,15 @@ function DeveloperDiagnostics({
   isLoading,
 }: {
   account: DemoAccount | null;
-  results: ExperienceResultMap;
+  results: FeatureResultMap;
   isLoading: boolean;
 }) {
   if (!account) {
     return null;
   }
 
-  const evaluatedResults = experiences
-    .map((experience) => getExperienceResult(results, account, experience))
+  const evaluatedResults = demoFeatures
+    .map((experience) => getFeatureResult(results, account, experience))
     .filter((result): result is SdkEvaluationResult => result !== null);
 
   return (
@@ -508,8 +973,8 @@ function DeveloperDiagnostics({
                 : "Personalization service"}
           </dd>
         </div>
-        {experiences.map((experience) => {
-          const result = getExperienceResult(results, account, experience);
+        {demoFeatures.map((experience) => {
+          const result = getFeatureResult(results, account, experience);
 
           return (
             <div key={experience.key}>
@@ -534,7 +999,7 @@ function App() {
     null,
   );
   const [cart, setCart] = useState<CartView | null>(null);
-  const [results, setResults] = useState<ExperienceResultMap>({});
+  const [results, setResults] = useState<FeatureResultMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const requestSequence = useRef(0);
@@ -573,6 +1038,18 @@ function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!message) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setMessage(null);
+    }, 2800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [message]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -618,10 +1095,10 @@ function App() {
       }
 
       const evaluations = await Promise.all(
-        experiences.map(async (experience) => {
+        demoFeatures.map(async (experience) => {
           const result = await client.evaluate(
             experience.key,
-            selectedAccount.context,
+            getFeatureEvaluationContext(experience.key, selectedAccount),
           );
           return [experience.key, result] as const;
         }),
@@ -632,13 +1109,10 @@ function App() {
       }
 
       setResults(
-        evaluations.reduce<ExperienceResultMap>(
-          (nextResults, [key, result]) => {
-            nextResults[key] = result;
-            return nextResults;
-          },
-          {},
-        ),
+        evaluations.reduce<FeatureResultMap>((nextResults, [key, result]) => {
+          nextResults[key] = result;
+          return nextResults;
+        }, {}),
       );
 
       if (evaluations.some(([, result]) => isClientEvaluationError(result))) {
@@ -655,14 +1129,51 @@ function App() {
     };
   }, [client, selectedAccount]);
 
-  const dashboardResult = selectedAccount
-    ? getExperienceResult(results, selectedAccount, experiences[0])
-    : null;
-  const checkoutResult = selectedAccount
-    ? getExperienceResult(results, selectedAccount, experiences[1])
-    : null;
-  const hasEnhancedDashboard = dashboardResult?.enabled === true;
-  const hasOnePageCheckout = checkoutResult?.enabled === true;
+  const hasEnhancedDashboard = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "beta-dashboard",
+  );
+  const hasOnePageCheckout = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "new-checkout",
+  );
+  const hasExpressPayment = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "express-payment",
+  );
+  const hasShippingProgress = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "shipping-progress-meter",
+  );
+  const hasCouponEngine = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "coupon-engine",
+  );
+  const hasPersonalizedRecommendations = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "personalized-recommendations",
+  );
+  const hasTrendingProducts = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "trending-products",
+  );
+  const hasHolidayPromoBanner = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "holiday-promo-banner",
+  );
+  const hasLiveSupportWidget = isFeatureEnabled(
+    results,
+    selectedAccount,
+    "live-support-widget",
+  );
 
   const handleAccountChange = (accountId: string | null) => {
     requestSequence.current += 1;
@@ -673,7 +1184,7 @@ function App() {
 
   const handleAddToCart = async (productId: string) => {
     if (!selectedAccount) {
-      setMessage("Choose a customer account before adding products to cart.");
+      setMessage("Choose a user account before adding products to cart.");
       return;
     }
 
@@ -696,7 +1207,9 @@ function App() {
 
     setCart(await clearCart(selectedAccount.id));
     setMessage(
-      hasOnePageCheckout
+      hasCouponEngine
+        ? "Order placed with coupon savings applied."
+        : hasOnePageCheckout
         ? "Order placed with one-page checkout."
         : "Order is ready for the payment step.",
     );
@@ -705,46 +1218,83 @@ function App() {
   return (
     <main className="demo-shell">
       <section className="app-frame" aria-labelledby="app-heading">
-        <header className="hero-section">
-          <div className="hero-copy">
-            <nav className="store-nav" aria-label="Store highlights">
-              <span className="brand-lockup">
-                <span className="brand-mark" aria-hidden="true">
-                  SE
-                </span>
-                Premium Audio Store
+        <header className="store-header">
+          <div className="store-navbar">
+            <a className="brand-lockup" href="#app-heading">
+              <span className="brand-mark" aria-hidden="true">
+                SE
               </span>
-              <span>Free shipping over $100</span>
-              <span>2-year warranty</span>
+              <span>ShopEase</span>
+            </a>
+            <label className="header-search">
+              <span className="search-icon" aria-hidden="true">
+                ⌕
+              </span>
+              <input
+                readOnly
+                value="Search headphones, speakers, and accessories"
+                aria-label="Search store products"
+              />
+            </label>
+            <nav className="header-links" aria-label="Store navigation">
+              <a href="#catalog-heading">Shop</a>
+              <a href="#cart-heading">Cart</a>
+              <a href="#guest-heading">Support</a>
             </nav>
-            <p className="eyebrow">Summer audio event</p>
-            <h1 id="app-heading">ShopEase Checkout</h1>
-            <p>
-              Shop premium audio gear with saved carts, member benefits, and a
-              checkout experience that adapts automatically to the selected
-              customer.
-            </p>
-            <div className="hero-actions" aria-label="Store assurances">
-              <span>Fast delivery</span>
-              <span>Secure checkout</span>
-              <span>Easy returns</span>
-            </div>
           </div>
-          <AccountSwitcher
-            accounts={accounts}
-            selectedAccount={selectedAccount}
-            isLoading={isLoading}
-            onAccountChange={handleAccountChange}
-          />
+
+          <div className="hero-section">
+            <div className="hero-copy">
+              <p className="eyebrow">Premium audio store</p>
+              <h1 id="app-heading">Upgrade your sound, checkout faster.</h1>
+              <p>
+                Discover premium audio gear with saved carts, member benefits,
+                and a checkout experience tailored to the selected user.
+              </p>
+              <div className="hero-cta-row">
+                <a className="primary-link" href="#catalog-heading">
+                  Shop best sellers
+                </a>
+                <a className="secondary-link" href="#cart-heading">
+                  View cart
+                </a>
+              </div>
+              <div className="hero-actions" aria-label="Store assurances">
+                <span>Free shipping over $100</span>
+                <span>2-year warranty</span>
+                <span>30-day returns</span>
+              </div>
+            </div>
+            <AccountSwitcher
+              accounts={accounts}
+              selectedAccount={selectedAccount}
+              isLoading={isLoading}
+              onAccountChange={handleAccountChange}
+            />
+          </div>
         </header>
 
-        {message ? <div className="toast-message">{message}</div> : null}
+        {message ? (
+          <div className="toast-message" role="status" aria-live="polite">
+            {message}
+          </div>
+        ) : null}
+
+        <FeatureShowcase account={selectedAccount} results={results} />
+        <PromoBanner isVisible={hasHolidayPromoBanner} />
 
         <div className="store-layout">
+          <UserDashboard
+            account={selectedAccount}
+            isEnhanced={hasEnhancedDashboard}
+          />
           <div className="store-main">
-            <CustomerDashboard
-              account={selectedAccount}
-              isEnhanced={hasEnhancedDashboard}
+            <RecommendationPanel
+              products={products}
+              hasPersonalizedRecommendations={hasPersonalizedRecommendations}
+              hasTrendingProducts={hasTrendingProducts}
+              selectedAccount={selectedAccount}
+              onAddToCart={handleAddToCart}
             />
             <ProductCatalog
               products={products}
@@ -756,10 +1306,14 @@ function App() {
             <CartPanel
               cart={cart}
               isOnePageCheckout={hasOnePageCheckout}
+              hasExpressPayment={hasExpressPayment}
+              hasShippingProgress={hasShippingProgress}
+              hasCouponEngine={hasCouponEngine}
               selectedAccount={selectedAccount}
               onQuantityChange={handleQuantityChange}
               onCheckout={handleCheckout}
             />
+            <LiveSupportWidget isVisible={hasLiveSupportWidget} />
           </div>
         </div>
 

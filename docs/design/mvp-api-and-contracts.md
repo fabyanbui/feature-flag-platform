@@ -68,8 +68,8 @@ The backend maps the token to a fixed actor and one of `ADMIN`, `DEVELOPER`, or
 `VIEWER`, then applies a centralized permission matrix. Missing or invalid
 credentials return `UNAUTHORIZED`; insufficient permissions return
 `FORBIDDEN`. Client-provided `X-Actor` or `X-Actor-Role` values are not trusted
-for authorization or audit attribution. Seed scripts may continue to use the
-internal `system` actor.
+for authorization or audit attribution. Seed scripts use the presentation admin
+actor `demo-admin` so seeded audit entries match the demo identity model.
 
 This is a local, presentation-grade identity model rather than OAuth or a
 production identity provider. Health and `POST /v1/evaluate` remain public.
@@ -928,6 +928,46 @@ from succeeding without a corresponding audit trail.
 
 Flag-group creation, updates, environment configuration changes, and flag-group
 assignment changes follow the same transaction rule.
+
+### 12.8 Soft Delete Contracts
+
+Feature flag deletion is exposed as:
+
+```http
+DELETE /v1/projects/{projectKey}/flags/{flagKey}
+```
+
+This is a soft delete that is separate from archive. Deleting a flag sets
+`deletedAt`/`deletedBy`, hides the flag from the normal dashboard and normal
+flag list, makes evaluation treat it as missing (`NOT_FOUND`), invalidates cache
+snapshots for that flag, and writes a `FEATURE_FLAG_DELETED` audit entry.
+Archived flags remain visible in the normal flag dashboard and evaluate with
+`FLAG_ARCHIVED`.
+
+Deleted flags can be viewed and recovered through:
+
+```http
+GET /v1/projects/{projectKey}/flags/deleted
+POST /v1/projects/{projectKey}/flags/{flagKey}/restore-deleted
+```
+
+Restoring a deleted flag clears `deletedAt`/`deletedBy` while preserving the
+flag's archive lifecycle state. The archive and restore endpoints remain the
+explicit lifecycle controls for active versus archived flags.
+
+Project deletion is exposed as:
+
+```http
+DELETE /v1/projects/{projectKey}
+```
+
+This is also a soft delete. A project can be deleted only when it is empty
+from the normal dashboard perspective: there must be no non-deleted feature
+flags, flag groups, or sample user contexts under the project. Soft-deleted
+feature flags, default environments, and existing audit entries may remain so
+configuration history stays append-only.
+Deleted projects are hidden from normal project reads/lists, and evaluation
+treats them as missing, returning `enabled=false` with `reason=NOT_FOUND`.
 
 ## 13. Flag Configuration History Contract
 

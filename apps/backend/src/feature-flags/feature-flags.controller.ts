@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -42,6 +43,15 @@ export class FeatureFlagsController {
     @Query() query: FeatureFlagQueryDto,
   ): Promise<PageResponse<FeatureFlagResponseDto>> {
     return this.featureFlagsService.list(params.projectKey, query);
+  }
+
+  @Get('deleted')
+  @ApiOkResponse({ type: FeatureFlagResponseDto, isArray: true })
+  listDeleted(
+    @Param() params: ProjectKeyParamDto,
+    @Query() query: FeatureFlagQueryDto,
+  ): Promise<PageResponse<FeatureFlagResponseDto>> {
+    return this.featureFlagsService.listDeleted(params.projectKey, query);
   }
 
   @Post()
@@ -94,5 +104,25 @@ export class FeatureFlagsController {
     @Param() params: ProjectFlagKeyParamDto,
   ): Promise<FeatureFlagResponseDto> {
     return this.featureFlagsService.restore(params.projectKey, params.flagKey);
+  }
+
+  @Delete(':flagKey')
+  @RequirePermissions(Permission.FLAG_LIFECYCLE_MANAGE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(@Param() params: ProjectFlagKeyParamDto): Promise<void> {
+    return this.featureFlagsService.delete(params.projectKey, params.flagKey);
+  }
+
+  @Post(':flagKey/restore-deleted')
+  @RequirePermissions(Permission.FLAG_LIFECYCLE_MANAGE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: FeatureFlagResponseDto })
+  restoreDeleted(
+    @Param() params: ProjectFlagKeyParamDto,
+  ): Promise<FeatureFlagResponseDto> {
+    return this.featureFlagsService.restoreDeleted(
+      params.projectKey,
+      params.flagKey,
+    );
   }
 }

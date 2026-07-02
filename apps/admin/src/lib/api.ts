@@ -121,7 +121,6 @@ function flagPath(projectKey: string, flagKey: string): string {
 }
 
 export type ListProjectsQuery = {
-    search?: string;
     limit?: number;
     offset?: number;
     sort?: string;
@@ -136,7 +135,7 @@ export type CreateProjectInput = {
 
 export type UpdateProjectInput = {
     name?: string;
-    description?: string;
+    description?: string | null;
 };
 
 export type ListFlagsQuery = {
@@ -234,9 +233,22 @@ export const adminApi = {
         });
     },
 
+    deleteProject(projectKey: string) {
+        return apiRequest<void>(projectPath(projectKey), {
+            method: 'DELETE',
+        });
+    },
+
     listFlags(projectKey: string, query: ListFlagsQuery = {}) {
         return apiRequest<PageResponse<FeatureFlag>>(
             `${projectPath(projectKey)}/flags`,
+            { query },
+        );
+    },
+
+    listDeletedFlags(projectKey: string, query: ListFlagsQuery = {}) {
+        return apiRequest<PageResponse<FeatureFlag>>(
+            `${projectPath(projectKey)}/flags/deleted`,
             { query },
         );
     },
@@ -277,6 +289,21 @@ export const adminApi = {
         );
     },
 
+    restoreDeletedFlag(projectKey: string, flagKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/restore-deleted`,
+            {
+                method: 'POST',
+            },
+        );
+    },
+
+    deleteFlag(projectKey: string, flagKey: string) {
+        return apiRequest<void>(flagPath(projectKey, flagKey), {
+            method: 'DELETE',
+        });
+    },
+
     listFlagGroups(projectKey: string, query: ListFlagGroupsQuery = {}) {
         return apiRequest<PageResponse<FlagGroup>>(
             `${projectPath(projectKey)}/groups`,
@@ -297,6 +324,15 @@ export const adminApi = {
             {
                 method: 'PATCH',
                 body: { name },
+            },
+        );
+    },
+
+    deleteFlagGroup(projectKey: string, groupKey: string) {
+        return apiRequest<void>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}`,
+            {
+                method: 'DELETE',
             },
         );
     },

@@ -6,6 +6,7 @@ describe('FlagGroupsRepository', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
     },
@@ -94,6 +95,21 @@ describe('FlagGroupsRepository', () => {
       },
       data: {
         name: 'Checkout experience',
+      },
+    });
+  });
+
+  it('deletes a group by project-scoped immutable key', async () => {
+    prisma.flagGroup.delete.mockResolvedValue({ id: 'group-1' });
+
+    await repository.deleteByProjectIdAndKey('project-1', 'checkout');
+
+    expect(prisma.flagGroup.delete).toHaveBeenCalledWith({
+      where: {
+        projectId_key: {
+          projectId: 'project-1',
+          key: 'checkout',
+        },
       },
     });
   });

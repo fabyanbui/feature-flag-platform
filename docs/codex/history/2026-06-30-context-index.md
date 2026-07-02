@@ -6,21 +6,28 @@ transcript.
 ## Read first
 
 - Active authority: `AGENTS.md`.
-- Product/deadline sources: `docs/requirement/requirement-init.md`,
-  `docs/requirement/info-init.md`, and `docs/plan/project-goal.md`.
+- Product and deadline sources:
+  - `docs/requirement/requirement-init.md`
+  - `docs/requirement/info-init.md`
+  - `docs/plan/project-goal.md`
 - Submission is due July 7, 2026; presentation is July 9, 2026. Slides and the
-  research report remain required.
-- `docs/plan/implementation-roadmap.md` is the completed MVP baseline;
-  `docs/plan/recommended-enhancements-roadmap.md` is the active enhancement and
-  gate source.
+  research report remain required final artifacts.
+- `docs/plan/implementation-roadmap.md` is the completed MVP regression
+  baseline.
+- `docs/plan/recommended-enhancements-roadmap.md` is the active source for
+  recommended phase completion evidence and Gate A/B/C sequencing.
 - Durable Codex context remains under `docs/codex/`, `.codex/`, and
   `.agents/skills/`.
-- Read latest prior indexes first: `2026-06-29`, `2026-06-28`, and
-  `2026-06-27` under `docs/codex/history/`.
-- Useful release/demo references: `docs/plan/mini-demo-app-implementation-plan.md`,
-  `docs/plan/requirement-traceability-matrix.md`, `docs/release/demo-script.md`,
-  `docs/release/final-recommended-release-review.md`, and
-  `docs/release/troubleshooting.md`.
+- Read the latest prior indexes first:
+  - `docs/codex/history/2026-06-29-context-index.md`
+  - `docs/codex/history/2026-06-28-context-index.md`
+  - `docs/codex/history/2026-06-27-context-index.md`
+- Useful release/demo references:
+  - `docs/plan/mini-demo-app-implementation-plan.md`
+  - `docs/plan/requirement-traceability-matrix.md`
+  - `docs/release/demo-script.md`
+  - `docs/release/final-recommended-release-review.md`
+  - `docs/release/troubleshooting.md`
 
 ## Repo guardrails to keep
 
@@ -56,10 +63,15 @@ transcript.
   Prisma persistence, evaluation engine, stable rollout hashing, audit logs,
   RBAC, SDK, admin UI, demo UI, Docker workflow, release docs, and what to
   study next.
-- Demo strategy decisions: no full register/login for this coursework; keep
-  server-resolved demo RBAC, avoid a distracting production-auth scope, enforce
-  permissions in backend guards, and prove feature-flag value through a real
-  business feature rather than only raw evaluation API calls.
+- Demo strategy decisions were made:
+  - lack of full register/login is acceptable for this coursework because demo
+    RBAC is explicitly server-resolved and presentation-grade,
+  - adding production auth would be too large and could distract from the
+    feature-flag platform value,
+  - developers cannot rely on client-side spoofing; backend permission guards
+    enforce admin/developer/viewer behavior,
+  - the demo app should prove business value through a real feature, not only
+    raw evaluation API calls.
 - `docs/plan/mini-demo-app-implementation-plan.md` was created and refined as
   the implementation plan for upgrading `apps/demo` into a mini checkout app:
   - `new-checkout` controls only the checkout experience,
@@ -68,10 +80,15 @@ transcript.
   - stale evaluation state must be cleared on scenario/account changes,
   - loading, missing config, SDK/client failure, and backend Off states must
     keep the safe Classic Checkout fallback.
-- Local database and Docker guidance was clarified: Compose reset uses
-  `docker compose down --volumes` then `docker compose up --build -d`;
-  standalone/local Prisma reset paths were explained without mutating data; a
-  Docker port binding error was attributed to host port conflict.
+- Local database and Docker guidance was clarified:
+  - Docker Compose reset path is `docker compose down --volumes` then
+    `docker compose up --build -d`,
+  - standalone/local PostgreSQL reset paths were explained without mutating a
+    database,
+  - Docker's role is to make PostgreSQL/backend/admin/demo startup reproducible,
+  - a Docker port binding error was attributed to host port conflict, with the
+    safe fix being to stop the conflicting container/process or choose another
+    host port.
 - RBAC and seed-data Q&A clarified durable design:
   - admin/developer/viewer are not DB user rows; they are demo identities from
     environment variables resolved by `apps/backend/src/auth/demo-identity.service.ts`,
@@ -97,14 +114,23 @@ transcript.
   - called from `apps/backend/src/evaluation/engine/evaluation-engine.ts`,
   - tests live in `apps/backend/src/evaluation/engine/stable-rollout-hash.spec.ts`,
   - percentage rollout must be deterministic from stable, non-PII rollout keys.
-- A full July 9 presentation scenario list was drafted: Docker startup,
-  two-plane architecture, seeded project/flags/groups, management UI, global
-  toggle, role targeting, percentage rollout across accounts, group/flag kill
-  switches, audit/history/statistics, JS SDK, fail-closed behavior, RBAC denial
-  states, troubleshooting, and backup Q&A proof.
-- Validation reported in June 30 sessions included repeated successful
-  `npm run lint --workspace=@ffp/demo`, `npm run build --workspace=@ffp/demo`,
-  and `git diff --check` runs on changed demo/release-doc paths.
+- A full presentation scenario list was drafted for the July 9 demo:
+  - setup and Docker startup,
+  - two-plane architecture,
+  - seeded project/flags/groups,
+  - project/flag/rule management,
+  - global enable/disable,
+  - role targeting,
+  - percentage rollout across multiple accounts,
+  - group kill switch and flag kill switch rollback,
+  - audit/history/statistics,
+  - JS SDK and fail-closed behavior,
+  - RBAC denial states,
+  - troubleshooting and backup Q&A proof.
+- Validation reported in June 30 sessions included repeated successful runs of:
+  - `npm run lint --workspace=@ffp/demo`
+  - `npm run build --workspace=@ffp/demo`
+  - `git diff --check` on changed demo/release-doc paths
 - Browser checks were run for desktop and mobile layouts. A recurring CORS note
   appeared when Vite used `localhost:5175` while backend CORS was configured for
   the expected demo origin; this was treated as a local port/origin mismatch, not
@@ -115,16 +141,24 @@ transcript.
 - Date interpreted for this file: June 30, 2026 in ICT (`+0700`); this update
   was performed on July 1, 2026.
 - Current branch while writing this file: `develop`.
-- Current `HEAD` while writing this file: `cf19f7b`; `develop` is even with
-  `origin/develop`.
+- Current `develop` is tracking `origin/develop`.
 - `docs/codex/history/2026-06-30-context-index.md` did not exist before this
   update.
 - Current roadmap records Phases 12 through 20 complete; no next recommended
   phase or unpassed gate is listed after Phase 20.
-- Current filesystem already contains the June 30 demo-app direction: the demo
-  app imports `data/demoAccounts` and `services/commerceDb`, shows ShopEase /
-  Premium Audio Store checkout UI, and evaluates the `beta-dashboard` and
-  `new-checkout` experiences through `@ffp/js-sdk`.
+- Current working tree already had modified files before this history index was
+  written:
+  - `apps/backend/prisma/seed.ts`
+  - `apps/demo/src/App.css`
+  - `apps/demo/src/App.tsx`
+- Filesystem now shows a broader demo feature matrix than the June 30 final
+  assistant summaries alone describe: current `apps/demo/src/App.tsx` includes
+  checkout, recommendation, standalone feature groups, multiple feature keys,
+  and a `FeatureShowcase`; current `apps/backend/prisma/seed.ts` includes
+  additional demo groups/flags such as `checkout-experience`,
+  `recommendations`, `express-payment`, `shipping-progress-meter`,
+  `personalized-recommendations`, `trending-products`, and
+  `holiday-promo-banner`. Inspect the current diff before editing.
 - Session logs said `docs/release/demo-app-debugging.md` was created, but the
   current filesystem does not contain that file. Trust the filesystem.
 - `docs/plan/mini-demo-app-implementation-plan.md` and `docs/release/demo-script.md`
@@ -144,11 +178,12 @@ Continue from current `develop`. Read `AGENTS.md`,
 `docs/release/demo-script.md`, and
 `docs/release/final-recommended-release-review.md`. Preserve the completed MVP
 baseline and Phase 20 recommended release posture. Before changing the demo or
-seed, inspect the current filesystem and current diff. Keep deterministic
-evaluation, stable non-PII rollout keys, append-only audit logging,
-server-resolved demo RBAC, fail-closed SDK behavior, optional Redis, and Docker
-Compose delivery intact. Prefer small reversible increments and run relevant
-npm, diff, and browser checks.
+seed, inspect the current working tree because `apps/backend/prisma/seed.ts`,
+`apps/demo/src/App.tsx`, and `apps/demo/src/App.css` are already modified.
+Keep deterministic evaluation, stable non-PII rollout keys, append-only audit
+logging, server-resolved demo RBAC, fail-closed SDK behavior, optional Redis,
+and Docker Compose delivery intact. Prefer small reversible increments and run
+relevant npm, diff, and browser checks.
 
 ## Session index, compressed
 

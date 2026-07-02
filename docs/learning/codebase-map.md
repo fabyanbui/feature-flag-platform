@@ -1269,7 +1269,7 @@ Production rules for `new-checkout`:
 
 Seed audit entries:
 
-- actor: `system`,
+- actor: `demo-admin`,
 - request ID: `seed_init`,
 - source: `seed`,
 - purpose: prove audit storage and demo traceability.

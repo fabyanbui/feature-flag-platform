@@ -31,6 +31,7 @@ demo-seed  exited 0
 backend    healthy
 admin      healthy
 demo       healthy
+demo-staging healthy
 ```
 
 Open:
@@ -38,7 +39,8 @@ Open:
 ```text
 Backend Swagger: http://localhost:3000/docs
 Admin app:       http://localhost:5173
-Demo app:        http://localhost:5174
+Demo app:        http://localhost:5174  (production)
+Staging demo:    http://localhost:5175  (staging)
 ```
 
 The npm-local workflow remains available if Docker Compose is not used:
@@ -52,6 +54,7 @@ npm run db:seed --workspace=@ffp/backend
 npm run dev:backend
 npm run dev:admin
 npm run dev:demo
+npm run dev:demo:staging
 ```
 
 ## Main Story
@@ -67,10 +70,12 @@ The demo has two planes:
 Recommended live sequence:
 
 1. Show SDK-backed role targeting and percentage rollout in the demo app.
-2. Activate and deactivate the group kill switch to prove fast rollback.
-3. Show Viewer RBAC disabled controls and backend-protected mutations.
-4. Show flag history, audit logs, and statistics as supporting evidence.
-5. Mention optional Redis only as a completed provider/fallback enhancement,
+2. Open the production and staging demo apps side-by-side to prove environment
+   scoped evaluation with the same flags and user context.
+3. Activate and deactivate the group kill switch to prove fast rollback.
+4. Show Viewer RBAC disabled controls and backend-protected mutations.
+5. Show flag history, audit logs, and statistics as supporting evidence.
+6. Mention optional Redis only as a completed provider/fallback enhancement,
    not as a dependency for the stable demo.
 
 ## Demo Flow
@@ -82,14 +87,19 @@ Open the admin dashboard.
 Show:
 
 - project `demo-project`,
-- group `customer-experience`,
+- groups `customer-experience`, `checkout-experience`, and `recommendations`,
 - flag `beta-dashboard`,
-- flag `new-checkout`.
+- flag `new-checkout`,
+- flag `coupon-engine`,
+- flag `live-support-widget`.
 
 Explain:
 
-- both demo flags belong to one operational rollback group,
-- `beta-dashboard` remains available in Admin as an additional seeded flag.
+- checkout demo flags belong to the `checkout-experience` rollback group,
+- `coupon-engine` controls the demo app coupon discount in the checkout panel,
+- `live-support-widget` is a standalone flag with no group assignment,
+- `beta-dashboard` remains available in Admin as an additional standalone seeded
+  flag with no group assignment.
 - the streamlined demo app focuses on `new-checkout` users for role targeting
   and percentage rollout.
 
@@ -97,10 +107,11 @@ Explain:
 
 Return to the admin dashboard and open **Groups**.
 
-For group `customer-experience` in `production`, show:
+For group `checkout-experience` in `production`, show:
 
-- two assigned flags,
-- lifecycle status remains `Enabled` for both flags,
+- checkout flags such as `new-checkout`, `express-payment`,
+  `shipping-progress-meter`, and `coupon-engine`,
+- lifecycle status remains `Enabled` for assigned flags,
 - group kill switch starts `Inactive`.
 
 Activate the group kill switch and accept the confirmation. In the demo app,

@@ -3,7 +3,7 @@ import { FeatureFlagsRepository } from './feature-flags.repository';
 describe('FeatureFlagsRepository group membership', () => {
   const prisma = {
     featureFlag: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
     },
@@ -17,19 +17,18 @@ describe('FeatureFlagsRepository group membership', () => {
   });
 
   it('loads the currently assigned group', async () => {
-    prisma.featureFlag.findUnique.mockResolvedValue({ id: 'flag-1' });
+    prisma.featureFlag.findFirst.mockResolvedValue({ id: 'flag-1' });
 
     await repository.findByProjectIdAndKeyWithGroup(
       'project-1',
       'new-checkout',
     );
 
-    expect(prisma.featureFlag.findUnique).toHaveBeenCalledWith({
+    expect(prisma.featureFlag.findFirst).toHaveBeenCalledWith({
       where: {
-        projectId_key: {
-          projectId: 'project-1',
-          key: 'new-checkout',
-        },
+        projectId: 'project-1',
+        key: 'new-checkout',
+        deletedAt: null,
       },
       include: {
         group: {

@@ -52,6 +52,8 @@ export type FeatureFlag = {
     killSwitch: boolean;
   } | null;
   archivedAt: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
   createdAt: string;
   updatedAt: string;
 };

@@ -1,19 +1,19 @@
 import type { EvaluationContext } from '@ffp/js-sdk';
 
-export type DemoAccountRole = 'admin' | 'beta-tester' | 'user';
+export type DemoAccountRole =
+  | 'shop-admin'
+  | 'beta-customer'
+  | 'regular-customer';
 
 export type DemoAccountRecord = {
   id: string;
-  title: string;
-  customerLabel: string;
-  accountGroup: string;
+  userLabel: string;
   scenarioSummary: string;
-  expectedOutcome: string;
-  expectedReason: string;
+  organizationId: string;
+  organizationName: string;
   userId: string;
   targetingId: string;
   role: DemoAccountRole;
-  presenterNote: string;
 };
 
 export type DemoAccount = DemoAccountRecord & {
