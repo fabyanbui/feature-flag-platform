@@ -99,7 +99,15 @@ export function FlagListPage({
         event.preventDefault();
         setLoading(true);
         setError(null);
-        setSubmittedSearch(search.trim());
+
+        const nextSearch = search.trim();
+
+        if (nextSearch === submittedSearch) {
+            void loadFlags();
+            return;
+        }
+
+        setSubmittedSearch(nextSearch);
     }
 
     async function confirmPendingAction() {
@@ -271,7 +279,7 @@ export function FlagListPage({
 
                 {!loading && !error && flags.length > 0 ? (
                     <div className="table-wrap">
-                        <table className="data-table">
+                        <table className="data-table flag-table">
                             <thead>
                                 <tr>
                                     <th scope="col">Flag</th>
@@ -349,7 +357,7 @@ export function FlagListPage({
                                         </td>
 
                                         <td>
-                                            <div className="row-actions">
+                                            <div className="flag-row-actions">
                                                 <button
                                                     type="button"
                                                     className="button button-secondary"
@@ -382,77 +390,75 @@ export function FlagListPage({
                                                     Rules
                                                 </button>
 
-                                                <div className="action-stack">
-                                                    {flag.lifecycleStatus ===
-                                                    'ARCHIVED' ? (
-                                                        <button
-                                                            type="button"
-                                                            className="button button-secondary"
-                                                            onClick={() =>
-                                                                setPendingAction(
-                                                                    {
-                                                                        type: 'restore',
-                                                                        flag,
-                                                                    },
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                !canManageLifecycle
-                                                            }
-                                                            title={
-                                                                !canManageLifecycle
-                                                                    ? 'Only administrators can restore flags.'
-                                                                    : undefined
-                                                            }
-                                                        >
-                                                            Restore
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            className="button button-secondary"
-                                                            onClick={() =>
-                                                                setPendingAction(
-                                                                    {
-                                                                        type: 'archive',
-                                                                        flag,
-                                                                    },
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                !canManageLifecycle
-                                                            }
-                                                            title={
-                                                                !canManageLifecycle
-                                                                    ? 'Only administrators can archive flags.'
-                                                                    : undefined
-                                                            }
-                                                        >
-                                                            Archive
-                                                        </button>
-                                                    )}
-
+                                                {flag.lifecycleStatus ===
+                                                'ARCHIVED' ? (
                                                     <button
                                                         type="button"
-                                                        className="button button-danger"
+                                                        className="button button-secondary"
                                                         onClick={() =>
-                                                            setPendingAction({
-                                                                type: 'delete',
-                                                                flag,
-                                                            })
+                                                            setPendingAction(
+                                                                {
+                                                                    type: 'restore',
+                                                                    flag,
+                                                                },
+                                                            )
                                                         }
                                                         disabled={
                                                             !canManageLifecycle
                                                         }
                                                         title={
                                                             !canManageLifecycle
-                                                                ? 'Only administrators can delete flags.'
+                                                                ? 'Only administrators can restore flags.'
                                                                 : undefined
                                                         }
                                                     >
-                                                        Delete
+                                                        Restore
                                                     </button>
-                                                </div>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className="button button-secondary"
+                                                        onClick={() =>
+                                                            setPendingAction(
+                                                                {
+                                                                    type: 'archive',
+                                                                    flag,
+                                                                },
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            !canManageLifecycle
+                                                        }
+                                                        title={
+                                                            !canManageLifecycle
+                                                                ? 'Only administrators can archive flags.'
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        Archive
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    className="button button-danger"
+                                                    onClick={() =>
+                                                        setPendingAction({
+                                                            type: 'delete',
+                                                            flag,
+                                                        })
+                                                    }
+                                                    disabled={
+                                                        !canManageLifecycle
+                                                    }
+                                                    title={
+                                                        !canManageLifecycle
+                                                            ? 'Only administrators can delete flags.'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    Delete
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
