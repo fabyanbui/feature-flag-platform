@@ -1083,11 +1083,7 @@ dd {
 
 .stats-filter-grid {
   display: grid;
-  grid-template-columns:
-    minmax(12rem, 0.8fr)
-    minmax(12rem, 1fr)
-    minmax(12rem, 1fr)
-    auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: end;
 }
@@ -1188,10 +1184,80 @@ dd {
   font-weight: 800;
 }
 
+.section-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.45fr);
+  align-items: end;
+  gap: 1rem;
+}
+
+.section-toolbar > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.section-toolbar-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.section-toolbar-actions .button {
+  width: min(100%, 18rem);
+}
+
+.stats-filter-grid .filter-actions,
+.audit-filter-grid .filter-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+.stats-filter-grid .filter-actions,
+.audit-filter-grid .filter-actions {
+  padding-top: 0.25rem;
+}
+
+input[type='datetime-local'] {
+  color-scheme: dark;
+  min-height: 48px;
+}
+
+.time-range-shortcuts {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.time-range-shortcuts legend {
+  color: var(--admin-muted-strong);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.time-range-shortcuts > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.time-range-shortcuts .button {
+  min-height: 36px;
+  padding: 0.52rem 0.75rem;
+  font-size: 0.84rem;
+}
+
 @media (max-width: 980px) {
   .stats-filter-grid,
   .stats-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .section-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.5fr);
   }
 }
 
@@ -1199,6 +1265,22 @@ dd {
   .stats-filter-grid,
   .stats-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .section-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .section-toolbar-actions,
+  .stats-filter-grid .filter-actions,
+  .audit-filter-grid .filter-actions,
+  .time-range-shortcuts > div {
+    justify-content: flex-start;
+  }
+
+  .section-toolbar-actions .button,
+  .time-range-shortcuts .button {
+    width: 100%;
   }
 }
 

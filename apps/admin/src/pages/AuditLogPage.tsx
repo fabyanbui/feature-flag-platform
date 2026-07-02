@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
+import { TimeRangeShortcuts } from '../components/TimeRangeShortcuts';
 import { adminApi } from '../lib/api';
 import { formatStatusForDisplay } from '../lib/status';
 import type { AuditLog } from '../lib/types';
@@ -213,7 +214,9 @@ export function AuditLogPage({
                         From
                         <input
                             type="datetime-local"
+                            step="60"
                             value={filters.from}
+                            title="Use the date and time picker or a quick range below."
                             onChange={(event) =>
                                 setFilters((current) => ({
                                     ...current,
@@ -227,7 +230,9 @@ export function AuditLogPage({
                         To
                         <input
                             type="datetime-local"
+                            step="60"
                             value={filters.to}
+                            title="Use the date and time picker or a quick range below."
                             onChange={(event) =>
                                 setFilters((current) => ({
                                     ...current,
@@ -236,6 +241,15 @@ export function AuditLogPage({
                             }
                         />
                     </label>
+
+                    <TimeRangeShortcuts
+                        onChange={(range) =>
+                            setFilters((current) => ({
+                                ...current,
+                                ...range,
+                            }))
+                        }
+                    />
 
                     <div className="filter-actions">
                         <button type="submit" className="button button-primary">
@@ -254,23 +268,25 @@ export function AuditLogPage({
             </section>
 
             <section className="panel">
-                <div className="section-header">
+                <div className="section-toolbar">
                     <div>
                         <h2>Entries</h2>
                         <p>Newest audit entries appear first.</p>
                     </div>
 
-                    <button
-                        type="button"
-                        className="button button-secondary"
-                        onClick={() => {
-              setLoading(true);
-              setError(null);
-              void loadAuditLogs();
-            }}
-                    >
-                        Refresh
-                    </button>
+                    <div className="section-toolbar-actions">
+                        <button
+                            type="button"
+                            className="button button-secondary"
+                            onClick={() => {
+                                setLoading(true);
+                                setError(null);
+                                void loadAuditLogs();
+                            }}
+                        >
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? <LoadingState title="Loading audit logs..." /> : null}
