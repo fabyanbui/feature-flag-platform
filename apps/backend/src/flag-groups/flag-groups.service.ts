@@ -792,6 +792,8 @@ export class FlagGroupsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
       createdAt: Date;
       updatedAt: Date;
       environmentConfigs: Array<{
@@ -838,6 +840,8 @@ export class FlagGroupsService {
           }
         : null,
       archivedAt: flag.archivedAt,
+      deletedAt: flag.deletedAt ?? null,
+      deletedBy: flag.deletedBy ?? null,
       createdAt: flag.createdAt,
       updatedAt: flag.updatedAt,
     };

@@ -84,7 +84,7 @@ export class ProjectsService {
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
 
-    const existing = await this.projectsRepository.findByKey(body.key);
+    const existing = await this.projectsRepository.findAnyByKey(body.key);
 
     if (existing) {
       throw conflictError(`Project "${body.key}" already exists.`);
@@ -183,6 +183,65 @@ export class ProjectsService {
     return this.toResponse(project);
   }
 
+  async delete(projectKey: string): Promise<void> {
+    const actor = this.getRequiredActor();
+    const requestId = this.requestContext.getRequestId();
+
+    await this.transactionService.run(async (tx) => {
+      const existing = await this.projectsRepository.findByKey(projectKey, tx);
+
+      if (!existing) {
+        throw notFoundError(`Project "${projectKey}" was not found.`);
+      }
+
+      const blockers = await this.projectsRepository.countDeletionBlockers(
+        existing.id,
+        tx,
+      );
+      const blockerMessages = [
+        blockers.flags > 0 ? `${blockers.flags} feature flag(s)` : null,
+        blockers.groups > 0 ? `${blockers.groups} flag group(s)` : null,
+        blockers.sampleUsers > 0
+          ? `${blockers.sampleUsers} sample user context(s)`
+          : null,
+      ].filter(Boolean);
+
+      if (blockerMessages.length > 0) {
+        throw conflictError(
+          `Project "${projectKey}" cannot be deleted until it is empty. Delete feature flags, delete flag groups, and delete sample users first: ${blockerMessages.join(', ')}.`,
+        );
+      }
+
+      const deletedAt = new Date();
+      const deleted = await this.projectsRepository.updateByKey(
+        projectKey,
+        {
+          deletedAt,
+          deletedBy: actor,
+        },
+        tx,
+      );
+
+      await this.auditLogService.record(tx, {
+        projectId: existing.id,
+        projectKey: existing.key,
+        targetType: AuditTargetType.PROJECT,
+        targetId: existing.id,
+        targetKey: existing.key,
+        action: AuditAction.PROJECT_DELETED,
+        actor,
+        before: this.projectSnapshot(existing),
+        after: this.projectSnapshot(deleted),
+        metadata: {
+          source: 'api',
+          deletionMode: 'soft-delete',
+          emptyProjectRequired: true,
+        },
+        requestId,
+      });
+    });
+  }
+
   private buildOrderBy(
     query: ProjectQueryDto,
   ): Prisma.ProjectOrderByWithRelationInput {
@@ -230,13 +289,32 @@ export class ProjectsService {
     key: string;
     name: string;
     description: string | null;
+    deletedAt?: Date | null;
+    deletedBy?: string | null;
   }) {
-    return cleanAuditSnapshot({
+    const snapshot: {
+      id: string;
+      key: string;
+      name: string;
+      description: string | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
+    } = {
       id: project.id,
       key: project.key,
       name: project.name,
       description: project.description,
-    });
+    };
+
+    if ('deletedAt' in project) {
+      snapshot.deletedAt = project.deletedAt ?? null;
+    }
+
+    if ('deletedBy' in project) {
+      snapshot.deletedBy = project.deletedBy ?? null;
+    }
+
+    return cleanAuditSnapshot(snapshot);
   }
 
   private toResponse(project: {

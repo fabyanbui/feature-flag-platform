@@ -234,9 +234,22 @@ export const adminApi = {
         });
     },
 
+    deleteProject(projectKey: string) {
+        return apiRequest<void>(projectPath(projectKey), {
+            method: 'DELETE',
+        });
+    },
+
     listFlags(projectKey: string, query: ListFlagsQuery = {}) {
         return apiRequest<PageResponse<FeatureFlag>>(
             `${projectPath(projectKey)}/flags`,
+            { query },
+        );
+    },
+
+    listDeletedFlags(projectKey: string, query: ListFlagsQuery = {}) {
+        return apiRequest<PageResponse<FeatureFlag>>(
+            `${projectPath(projectKey)}/flags/deleted`,
             { query },
         );
     },
@@ -275,6 +288,21 @@ export const adminApi = {
                 method: 'POST',
             },
         );
+    },
+
+    restoreDeletedFlag(projectKey: string, flagKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/restore-deleted`,
+            {
+                method: 'POST',
+            },
+        );
+    },
+
+    deleteFlag(projectKey: string, flagKey: string) {
+        return apiRequest<void>(flagPath(projectKey, flagKey), {
+            method: 'DELETE',
+        });
     },
 
     listFlagGroups(projectKey: string, query: ListFlagGroupsQuery = {}) {

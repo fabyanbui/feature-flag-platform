@@ -57,6 +57,59 @@ export class FeatureFlagsService {
 
     const where: Prisma.FeatureFlagWhereInput = {
       projectId: project.id,
+      deletedAt: null,
+      lifecycleStatus: query.lifecycleStatus,
+      ...(query.search
+        ? {
+            OR: [
+              { key: { contains: query.search, mode: 'insensitive' } },
+              { name: { contains: query.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(query.status
+        ? {
+            environmentConfigs: {
+              some: {
+                status: query.status,
+              },
+            },
+          }
+        : {}),
+    };
+
+    const orderBy = this.buildOrderBy(query);
+
+    const [items, total] = await Promise.all([
+      this.featureFlagsRepository.findMany(
+        where,
+        orderBy,
+        query.limit,
+        query.offset,
+      ),
+      this.featureFlagsRepository.count(where),
+    ]);
+
+    return createPageResponse(
+      items.map((flag) => this.toResponse(project.key, flag)),
+      query.limit,
+      query.offset,
+      total,
+    );
+  }
+
+  async listDeleted(projectKey: string, query: FeatureFlagQueryDto) {
+    const project = await this.projectsRepository.findByKey(projectKey);
+
+    if (!project) {
+      throw notFoundError(`Project "${projectKey}" was not found.`);
+    }
+
+    const where: Prisma.FeatureFlagWhereInput = {
+      projectId: project.id,
+      deletedAt: {
+        not: null,
+      },
       lifecycleStatus: query.lifecycleStatus,
       ...(query.search
         ? {
@@ -119,7 +172,7 @@ export class FeatureFlagsService {
       throw notFoundError(`Project "${projectKey}" was not found.`);
     }
 
-    const existing = await this.featureFlagsRepository.findByProjectIdAndKey(
+    const existing = await this.featureFlagsRepository.findAnyByProjectIdAndKey(
       project.id,
       body.key,
     );
@@ -329,6 +382,165 @@ export class FeatureFlagsService {
     );
   }
 
+  async delete(projectKey: string, flagKey: string): Promise<void> {
+    const actor = this.getRequiredActor();
+    const requestId = this.requestContext.getRequestId();
+
+    const result = await this.transactionService.run(async (tx) => {
+      const project = await this.projectsRepository.findByKey(projectKey, tx);
+
+      if (!project) {
+        throw notFoundError(`Project "${projectKey}" was not found.`);
+      }
+
+      const existingFlag =
+        await this.featureFlagsRepository.findByProjectIdAndKeyWithConfigs(
+          project.id,
+          flagKey,
+          tx,
+        );
+
+      if (!existingFlag) {
+        throw notFoundError(
+          `Feature flag "${flagKey}" was not found in project "${projectKey}".`,
+        );
+      }
+
+      const deletedFlag =
+        await this.featureFlagsRepository.updateByProjectIdAndKey(
+          project.id,
+          flagKey,
+          {
+            deletedAt: new Date(),
+            deletedBy: actor,
+          },
+          tx,
+        );
+
+      const afterFlag =
+        await this.featureFlagsRepository.findDeletedByProjectIdAndKeyWithConfigs(
+          project.id,
+          deletedFlag.key,
+          tx,
+        );
+
+      if (!afterFlag) {
+        throw notFoundError(`Feature flag "${deletedFlag.key}" was not found.`);
+      }
+
+      const config = this.getDefaultConfig(afterFlag);
+
+      await this.auditLogService.record(tx, {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: config.environmentId,
+        environmentKey: config.environment.key,
+        targetType: AuditTargetType.FEATURE_FLAG,
+        targetId: deletedFlag.id,
+        targetKey: deletedFlag.key,
+        action: AuditAction.FEATURE_FLAG_DELETED,
+        actor,
+        before: this.toSnapshot(project.key, existingFlag),
+        after: this.toSnapshot(project.key, afterFlag),
+        metadata: {
+          source: 'api',
+          deletionMode: 'soft-delete',
+        },
+        requestId,
+      });
+
+      return { project, flag: afterFlag };
+    });
+
+    await this.cacheInvalidator.invalidateFlag(
+      result.project.key,
+      result.flag.key,
+    );
+  }
+
+  async restoreDeleted(
+    projectKey: string,
+    flagKey: string,
+  ): Promise<FeatureFlagResponseDto> {
+    const actor = this.getRequiredActor();
+    const requestId = this.requestContext.getRequestId();
+
+    const result = await this.transactionService.run(async (tx) => {
+      const project = await this.projectsRepository.findByKey(projectKey, tx);
+
+      if (!project) {
+        throw notFoundError(`Project "${projectKey}" was not found.`);
+      }
+
+      const existingFlag =
+        await this.featureFlagsRepository.findDeletedByProjectIdAndKeyWithConfigs(
+          project.id,
+          flagKey,
+          tx,
+        );
+
+      if (!existingFlag) {
+        throw notFoundError(
+          `Deleted feature flag "${flagKey}" was not found in project "${projectKey}".`,
+        );
+      }
+
+      const restoredFlag =
+        await this.featureFlagsRepository.updateByProjectIdAndKey(
+          project.id,
+          flagKey,
+          {
+            deletedAt: null,
+            deletedBy: null,
+          },
+          tx,
+        );
+
+      const afterFlag =
+        await this.featureFlagsRepository.findByProjectIdAndKeyWithConfigs(
+          project.id,
+          restoredFlag.key,
+          tx,
+        );
+
+      if (!afterFlag) {
+        throw notFoundError(
+          `Feature flag "${restoredFlag.key}" was not found.`,
+        );
+      }
+
+      const config = this.getDefaultConfig(afterFlag);
+
+      await this.auditLogService.record(tx, {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: config.environmentId,
+        environmentKey: config.environment.key,
+        targetType: AuditTargetType.FEATURE_FLAG,
+        targetId: restoredFlag.id,
+        targetKey: restoredFlag.key,
+        action: AuditAction.FEATURE_FLAG_RESTORED,
+        actor,
+        before: this.toSnapshot(project.key, existingFlag),
+        after: this.toSnapshot(project.key, afterFlag),
+        metadata: {
+          source: 'api',
+          restoredFrom: 'soft-delete',
+        },
+        requestId,
+      });
+
+      return { project, flag: afterFlag };
+    });
+
+    await this.cacheInvalidator.invalidateFlag(
+      result.project.key,
+      result.flag.key,
+    );
+
+    return this.toResponse(result.project.key, result.flag);
+  }
+
   private async updateLifecycle(
     projectKey: string,
     flagKey: string,
@@ -510,6 +722,8 @@ export class FeatureFlagsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
       environmentConfigs: Array<{
         id: string;
         environmentId: string;
@@ -534,6 +748,8 @@ export class FeatureFlagsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
     },
     config: {
       status: FlagConfigStatus;
@@ -554,6 +770,8 @@ export class FeatureFlagsService {
       killSwitch: config.killSwitch,
       environmentKey,
       archivedAt: flag.archivedAt,
+      deletedAt: flag.deletedAt ?? null,
+      deletedBy: flag.deletedBy ?? null,
     });
   }
 
@@ -566,6 +784,8 @@ export class FeatureFlagsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
       createdAt: Date;
       updatedAt: Date;
       environmentConfigs: Array<{
@@ -612,6 +832,8 @@ export class FeatureFlagsService {
           }
         : null,
       archivedAt: flag.archivedAt,
+      deletedAt: flag.deletedAt ?? null,
+      deletedBy: flag.deletedBy ?? null,
       createdAt: flag.createdAt,
       updatedAt: flag.updatedAt,
     };

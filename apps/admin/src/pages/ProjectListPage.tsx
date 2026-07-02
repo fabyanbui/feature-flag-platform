@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
 import { adminApi } from '../lib/api';
 import type { Project } from '../lib/types';
@@ -30,10 +31,14 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
     const [submittedSearch, setSubmittedSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
+    const [deletingProjectKey, setDeletingProjectKey] = useState<string | null>(
+        null,
+    );
     const [error, setError] = useState<string | null>(null);
     const [createForm, setCreateForm] =
         useState<CreateProjectForm>(initialCreateForm);
     const [formError, setFormError] = useState<string | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
 
     const loadProjects = useCallback(async () => {
         try {
@@ -45,6 +50,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
             });
 
             setProjects(response.items);
+            setError(null);
         } catch (requestError) {
             setError(
                 requestError instanceof Error
@@ -110,6 +116,30 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
         }
     }
 
+    async function confirmDeleteProject() {
+        if (!pendingDelete) {
+            return;
+        }
+
+        setDeletingProjectKey(pendingDelete.key);
+        setError(null);
+
+        try {
+            await adminApi.deleteProject(pendingDelete.key);
+            setPendingDelete(null);
+            await loadProjects();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : 'Failed to delete project.',
+            );
+            setPendingDelete(null);
+        } finally {
+            setDeletingProjectKey(null);
+        }
+    }
+
     return (
         <section className="page-stack">
             <header className="page-header">
@@ -128,7 +158,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                 {!canManageProjects ? (
                     <p className="permission-notice" id="project-permission-help">
                         Read-only for this identity. Only administrators can
-                        create projects.
+                        create or delete empty projects.
                     </p>
                 ) : null}
 
@@ -266,8 +296,26 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                                         type="button"
                                         className="button button-primary"
                                         onClick={() => onOpenProject(project.key)}
+                                        disabled={deletingProjectKey === project.key}
                                     >
                                         Open flags
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="button button-danger"
+                                        onClick={() => setPendingDelete(project)}
+                                        disabled={
+                                            !canManageProjects ||
+                                            deletingProjectKey === project.key
+                                        }
+                                        title={
+                                            !canManageProjects
+                                                ? 'Only administrators can delete projects.'
+                                                : 'Only projects with no visible flags, groups, or sample users can be deleted.'
+                                        }
+                                    >
+                                        Delete project
                                     </button>
                                 </div>
                             </article>
@@ -275,6 +323,21 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                     </div>
                 ) : null}
             </section>
+
+            <ConfirmDialog
+                open={pendingDelete !== null}
+                title="Delete project?"
+                description={
+                    pendingDelete
+                        ? `Delete "${pendingDelete.key}" as a soft delete. This only succeeds when the project is empty: no visible feature flags, flag groups, or sample users. Audit history remains append-only.`
+                        : ''
+                }
+                confirmLabel="Delete project"
+                destructive
+                busy={deletingProjectKey !== null}
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDeleteProject}
+            />
         </section>
     );
 }

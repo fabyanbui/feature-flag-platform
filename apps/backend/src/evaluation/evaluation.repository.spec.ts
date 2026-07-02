@@ -9,13 +9,13 @@ import { EvaluationRepository } from './evaluation.repository';
 describe('EvaluationRepository', () => {
   const prisma = {
     project: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     environment: {
       findFirst: jest.fn(),
     },
     featureFlag: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     flagEnvironmentConfig: {
       findUnique: jest.fn(),
@@ -34,7 +34,7 @@ describe('EvaluationRepository', () => {
   });
 
   it('returns null when project is missing', async () => {
-    prisma.project.findUnique.mockResolvedValue(null);
+    prisma.project.findFirst.mockResolvedValue(null);
 
     await expect(
       repository.findSnapshot({
@@ -44,13 +44,13 @@ describe('EvaluationRepository', () => {
     ).resolves.toBeNull();
 
     expect(prisma.environment.findFirst).not.toHaveBeenCalled();
-    expect(prisma.featureFlag.findUnique).not.toHaveBeenCalled();
+    expect(prisma.featureFlag.findFirst).not.toHaveBeenCalled();
     expect(prisma.flagEnvironmentConfig.findUnique).not.toHaveBeenCalled();
     expect(prisma.flagGroupConfig.findUnique).not.toHaveBeenCalled();
   });
 
   it('returns null when default environment is missing', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue(null);
@@ -73,11 +73,11 @@ describe('EvaluationRepository', () => {
       },
     });
 
-    expect(prisma.featureFlag.findUnique).not.toHaveBeenCalled();
+    expect(prisma.featureFlag.findFirst).not.toHaveBeenCalled();
   });
 
   it('returns null when explicit environment is missing', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue(null);
@@ -101,18 +101,18 @@ describe('EvaluationRepository', () => {
       },
     });
 
-    expect(prisma.featureFlag.findUnique).not.toHaveBeenCalled();
+    expect(prisma.featureFlag.findFirst).not.toHaveBeenCalled();
   });
 
   it('returns null when flag is missing', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue(null);
+    prisma.featureFlag.findFirst.mockResolvedValue(null);
 
     await expect(
       repository.findSnapshot({
@@ -121,12 +121,11 @@ describe('EvaluationRepository', () => {
       }),
     ).resolves.toBeNull();
 
-    expect(prisma.featureFlag.findUnique).toHaveBeenCalledWith({
+    expect(prisma.featureFlag.findFirst).toHaveBeenCalledWith({
       where: {
-        projectId_key: {
-          projectId: 'project-1',
-          key: 'missing-flag',
-        },
+        projectId: 'project-1',
+        key: 'missing-flag',
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -139,14 +138,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('returns null when config is missing', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
@@ -201,14 +200,14 @@ describe('EvaluationRepository', () => {
       },
     ];
 
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
@@ -246,14 +245,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('returns the actual default environment identity for metric recording', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
@@ -279,14 +278,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('orders selected rules by priority ascending', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: null,
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
@@ -317,14 +316,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('returns active group state for the evaluated environment', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: 'group-1',
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
@@ -380,14 +379,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('throws when an assigned group is missing its environment config', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: 'group-1',
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
@@ -409,14 +408,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('does not require group state when the flag is archived', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: 'group-1',
       lifecycleStatus: FeatureFlagLifecycleStatus.ARCHIVED,
@@ -444,14 +443,14 @@ describe('EvaluationRepository', () => {
   });
 
   it('does not require group state when the flag config is disabled', async () => {
-    prisma.project.findUnique.mockResolvedValue({
+    prisma.project.findFirst.mockResolvedValue({
       id: 'project-1',
     });
     prisma.environment.findFirst.mockResolvedValue({
       id: 'environment-1',
       key: 'production',
     });
-    prisma.featureFlag.findUnique.mockResolvedValue({
+    prisma.featureFlag.findFirst.mockResolvedValue({
       id: 'flag-1',
       groupId: 'group-1',
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,

@@ -12,6 +12,8 @@ function createProject(overrides = {}) {
     description: 'Demo project description.',
     createdAt: fixedDate,
     updatedAt: fixedDate,
+    deletedAt: null,
+    deletedBy: null,
     ...overrides,
   };
 }
@@ -38,10 +40,12 @@ describe('ProjectsService', () => {
 
   const projectsRepository = {
     findByKey: jest.fn(),
+    findAnyByKey: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
     updateByKey: jest.fn(),
+    countDeletionBlockers: jest.fn(),
   };
 
   const environmentsRepository = {
@@ -236,12 +240,13 @@ describe('ProjectsService', () => {
       });
 
       expect(projectsRepository.findByKey).not.toHaveBeenCalled();
+      expect(projectsRepository.findAnyByKey).not.toHaveBeenCalled();
       expect(transactionService.run).not.toHaveBeenCalled();
       expect(auditLogService.record).not.toHaveBeenCalled();
     });
 
     it('rejects duplicate project key with CONFLICT', async () => {
-      projectsRepository.findByKey.mockResolvedValue(createProject());
+      projectsRepository.findAnyByKey.mockResolvedValue(createProject());
 
       await expect(
         service.create({
@@ -254,7 +259,9 @@ describe('ProjectsService', () => {
         }),
       });
 
-      expect(projectsRepository.findByKey).toHaveBeenCalledWith('demo-project');
+      expect(projectsRepository.findAnyByKey).toHaveBeenCalledWith(
+        'demo-project',
+      );
       expect(transactionService.run).not.toHaveBeenCalled();
       expect(auditLogService.record).not.toHaveBeenCalled();
     });
@@ -263,7 +270,7 @@ describe('ProjectsService', () => {
       const project = createProject();
       const environment = createEnvironment();
 
-      projectsRepository.findByKey.mockResolvedValue(null);
+      projectsRepository.findAnyByKey.mockResolvedValue(null);
       projectsRepository.create.mockResolvedValue(project);
       environmentsRepository.create.mockResolvedValue(environment);
 
@@ -310,7 +317,7 @@ describe('ProjectsService', () => {
       const project = createProject();
       const environment = createEnvironment();
 
-      projectsRepository.findByKey.mockResolvedValue(null);
+      projectsRepository.findAnyByKey.mockResolvedValue(null);
       projectsRepository.create.mockResolvedValue(project);
       environmentsRepository.create.mockResolvedValue(environment);
 
@@ -333,12 +340,12 @@ describe('ProjectsService', () => {
           action: AuditAction.PROJECT_CREATED,
           actor: 'mentor@example.local',
           before: null,
-          after: {
+          after: expect.objectContaining({
             id: 'project-1',
             key: 'demo-project',
             name: 'Demo Project',
             description: 'Demo project description.',
-          },
+          }),
           metadata: {
             source: 'api',
             defaultEnvironmentKey: 'production',
@@ -490,20 +497,130 @@ describe('ProjectsService', () => {
           targetKey: 'demo-project',
           action: AuditAction.PROJECT_UPDATED,
           actor: 'mentor@example.local',
-          before: {
+          before: expect.objectContaining({
             id: 'project-1',
             key: 'demo-project',
             name: 'Old Project',
             description: 'Old description.',
-          },
-          after: {
+          }),
+          after: expect.objectContaining({
             id: 'project-1',
             key: 'demo-project',
             name: 'Updated Project',
             description: 'Updated description.',
-          },
+          }),
           metadata: {
             source: 'api',
+          },
+          requestId: 'req-test',
+        }),
+      );
+    });
+  });
+
+  describe('delete', () => {
+    it('rejects missing actor before mutation', async () => {
+      requestContext.getActor.mockReturnValue(undefined);
+
+      await expect(service.delete('demo-project')).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ApiErrorCode.VALIDATION_ERROR,
+        }),
+      });
+
+      expect(transactionService.run).not.toHaveBeenCalled();
+      expect(projectsRepository.updateByKey).not.toHaveBeenCalled();
+      expect(auditLogService.record).not.toHaveBeenCalled();
+    });
+
+    it('throws NOT_FOUND when project does not exist inside transaction', async () => {
+      projectsRepository.findByKey.mockResolvedValue(null);
+
+      await expect(service.delete('missing-project')).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ApiErrorCode.NOT_FOUND,
+        }),
+      });
+
+      expect(projectsRepository.findByKey).toHaveBeenCalledWith(
+        'missing-project',
+        tx,
+      );
+      expect(projectsRepository.updateByKey).not.toHaveBeenCalled();
+      expect(auditLogService.record).not.toHaveBeenCalled();
+    });
+
+    it('rejects deletion when the project is not empty', async () => {
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      projectsRepository.countDeletionBlockers.mockResolvedValue({
+        flags: 2,
+        groups: 1,
+        sampleUsers: 3,
+      });
+
+      await expect(service.delete('demo-project')).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ApiErrorCode.CONFLICT,
+        }),
+      });
+
+      expect(projectsRepository.updateByKey).not.toHaveBeenCalled();
+      expect(auditLogService.record).not.toHaveBeenCalled();
+    });
+
+    it('soft deletes an empty project and writes PROJECT_DELETED audit log', async () => {
+      const existing = createProject();
+      const deleted = createProject({
+        deletedAt: fixedDate,
+        deletedBy: 'mentor@example.local',
+      });
+
+      projectsRepository.findByKey.mockResolvedValue(existing);
+      projectsRepository.countDeletionBlockers.mockResolvedValue({
+        flags: 0,
+        groups: 0,
+        sampleUsers: 0,
+      });
+      projectsRepository.updateByKey.mockResolvedValue(deleted);
+
+      await service.delete('demo-project');
+
+      expect(projectsRepository.countDeletionBlockers).toHaveBeenCalledWith(
+        'project-1',
+        tx,
+      );
+      expect(projectsRepository.updateByKey).toHaveBeenCalledWith(
+        'demo-project',
+        {
+          deletedAt: expect.any(Date),
+          deletedBy: 'mentor@example.local',
+        },
+        tx,
+      );
+      expect(auditLogService.record).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          projectId: 'project-1',
+          projectKey: 'demo-project',
+          targetType: AuditTargetType.PROJECT,
+          targetId: 'project-1',
+          targetKey: 'demo-project',
+          action: AuditAction.PROJECT_DELETED,
+          actor: 'mentor@example.local',
+          before: expect.objectContaining({
+            key: 'demo-project',
+            deletedAt: null,
+            deletedBy: null,
+          }),
+          after: expect.objectContaining({
+            key: 'demo-project',
+            deletedAt: fixedDate.toISOString(),
+            deletedBy: 'mentor@example.local',
+          }),
+          metadata: {
+            source: 'api',
+            deletionMode: 'soft-delete',
+            emptyProjectRequired: true,
           },
           requestId: 'req-test',
         }),

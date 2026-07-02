@@ -136,6 +136,16 @@
   justify-content: flex-end;
 }
 
+.action-stack {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 8.5rem;
+}
+
+.action-stack .button {
+  width: 100%;
+}
+
 .page-stack {
   display: grid;
   gap: 22px;
