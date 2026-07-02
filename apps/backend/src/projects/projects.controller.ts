@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -59,5 +62,12 @@ export class ProjectsController {
     @Body() body: UpdateProjectDto,
   ): Promise<ProjectResponseDto> {
     return this.projectsService.update(params.projectKey, body);
+  }
+
+  @Delete(':projectKey')
+  @RequirePermissions(Permission.PROJECT_MANAGE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(@Param() params: ProjectKeyParamDto): Promise<void> {
+    return this.projectsService.delete(params.projectKey);
   }
 }

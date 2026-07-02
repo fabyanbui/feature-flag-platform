@@ -1,89 +1,116 @@
-import type { CartLine, DemoAccountRecord, Product } from './demoAccounts';
+import type {
+  CartLine,
+  DemoAccountRecord,
+  DemoAccountRole,
+  Product,
+} from './demoAccounts';
 
-const checkoutRolloutAccountSeed: readonly [
+type OrganizationAccountPlan = {
+  organizationId: string;
+  organizationName: string;
+  shopAdmins: number;
+  betaCustomers: number;
+  regularCustomers: number;
+};
+
+type CheckoutRolloutAccountSeedRow = [
   accountNumber: string,
   targetingId: string,
-  expectedReason: string,
-  expectedOutcome: string,
-][] = [
-  ['01', 'demo-rollout-01', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['02', 'demo-rollout-03', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['03', 'demo-rollout-06', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['04', 'demo-rollout-08', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['05', 'demo-rollout-11', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['06', 'demo-rollout-13', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['07', 'demo-rollout-17', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['08', 'demo-rollout-18', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['09', 'demo-rollout-20', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['10', 'demo-rollout-24', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
-  ['11', 'demo-rollout-32', 'PERCENTAGE_ROLLOUT', 'New One-Page Checkout is visible for this rollout account.'],
-  ['12', 'demo-rollout-34', 'DEFAULT_OFF', 'Classic Checkout remains active for this rollout account.'],
+  organizationId: string,
+  organizationName: string,
+  role: DemoAccountRole,
 ];
 
+const organizationAccountPlans: readonly OrganizationAccountPlan[] = [
+  {
+    organizationId: 'org-alpha',
+    organizationName: 'Alpha Audio Collective',
+    shopAdmins: 1,
+    betaCustomers: 8,
+    regularCustomers: 21,
+  },
+  {
+    organizationId: 'org-beta',
+    organizationName: 'Beta Retail Lab',
+    shopAdmins: 1,
+    betaCustomers: 5,
+    regularCustomers: 19,
+  },
+  {
+    organizationId: 'org-gamma',
+    organizationName: 'Gamma Gadget Market',
+    shopAdmins: 1,
+    betaCustomers: 4,
+    regularCustomers: 15,
+  },
+  {
+    organizationId: 'org-delta',
+    organizationName: 'Delta Digital Supply',
+    shopAdmins: 1,
+    betaCustomers: 2,
+    regularCustomers: 12,
+  },
+  {
+    organizationId: 'org-epsilon',
+    organizationName: 'Epsilon Electronics',
+    shopAdmins: 1,
+    betaCustomers: 1,
+    regularCustomers: 8,
+  },
+];
+
+function createCheckoutRolloutAccountSeed(): CheckoutRolloutAccountSeedRow[] {
+  let nextAccountNumber = 1;
+
+  return organizationAccountPlans.flatMap((organization) => {
+    const roles: DemoAccountRole[] = [
+      ...Array.from(
+        { length: organization.shopAdmins },
+        () => 'shop-admin' as const,
+      ),
+      ...Array.from(
+        { length: organization.betaCustomers },
+        () => 'beta-customer' as const,
+      ),
+      ...Array.from(
+        { length: organization.regularCustomers },
+        () => 'regular-customer' as const,
+      ),
+    ];
+
+    return roles.map((role): CheckoutRolloutAccountSeedRow => {
+      const accountNumber = String(nextAccountNumber).padStart(3, '0');
+      nextAccountNumber += 1;
+
+      return [
+        accountNumber,
+        `demo-rollout-${accountNumber}`,
+        organization.organizationId,
+        organization.organizationName,
+        role,
+      ];
+    });
+  });
+}
+
+const checkoutRolloutAccountSeed: readonly CheckoutRolloutAccountSeedRow[] =
+  createCheckoutRolloutAccountSeed();
+
 const checkoutRolloutAccounts: DemoAccountRecord[] = checkoutRolloutAccountSeed.map(
-  ([accountNumber, targetingId, expectedReason, expectedOutcome]) => ({
+  ([accountNumber, targetingId, organizationId, organizationName, role]) => ({
     id: `rollout-account-${accountNumber}`,
-    title: `Rollout account ${accountNumber}`,
-    customerLabel: `Customer account ${accountNumber}`,
-    accountGroup: 'Staged checkout rollout',
+    userLabel: `User account ${accountNumber}`,
     scenarioSummary:
-      'Regular shopper in the staged account series. Switch accounts to see gradual release behavior.',
-    expectedOutcome,
-    expectedReason,
+      'Returning shopper with saved cart details and a familiar checkout setup.',
+    organizationId,
+    organizationName,
     userId: targetingId,
     targetingId,
-    role: 'user',
-    presenterNote:
-      'Regular account in the deterministic rollout series. Re-evaluate the same account to show the result stays stable.',
+    role,
   }),
 );
 
 export const demoAccountSeed: readonly DemoAccountRecord[] = [
-  {
-    id: 'role-targeting-on',
-    title: 'Early-access customer',
-    customerLabel: 'Beta customer',
-    accountGroup: 'Role-based early access',
-    scenarioSummary:
-      'Shows a customer segment that receives the newest checkout experience before general rollout.',
-    expectedOutcome: 'New One-Page Checkout visible for this customer segment.',
-    expectedReason: 'ROLE_MATCH',
-    userId: 'demo-user-beta',
-    targetingId: 'demo-user-beta',
-    role: 'beta-tester',
-    presenterNote: 'Expected technical reason: ROLE_MATCH.',
-  },
-  {
-    id: 'regular-customer',
-    title: 'Regular customer',
-    customerLabel: 'Regular customer',
-    accountGroup: 'Standard customers',
-    scenarioSummary:
-      'Shows a standard ecommerce customer with one user ID, one targeting ID, and one role.',
-    expectedOutcome:
-      'Checkout visibility depends on deterministic percentage rollout for this account.',
-    expectedReason: 'DEFAULT_OFF or PERCENTAGE_ROLLOUT',
-    userId: 'demo-user-regular',
-    targetingId: 'demo-user-regular',
-    role: 'user',
-    presenterNote:
-      'Use Customer account 01–12 for a more predictable included/excluded rollout series.',
-  },
-  {
-    id: 'admin-preview-customer',
-    title: 'Admin preview customer',
-    customerLabel: 'Admin preview customer',
-    accountGroup: 'Admin allowlist preview',
-    scenarioSummary:
-      'Shows an ecommerce preview customer that is explicitly allowlisted by user ID.',
-    expectedOutcome: 'New One-Page Checkout visible for the allowlisted preview account.',
-    expectedReason: 'USER_ALLOWLIST',
-    userId: 'demo-user-admin',
-    targetingId: 'demo-user-admin',
-    role: 'admin',
-    presenterNote:
-      'This is only a storefront sample account, not login, registration, or RBAC authentication.',
-  },
   ...checkoutRolloutAccounts,
 ];
 
@@ -128,17 +155,18 @@ export const productSeed: readonly Product[] = [
     badge: 'Add-on',
     accent: 'orange',
   },
+  {
+    id: 'studio-stand',
+    name: 'Adjustable Studio Stand',
+    category: 'Accessories',
+    description: 'Weighted desktop stand that keeps headphones displayed, protected, and easy to reach.',
+    price: 39,
+    rating: 4.7,
+    badge: 'Desk setup',
+    accent: 'blue',
+  },
 ];
 
 export const cartSeed: Record<string, CartLine[]> = {
-  'role-targeting-on': [
-    { productId: 'headphones-pro', quantity: 1 },
-    { productId: 'charging-dock', quantity: 1 },
-  ],
-  'regular-customer': [{ productId: 'headphones-pro', quantity: 1 }],
-  'admin-preview-customer': [
-    { productId: 'headphones-pro', quantity: 1 },
-    { productId: 'speaker-mini', quantity: 1 },
-  ],
-  'rollout-account-06': [{ productId: 'audio-case', quantity: 2 }],
+  'rollout-account-006': [{ productId: 'audio-case', quantity: 2 }],
 };

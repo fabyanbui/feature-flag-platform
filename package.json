@@ -20,6 +20,9 @@
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "diff:check": "git diff --check"
+    "diff:check": "git diff --check",
+    "dev:demo:staging": "VITE_ENVIRONMENT_KEY=staging npm run dev --workspace=@ffp/demo -- --host 0.0.0.0 --port 5175",
+    "build:demo:staging": "npm run build:staging --workspace=@ffp/demo",
+    "preview:demo:staging": "npm run preview --workspace=@ffp/demo -- --host 0.0.0.0 --port 4175"
   }
 }

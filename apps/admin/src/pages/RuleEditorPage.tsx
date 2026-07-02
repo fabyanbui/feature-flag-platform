@@ -37,7 +37,7 @@ type EvaluationForm = {
 const initialEvaluationForm: EvaluationForm = {
     targetingKey: 'demo-user-beta',
     userId: 'demo-user-beta',
-    roles: 'beta-tester',
+    roles: 'beta-customer',
 };
 
 export function RuleEditorPage({
@@ -301,7 +301,7 @@ export function RuleEditorPage({
                         but evaluation testing remains available.
                     </p>
                 ) : null}
-                <div className="section-header">
+                <div className="section-header rules-section-header">
                     <div>
                         <h2>Rules</h2>
                         <p>
@@ -311,7 +311,7 @@ export function RuleEditorPage({
                         </p>
                     </div>
 
-                    <div className="header-actions">
+                    <div className="header-actions rules-section-actions">
                         <button
                             type="button"
                             className="button button-secondary"
@@ -488,7 +488,7 @@ export function RuleEditorPage({
                                     roles: event.target.value,
                                 }))
                             }
-                            placeholder="beta-tester, admin"
+                            placeholder="shop-admin, beta-customer, regular-customer"
                         />
                     </label>
 
@@ -618,7 +618,7 @@ function defaultValueForRuleType(type: RuleType): string {
     }
 
     if (type === 'ROLE_TARGETING') {
-        return 'beta-tester';
+        return 'beta-customer';
     }
 
     return 'demo-user-beta';
@@ -662,7 +662,7 @@ function placeholderForRuleType(type: RuleType): string {
         case 'USER_ALLOWLIST':
             return 'demo-user-beta, demo-user-admin';
         case 'ROLE_TARGETING':
-            return 'beta-tester, admin';
+            return 'shop-admin, beta-customer, regular-customer';
         case 'PERCENTAGE_ROLLOUT':
             return '25';
     }

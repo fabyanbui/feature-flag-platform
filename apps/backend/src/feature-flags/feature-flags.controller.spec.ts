@@ -3,11 +3,14 @@ import { FeatureFlagsController } from './feature-flags.controller';
 describe('FeatureFlagsController', () => {
   const featureFlagsService = {
     list: jest.fn(),
+    listDeleted: jest.fn(),
     create: jest.fn(),
     get: jest.fn(),
     update: jest.fn(),
     archive: jest.fn(),
     restore: jest.fn(),
+    delete: jest.fn(),
+    restoreDeleted: jest.fn(),
   };
 
   let controller: FeatureFlagsController;
@@ -47,6 +50,25 @@ describe('FeatureFlagsController', () => {
     expect(featureFlagsService.create).toHaveBeenCalledWith(
       'demo-project',
       body,
+    );
+  });
+
+  it('delegates listDeleted to service', async () => {
+    const params = { projectKey: 'demo-project' };
+    const query = { limit: 20, offset: 0 };
+    const response = {
+      items: [],
+      page: { limit: 20, offset: 0, total: 0, hasNext: false },
+    };
+
+    featureFlagsService.listDeleted.mockResolvedValue(response);
+
+    await expect(controller.listDeleted(params, query as never)).resolves.toBe(
+      response,
+    );
+    expect(featureFlagsService.listDeleted).toHaveBeenCalledWith(
+      'demo-project',
+      query,
     );
   });
 
@@ -99,6 +121,31 @@ describe('FeatureFlagsController', () => {
 
     await expect(controller.restore(params)).resolves.toBe(response);
     expect(featureFlagsService.restore).toHaveBeenCalledWith(
+      'demo-project',
+      'new-checkout',
+    );
+  });
+
+  it('delegates delete to service', async () => {
+    const params = { projectKey: 'demo-project', flagKey: 'new-checkout' };
+
+    featureFlagsService.delete.mockResolvedValue(undefined);
+
+    await expect(controller.delete(params)).resolves.toBeUndefined();
+    expect(featureFlagsService.delete).toHaveBeenCalledWith(
+      'demo-project',
+      'new-checkout',
+    );
+  });
+
+  it('delegates restoreDeleted to service', async () => {
+    const params = { projectKey: 'demo-project', flagKey: 'new-checkout' };
+    const response = { id: 'flag-1', key: 'new-checkout' };
+
+    featureFlagsService.restoreDeleted.mockResolvedValue(response);
+
+    await expect(controller.restoreDeleted(params)).resolves.toBe(response);
+    expect(featureFlagsService.restoreDeleted).toHaveBeenCalledWith(
       'demo-project',
       'new-checkout',
     );

@@ -247,6 +247,9 @@ function summarizeHistoryEntry(entry: AuditLog): string {
         case 'FEATURE_FLAG_ARCHIVED':
             return 'Feature flag was archived and will evaluate Off.';
 
+        case 'FEATURE_FLAG_DELETED':
+            return 'Feature flag was soft-deleted and hidden from normal evaluation until restored.';
+
         case 'FEATURE_FLAG_RESTORED':
             return 'Feature flag was restored to active lifecycle status.';
 

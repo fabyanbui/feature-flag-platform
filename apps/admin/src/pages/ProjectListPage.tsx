@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
 import { adminApi } from '../lib/api';
 import type { Project } from '../lib/types';
@@ -16,8 +17,18 @@ type CreateProjectForm = {
     description: string;
 };
 
+type EditProjectForm = {
+    name: string;
+    description: string;
+};
+
 const initialCreateForm: CreateProjectForm = {
     key: '',
+    name: '',
+    description: '',
+};
+
+const initialEditForm: EditProjectForm = {
     name: '',
     description: '',
 };
@@ -26,25 +37,33 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
     const { can } = useAuth();
     const canManageProjects = can('PROJECT_MANAGE');
     const [projects, setProjects] = useState<Project[]>([]);
-    const [search, setSearch] = useState('');
-    const [submittedSearch, setSubmittedSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
+    const [updatingProjectKey, setUpdatingProjectKey] = useState<string | null>(
+        null,
+    );
+    const [deletingProjectKey, setDeletingProjectKey] = useState<string | null>(
+        null,
+    );
     const [error, setError] = useState<string | null>(null);
     const [createForm, setCreateForm] =
         useState<CreateProjectForm>(initialCreateForm);
     const [formError, setFormError] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState<EditProjectForm>(initialEditForm);
+    const [editError, setEditError] = useState<string | null>(null);
+    const [pendingEdit, setPendingEdit] = useState<Project | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
 
     const loadProjects = useCallback(async () => {
         try {
             const response = await adminApi.listProjects({
-                search: submittedSearch,
                 sort: 'updatedAt',
                 order: 'desc',
                 limit: 50,
             });
 
             setProjects(response.items);
+            setError(null);
         } catch (requestError) {
             setError(
                 requestError instanceof Error
@@ -54,7 +73,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
         } finally {
             setLoading(false);
         }
-    }, [submittedSearch]);
+    }, []);
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
@@ -63,13 +82,6 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
 
         return () => window.clearTimeout(timeoutId);
     }, [loadProjects]);
-
-    function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        setLoading(true);
-        setError(null);
-        setSubmittedSearch(search.trim());
-    }
 
     async function handleCreateProject(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -110,6 +122,91 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
         }
     }
 
+    function openEditProject(project: Project) {
+        setPendingEdit(project);
+        setEditForm({
+            name: project.name,
+            description: project.description ?? '',
+        });
+        setEditError(null);
+    }
+
+    function cancelEditProject() {
+        if (updatingProjectKey) {
+            return;
+        }
+
+        setPendingEdit(null);
+        setEditForm(initialEditForm);
+        setEditError(null);
+    }
+
+    async function handleUpdateProject(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        if (!pendingEdit) {
+            return;
+        }
+
+        if (!canManageProjects) {
+            setEditError('Only administrators can update projects.');
+            return;
+        }
+
+        const nameError = validateRequired(editForm.name, 'Project name');
+
+        if (nameError) {
+            setEditError(nameError);
+            return;
+        }
+
+        setUpdatingProjectKey(pendingEdit.key);
+        setEditError(null);
+        setError(null);
+
+        try {
+            await adminApi.updateProject(pendingEdit.key, {
+                name: editForm.name.trim(),
+                description: editForm.description.trim() || null,
+            });
+            setPendingEdit(null);
+            setEditForm(initialEditForm);
+            await loadProjects();
+        } catch (requestError) {
+            setEditError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : 'Failed to update project.',
+            );
+        } finally {
+            setUpdatingProjectKey(null);
+        }
+    }
+
+    async function confirmDeleteProject() {
+        if (!pendingDelete) {
+            return;
+        }
+
+        setDeletingProjectKey(pendingDelete.key);
+        setError(null);
+
+        try {
+            await adminApi.deleteProject(pendingDelete.key);
+            setPendingDelete(null);
+            await loadProjects();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : 'Failed to delete project.',
+            );
+            setPendingDelete(null);
+        } finally {
+            setDeletingProjectKey(null);
+        }
+    }
+
     return (
         <section className="page-stack">
             <header className="page-header">
@@ -128,7 +225,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                 {!canManageProjects ? (
                     <p className="permission-notice" id="project-permission-help">
                         Read-only for this identity. Only administrators can
-                        create projects.
+                        create, update, or delete empty projects.
                     </p>
                 ) : null}
 
@@ -206,23 +303,8 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                 <div className="section-header">
                     <div>
                         <h2>Project list</h2>
-                        <p>Search by project name or key.</p>
+                        <p>Newest updated projects appear first.</p>
                     </div>
-
-                    <form className="inline-form" onSubmit={handleSearchSubmit}>
-                        <label className="sr-only" htmlFor="project-search">
-                            Search projects
-                        </label>
-                        <input
-                            id="project-search"
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                            placeholder="Search projects..."
-                        />
-                        <button type="submit" className="button button-secondary">
-                            Search
-                        </button>
-                    </form>
                 </div>
 
                 {loading ? <LoadingState title="Loading projects..." /> : null}
@@ -266,8 +348,48 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                                         type="button"
                                         className="button button-primary"
                                         onClick={() => onOpenProject(project.key)}
+                                        disabled={
+                                            deletingProjectKey === project.key ||
+                                            updatingProjectKey === project.key
+                                        }
                                     >
                                         Open flags
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="button button-secondary"
+                                        onClick={() => openEditProject(project)}
+                                        disabled={
+                                            !canManageProjects ||
+                                            deletingProjectKey === project.key ||
+                                            updatingProjectKey === project.key
+                                        }
+                                        title={
+                                            !canManageProjects
+                                                ? 'Only administrators can update projects.'
+                                                : 'Update project name and description.'
+                                        }
+                                    >
+                                        Edit project
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="button button-danger"
+                                        onClick={() => setPendingDelete(project)}
+                                        disabled={
+                                            !canManageProjects ||
+                                            deletingProjectKey === project.key ||
+                                            updatingProjectKey === project.key
+                                        }
+                                        title={
+                                            !canManageProjects
+                                                ? 'Only administrators can delete projects.'
+                                                : 'Only projects with no visible flags, groups, or sample users can be deleted.'
+                                        }
+                                    >
+                                        Delete project
                                     </button>
                                 </div>
                             </article>
@@ -275,6 +397,105 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                     </div>
                 ) : null}
             </section>
+
+            {pendingEdit ? (
+                <div className="dialog-backdrop" role="presentation">
+                    <section
+                        className="dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="edit-project-title"
+                        aria-describedby="edit-project-description"
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape' && !updatingProjectKey) {
+                                cancelEditProject();
+                            }
+                        }}
+                    >
+                        <div>
+                            <p className="eyebrow">Project settings</p>
+                            <h2 id="edit-project-title">Edit project</h2>
+                            <p id="edit-project-description">
+                                Update the display name and description for{' '}
+                                <code>{pendingEdit.key}</code>. The project key stays
+                                immutable so API clients keep working.
+                            </p>
+                        </div>
+
+                        <form className="form-grid dialog-form" onSubmit={handleUpdateProject}>
+                            <label className="form-grid-full">
+                                Project name
+                                <input
+                                    value={editForm.name}
+                                    onChange={(event) =>
+                                        setEditForm((current) => ({
+                                            ...current,
+                                            name: event.target.value,
+                                        }))
+                                    }
+                                    disabled={updatingProjectKey !== null}
+                                    autoFocus
+                                />
+                            </label>
+
+                            <label className="form-grid-full">
+                                Description
+                                <textarea
+                                    value={editForm.description}
+                                    onChange={(event) =>
+                                        setEditForm((current) => ({
+                                            ...current,
+                                            description: event.target.value,
+                                        }))
+                                    }
+                                    disabled={updatingProjectKey !== null}
+                                    rows={4}
+                                />
+                            </label>
+
+                            {editError ? (
+                                <p className="form-error form-grid-full" role="alert">
+                                    {editError}
+                                </p>
+                            ) : null}
+
+                            <div className="dialog-actions form-grid-full">
+                                <button
+                                    type="button"
+                                    className="button button-secondary"
+                                    onClick={cancelEditProject}
+                                    disabled={updatingProjectKey !== null}
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="button button-primary"
+                                    disabled={updatingProjectKey !== null}
+                                >
+                                    {updatingProjectKey ? 'Saving...' : 'Save changes'}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            ) : null}
+
+            <ConfirmDialog
+                open={pendingDelete !== null}
+                title="Delete project?"
+                description={
+                    pendingDelete
+                        ? `Delete "${pendingDelete.key}" as a soft delete. This only succeeds when the project is empty: no visible feature flags, flag groups, or sample users. Audit history remains append-only.`
+                        : ''
+                }
+                confirmLabel="Delete project"
+                destructive
+                busy={deletingProjectKey !== null}
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDeleteProject}
+            />
         </section>
     );
 }

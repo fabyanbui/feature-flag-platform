@@ -17,5 +17,5 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  description?: string;
+  description?: string | null;
 }

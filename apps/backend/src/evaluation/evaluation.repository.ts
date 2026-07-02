@@ -15,9 +15,10 @@ export class EvaluationRepository {
   async findSnapshot(
     input: FindEvaluationSnapshotInput,
   ): Promise<EvaluationSnapshot | null> {
-    const project = await this.prisma.project.findUnique({
+    const project = await this.prisma.project.findFirst({
       where: {
         key: input.projectKey,
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -48,12 +49,11 @@ export class EvaluationRepository {
       return null;
     }
 
-    const flag = await this.prisma.featureFlag.findUnique({
+    const flag = await this.prisma.featureFlag.findFirst({
       where: {
-        projectId_key: {
-          projectId: project.id,
-          key: input.flagKey,
-        },
+        projectId: project.id,
+        key: input.flagKey,
+        deletedAt: null,
       },
       select: {
         id: true,

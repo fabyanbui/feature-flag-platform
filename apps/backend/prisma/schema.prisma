@@ -56,6 +56,7 @@ enum AuditAction {
 
   FLAG_GROUP_CREATED
   FLAG_GROUP_UPDATED
+  FLAG_GROUP_DELETED
   FLAG_GROUP_KILL_SWITCH_UPDATED
 
   FLAG_CONFIG_CREATED
@@ -72,12 +73,14 @@ enum AuditAction {
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  key         String   @unique @db.VarChar(64)
-  name        String   @db.VarChar(120)
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String    @id @default(cuid())
+  key         String    @unique @db.VarChar(64)
+  name        String    @db.VarChar(120)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.VarChar(120)
 
   environments       Environment[]
   flags              FeatureFlag[]
@@ -88,6 +91,7 @@ model Project {
   auditLogEntries    AuditLogEntry[]
   evaluationMetrics  FlagEvaluationMetric[]
 
+  @@index([deletedAt])
   @@map("projects")
 }
 
@@ -126,6 +130,8 @@ model FeatureFlag {
   archivedAt      DateTime?                  @map("archived_at")
   createdAt       DateTime                   @default(now()) @map("created_at")
   updatedAt       DateTime                   @updatedAt @map("updated_at")
+  deletedAt       DateTime?                  @map("deleted_at")
+  deletedBy       String?                    @map("deleted_by") @db.VarChar(120)
 
   project            Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
   group              FlagGroup?              @relation(fields: [projectId, groupId], references: [projectId, id], onDelete: Restrict)
@@ -136,6 +142,7 @@ model FeatureFlag {
   @@unique([projectId, id])
   @@index([projectId])
   @@index([projectId, lifecycleStatus])
+  @@index([projectId, deletedAt])
   @@index([groupId])
   @@map("feature_flags")
 }

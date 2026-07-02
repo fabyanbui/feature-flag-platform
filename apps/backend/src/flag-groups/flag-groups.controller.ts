@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -11,6 +13,7 @@ import {
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -66,6 +69,14 @@ export class FlagGroupsController {
       params.groupKey,
       body,
     );
+  }
+
+  @Delete(':groupKey')
+  @HttpCode(204)
+  @RequirePermissions(Permission.GROUP_MANAGE)
+  @ApiNoContentResponse({ description: 'Flag group deleted.' })
+  delete(@Param() params: ProjectGroupKeyParamDto): Promise<void> {
+    return this.flagGroupsService.delete(params.projectKey, params.groupKey);
   }
 
   @Put(':groupKey/config')

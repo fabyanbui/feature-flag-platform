@@ -187,9 +187,14 @@ On a clean database it creates:
 
 - project `demo-project`,
 - environments `production`, `staging`, and `development`,
-- group `customer-experience`, with its kill switch inactive when created,
-- flags `beta-dashboard` and `new-checkout`, assigned to
-  `customer-experience` when created,
+- groups `customer-experience`, `checkout-experience`, and `recommendations`,
+  with kill switches inactive when created,
+- core flags `beta-dashboard` and `new-checkout`,
+  where `beta-dashboard` is standalone and `new-checkout` belongs to the
+  checkout experience,
+- demo feature flags `express-payment`, `shipping-progress-meter`,
+  `coupon-engine`, `personalized-recommendations`, `trending-products`,
+  `holiday-promo-banner`, and `live-support-widget`,
 - sample users for beta, regular, and admin scenarios,
 - audit entries for seeded setup.
 
@@ -213,14 +218,37 @@ Demo app:
 npm run dev:demo
 ```
 
+Staging demo app on a second port:
+
+```bash
+npm run dev:demo:staging
+```
+
 Local URLs:
 
 ```text
 Backend API: http://localhost:3000/v1
 Admin app:   http://localhost:5173
-Demo app:    http://localhost:5174
+Demo app:    http://localhost:5174  (production environment)
+Demo app:    http://localhost:5175  (staging environment)
 Swagger UI:  http://localhost:3000/docs
 ```
+
+The production and staging demo apps use the same React code and the same
+backend. They differ only by the SDK `environmentKey` embedded by Vite:
+`production` on port `5174` and `staging` on port `5175`. This lets you show
+the same feature flag resolving differently across environments without adding
+environment-management UI.
+
+To build a staging bundle without Docker Compose, run:
+
+```bash
+npm run build:demo:staging
+npm run preview:demo:staging
+```
+
+Then open `http://localhost:4175`. Vite embeds `VITE_ENVIRONMENT_KEY` at build
+time, so rebuild after changing the target environment.
 
 ### Docker Compose demo workflow
 
@@ -240,6 +268,18 @@ Keep `DATABASE_URL` for npm-local development. Compose uses
 `postgres`. Browser-facing `VITE_API_BASE_URL` must continue to use
 `http://localhost:3000/v1`; a browser cannot resolve the internal `backend`
 service name.
+
+Compose starts two demo frontends by default:
+
+- `demo` at `http://localhost:5174` with `VITE_ENVIRONMENT_KEY=production`
+- `demo-staging` at `http://localhost:5175` with
+  `VITE_ENVIRONMENT_KEY=staging`
+
+The backend CORS allowlist must include both browser origins. The example env
+file provides `DEMO_ORIGIN=http://localhost:5174` and
+`DEMO_STAGING_ORIGIN=http://localhost:5175`. If you change
+`DEMO_STAGING_HOST_PORT`, also change `DEMO_STAGING_ORIGIN` to the matching
+browser URL before restarting the backend/Compose stack.
 
 Start the complete demo path from a clean environment:
 
@@ -261,7 +301,7 @@ postgres healthy
 -> migrate exits 0
 -> demo-seed exits 0
 -> backend healthy
--> admin and demo healthy
+-> admin, demo, and demo-staging healthy
 ```
 
 The `migrate` service runs `prisma migrate deploy`. The `demo-seed` service
@@ -297,6 +337,7 @@ Verify the public endpoints:
 curl http://localhost:3000/v1/health
 curl --head http://localhost:5173
 curl --head http://localhost:5174
+curl --head http://localhost:5175
 ```
 
 Open the Compose database with Prisma Studio when you need a local
@@ -435,9 +476,9 @@ Use the seeded data for a local presentation:
 
 1. Start PostgreSQL, backend, admin app, and demo app.
 2. Open the admin dashboard and inspect `demo-project`.
-3. Show flags `beta-dashboard` and `new-checkout`.
-4. Open **Groups**, activate the `customer-experience` production kill switch,
-   and confirm both assigned flags evaluate `Off` with
+3. Show flags `new-checkout`, `coupon-engine`, and `live-support-widget`.
+4. Open **Groups**, activate the `checkout-experience` production kill switch,
+   and confirm assigned checkout flags evaluate `Off` with
    `reason=GROUP_KILL_SWITCH`.
 5. Deactivate the group switch to restore normal evaluation.
 6. Open the demo app and evaluate:

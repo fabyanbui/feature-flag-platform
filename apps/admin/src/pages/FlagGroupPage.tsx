@@ -10,11 +10,16 @@ import { validateKey, validateRequired } from '../lib/validation';
 type FlagGroupPageProps = {
     projectKey: string;
     onBackToFlags: () => void;
+    onOpenAuditLogs: () => void;
 };
 
 type PendingSwitch = {
     group: FlagGroup;
     nextValue: boolean;
+};
+
+type PendingDelete = {
+    group: FlagGroup;
 };
 
 const initialCreateForm = {
@@ -25,6 +30,7 @@ const initialCreateForm = {
 export function FlagGroupPage({
     projectKey,
     onBackToFlags,
+    onOpenAuditLogs,
 }: FlagGroupPageProps) {
     const { can } = useAuth();
     const canManageGroups = can('GROUP_MANAGE');
@@ -40,6 +46,9 @@ export function FlagGroupPage({
     const [error, setError] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | null>(
+        null,
+    );
+    const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
         null,
     );
 
@@ -176,6 +185,30 @@ export function FlagGroupPage({
         }
     }
 
+    async function confirmDelete() {
+        if (!pendingDelete) {
+            return;
+        }
+
+        setBusyGroupKey(pendingDelete.group.key);
+        setError(null);
+
+        try {
+            await adminApi.deleteFlagGroup(projectKey, pendingDelete.group.key);
+            setPendingDelete(null);
+            await loadGroups();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : 'Failed to delete flag group.',
+            );
+            setPendingDelete(null);
+        } finally {
+            setBusyGroupKey(null);
+        }
+    }
+
     return (
         <section className="page-stack">
             <header className="page-header">
@@ -190,6 +223,14 @@ export function FlagGroupPage({
                 </div>
 
                 <div className="header-actions">
+                    <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={onOpenAuditLogs}
+                    >
+                        View group audit logs
+                    </button>
+
                     <button
                         type="button"
                         className="button button-secondary"
@@ -316,12 +357,7 @@ export function FlagGroupPage({
                                 >
                                     <div>
                                         <div className="group-card-heading">
-                                            <div>
-                                                <h3>{group.name}</h3>
-                                                <p className="muted">
-                                                    <code>{group.key}</code>
-                                                </p>
-                                            </div>
+                                            <h3>{group.name}</h3>
 
                                             <span
                                                 className={`badge ${
@@ -335,10 +371,14 @@ export function FlagGroupPage({
                                                     ? 'Active'
                                                     : 'Inactive'}
                                             </span>
+
+                                            <span className="group-key-pill">
+                                                {group.key}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <dl className="meta-list">
+                                    <dl className="meta-list group-meta-list">
                                         <div>
                                             <dt>Environment</dt>
                                             <dd>{group.environmentKey}</dd>
@@ -349,8 +389,8 @@ export function FlagGroupPage({
                                         </div>
                                     </dl>
 
-                                    <label>
-                                        Display name
+                                    <label className="group-name-field">
+                                        <span>Display name</span>
                                         <input
                                             value={
                                                 renameDrafts[group.key] ??
@@ -367,50 +407,79 @@ export function FlagGroupPage({
                                         />
                                     </label>
 
-                                    <div className="card-actions">
-                                        <button
-                                            type="button"
-                                            className="button button-secondary"
-                                            onClick={() =>
-                                                void handleRename(group)
-                                            }
-                                            disabled={busy || !canManageGroups}
-                                            title={
-                                                !canManageGroups
-                                                    ? 'Only administrators can rename groups.'
-                                                    : undefined
-                                            }
-                                        >
-                                            Save name
-                                        </button>
+                                    <div className="group-card-actions">
+                                        <div className="card-actions group-primary-actions">
+                                            <button
+                                                type="button"
+                                                className="button button-secondary"
+                                                onClick={() =>
+                                                    void handleRename(group)
+                                                }
+                                                disabled={
+                                                    busy || !canManageGroups
+                                                }
+                                                title={
+                                                    !canManageGroups
+                                                        ? 'Only administrators can rename groups.'
+                                                        : undefined
+                                                }
+                                            >
+                                                Save name
+                                            </button>
 
-                                        <button
-                                            type="button"
-                                            className={
-                                                group.killSwitch
-                                                    ? 'button button-secondary'
-                                                    : 'button button-danger'
-                                            }
-                                            onClick={() =>
-                                                setPendingSwitch({
-                                                    group,
-                                                    nextValue:
-                                                        !group.killSwitch,
-                                                })
-                                            }
-                                            disabled={
-                                                busy || !canManageKillSwitch
-                                            }
-                                            aria-describedby={
-                                                !canManageKillSwitch
-                                                    ? 'switch-permission-help'
-                                                    : undefined
-                                            }
-                                        >
-                                            {group.killSwitch
-                                                ? 'Deactivate switch'
-                                                : 'Activate kill switch'}
-                                        </button>
+                                            <button
+                                                type="button"
+                                                className={
+                                                    group.killSwitch
+                                                        ? 'button button-secondary'
+                                                        : 'button button-danger'
+                                                }
+                                                onClick={() =>
+                                                    setPendingSwitch({
+                                                        group,
+                                                        nextValue:
+                                                            !group.killSwitch,
+                                                    })
+                                                }
+                                                disabled={
+                                                    busy ||
+                                                    !canManageKillSwitch
+                                                }
+                                                aria-describedby={
+                                                    !canManageKillSwitch
+                                                        ? 'switch-permission-help'
+                                                        : undefined
+                                                }
+                                            >
+                                                {group.killSwitch
+                                                    ? 'Deactivate switch'
+                                                    : 'Activate switch'}
+                                            </button>
+                                        </div>
+
+                                        <div className="group-delete-action">
+                                            <button
+                                                type="button"
+                                                className="button button-danger"
+                                                onClick={() =>
+                                                    setPendingDelete({ group })
+                                                }
+                                                disabled={
+                                                    busy ||
+                                                    !canManageGroups ||
+                                                    group.assignedFlagCount > 0
+                                                }
+                                                title={
+                                                    group.assignedFlagCount > 0
+                                                        ? 'Unassign all flags before deleting this group.'
+                                                        : !canManageGroups
+                                                          ? 'Only administrators can delete groups.'
+                                                          : undefined
+                                                }
+                                            >
+                                                Delete group
+                                            </button>
+                                        </div>
                                     </div>
                                 </article>
                             );
@@ -442,6 +511,21 @@ export function FlagGroupPage({
                 busy={busyGroupKey !== null}
                 onCancel={() => setPendingSwitch(null)}
                 onConfirm={confirmSwitchChange}
+            />
+
+            <ConfirmDialog
+                open={pendingDelete !== null}
+                title="Delete flag group?"
+                description={
+                    pendingDelete
+                        ? `Delete "${pendingDelete.group.name}" and cascade-delete its environment-specific group configs. This is only allowed because no flags are assigned.`
+                        : ''
+                }
+                confirmLabel="Delete group"
+                destructive
+                busy={busyGroupKey !== null}
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
             />
         </section>
     );

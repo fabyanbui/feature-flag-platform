@@ -73,6 +73,21 @@ export class FlagGroupsRepository {
     });
   }
 
+  deleteByProjectIdAndKey(
+    projectId: string,
+    groupKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.flagGroup.delete({
+      where: {
+        projectId_key: {
+          projectId,
+          key: groupKey,
+        },
+      },
+    });
+  }
+
   findMany(
     where: Prisma.FlagGroupWhereInput,
     orderBy: Prisma.FlagGroupOrderByWithRelationInput,

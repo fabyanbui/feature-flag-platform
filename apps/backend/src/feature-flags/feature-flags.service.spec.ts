@@ -62,6 +62,8 @@ function createFlag(overrides = {}) {
     description: 'Controls checkout rollout.',
     lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
     archivedAt: null,
+    deletedAt: null,
+    deletedBy: null,
     createdAt: fixedDate,
     updatedAt: fixedDate,
     environmentConfigs: [createConfig()],
@@ -86,7 +88,9 @@ describe('FeatureFlagsService', () => {
     findMany: jest.fn(),
     count: jest.fn(),
     findByProjectIdAndKey: jest.fn(),
+    findAnyByProjectIdAndKey: jest.fn(),
     findByProjectIdAndKeyWithConfigs: jest.fn(),
+    findDeletedByProjectIdAndKeyWithConfigs: jest.fn(),
     create: jest.fn(),
     updateByProjectIdAndKey: jest.fn(),
   };
@@ -173,6 +177,7 @@ describe('FeatureFlagsService', () => {
 
       const expectedWhere = {
         projectId: 'project-1',
+        deletedAt: null,
         lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
         OR: [
           {
@@ -220,6 +225,8 @@ describe('FeatureFlagsService', () => {
             environmentKey: 'production',
             group: null,
             archivedAt: null,
+            deletedAt: null,
+            deletedBy: null,
             createdAt: fixedDate,
             updatedAt: fixedDate,
           },
@@ -251,6 +258,48 @@ describe('FeatureFlagsService', () => {
 
       expect(featureFlagsRepository.findMany).not.toHaveBeenCalled();
     });
+
+    it('lists soft-deleted flags separately from the normal flag list', async () => {
+      const deletedFlag = createFlag({
+        deletedAt: fixedDate,
+        deletedBy: 'mentor@example.local',
+      });
+
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findMany.mockResolvedValue([deletedFlag]);
+      featureFlagsRepository.count.mockResolvedValue(1);
+
+      const result = await service.listDeleted('demo-project', {
+        limit: 20,
+        offset: 0,
+        sort: 'updatedAt',
+        order: 'desc',
+      });
+
+      const expectedWhere = {
+        projectId: 'project-1',
+        deletedAt: {
+          not: null,
+        },
+        lifecycleStatus: undefined,
+      };
+
+      expect(featureFlagsRepository.findMany).toHaveBeenCalledWith(
+        expectedWhere,
+        {
+          updatedAt: 'desc',
+        },
+        20,
+        0,
+      );
+      expect(result.items[0]).toEqual(
+        expect.objectContaining({
+          key: 'new-checkout',
+          deletedAt: fixedDate,
+          deletedBy: 'mentor@example.local',
+        }),
+      );
+    });
   });
 
   describe('get', () => {
@@ -275,6 +324,8 @@ describe('FeatureFlagsService', () => {
         environmentKey: 'production',
         group: null,
         archivedAt: null,
+        deletedAt: null,
+        deletedBy: null,
         createdAt: fixedDate,
         updatedAt: fixedDate,
       });
@@ -316,7 +367,7 @@ describe('FeatureFlagsService', () => {
 
     it('rejects duplicate flag key with CONFLICT', async () => {
       projectsRepository.findByKey.mockResolvedValue(createProject());
-      featureFlagsRepository.findByProjectIdAndKey.mockResolvedValue(
+      featureFlagsRepository.findAnyByProjectIdAndKey.mockResolvedValue(
         createFlag(),
       );
 
@@ -345,7 +396,7 @@ describe('FeatureFlagsService', () => {
       });
 
       projectsRepository.findByKey.mockResolvedValue(project);
-      featureFlagsRepository.findByProjectIdAndKey.mockResolvedValue(null);
+      featureFlagsRepository.findAnyByProjectIdAndKey.mockResolvedValue(null);
       environmentsRepository.findDefaultByProjectId.mockResolvedValue(
         environment,
       );
@@ -655,6 +706,128 @@ describe('FeatureFlagsService', () => {
 
       expect(result.lifecycleStatus).toBe(FeatureFlagLifecycleStatus.ACTIVE);
       expect(result.archivedAt).toBeNull();
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
+    });
+
+    it('soft deletes flag without archiving and writes FEATURE_FLAG_DELETED audit log', async () => {
+      const existingFlag = createFlag();
+      const deletedRecord = createFlag({
+        deletedAt: fixedDate,
+        deletedBy: 'mentor@example.local',
+      });
+      const afterFlag = createFlag({
+        deletedAt: fixedDate,
+        deletedBy: 'mentor@example.local',
+      });
+
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        existingFlag,
+      );
+      featureFlagsRepository.findDeletedByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        afterFlag,
+      );
+      featureFlagsRepository.updateByProjectIdAndKey.mockResolvedValue(
+        deletedRecord,
+      );
+
+      await service.delete('demo-project', 'new-checkout');
+
+      expect(
+        featureFlagsRepository.updateByProjectIdAndKey,
+      ).toHaveBeenCalledWith(
+        'project-1',
+        'new-checkout',
+        {
+          deletedAt: expect.any(Date),
+          deletedBy: 'mentor@example.local',
+        },
+        tx,
+      );
+
+      expect(auditLogService.record).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          action: AuditAction.FEATURE_FLAG_DELETED,
+          before: expect.objectContaining({
+            lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+            deletedAt: null,
+          }),
+          after: expect.objectContaining({
+            lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+            deletedAt: fixedDate.toISOString(),
+            deletedBy: 'mentor@example.local',
+          }),
+          metadata: {
+            source: 'api',
+            deletionMode: 'soft-delete',
+          },
+        }),
+      );
+      expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
+        'demo-project',
+        'new-checkout',
+      );
+    });
+
+    it('restores a soft-deleted flag without changing archive status', async () => {
+      const existingFlag = createFlag({
+        deletedAt: fixedDate,
+        deletedBy: 'mentor@example.local',
+      });
+      const restoredRecord = createFlag();
+      const afterFlag = createFlag();
+
+      projectsRepository.findByKey.mockResolvedValue(createProject());
+      featureFlagsRepository.findDeletedByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        existingFlag,
+      );
+      featureFlagsRepository.findByProjectIdAndKeyWithConfigs.mockResolvedValue(
+        afterFlag,
+      );
+      featureFlagsRepository.updateByProjectIdAndKey.mockResolvedValue(
+        restoredRecord,
+      );
+
+      const result = await service.restoreDeleted(
+        'demo-project',
+        'new-checkout',
+      );
+
+      expect(
+        featureFlagsRepository.updateByProjectIdAndKey,
+      ).toHaveBeenCalledWith(
+        'project-1',
+        'new-checkout',
+        {
+          deletedAt: null,
+          deletedBy: null,
+        },
+        tx,
+      );
+
+      expect(auditLogService.record).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          action: AuditAction.FEATURE_FLAG_RESTORED,
+          before: expect.objectContaining({
+            deletedAt: fixedDate.toISOString(),
+          }),
+          after: expect.objectContaining({
+            deletedAt: null,
+            lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
+          }),
+          metadata: {
+            source: 'api',
+            restoredFrom: 'soft-delete',
+          },
+        }),
+      );
+
+      expect(result.deletedAt).toBeNull();
       expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
         'demo-project',
         'new-checkout',

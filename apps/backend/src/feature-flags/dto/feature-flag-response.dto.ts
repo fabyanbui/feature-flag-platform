@@ -82,6 +82,18 @@ export class FeatureFlagResponseDto {
   })
   archivedAt!: Date | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Soft-delete timestamp. Deleted flags are hidden from the normal flag list.',
+  })
+  deletedAt!: Date | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+  })
+  deletedBy!: string | null;
+
   @ApiProperty()
   createdAt!: Date;
 

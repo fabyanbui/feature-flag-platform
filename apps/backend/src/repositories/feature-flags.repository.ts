@@ -12,6 +12,20 @@ export class FeatureFlagsRepository {
     flagKey: string,
     db: RepositoryClient = this.prisma,
   ) {
+    return db.featureFlag.findFirst({
+      where: {
+        projectId,
+        key: flagKey,
+        deletedAt: null,
+      },
+    });
+  }
+
+  findAnyByProjectIdAndKey(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
     return db.featureFlag.findUnique({
       where: {
         projectId_key: {
@@ -27,12 +41,11 @@ export class FeatureFlagsRepository {
     flagKey: string,
     db: RepositoryClient = this.prisma,
   ) {
-    return db.featureFlag.findUnique({
+    return db.featureFlag.findFirst({
       where: {
-        projectId_key: {
-          projectId,
-          key: flagKey,
-        },
+        projectId,
+        key: flagKey,
+        deletedAt: null,
       },
       include: {
         group: {
@@ -160,11 +173,47 @@ export class FeatureFlagsRepository {
     flagKey: string,
     db: RepositoryClient = this.prisma,
   ) {
-    return db.featureFlag.findUnique({
+    return db.featureFlag.findFirst({
       where: {
-        projectId_key: {
-          projectId,
-          key: flagKey,
+        projectId,
+        key: flagKey,
+        deletedAt: null,
+      },
+      include: {
+        environmentConfigs: {
+          include: {
+            environment: true,
+            rules: {
+              orderBy: {
+                priority: 'asc',
+              },
+            },
+          },
+        },
+        group: {
+          include: {
+            configs: {
+              include: {
+                environment: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findDeletedByProjectIdAndKeyWithConfigs(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.findFirst({
+      where: {
+        projectId,
+        key: flagKey,
+        deletedAt: {
+          not: null,
         },
       },
       include: {
