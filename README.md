@@ -317,6 +317,26 @@ through the internal `postgres:5432` address:
 POSTGRES_HOST_PORT=55432 docker compose up --build
 ```
 
+If you use alternate ports for a validation stack, keep the same values for
+every later `docker compose` command by exporting them in the shell or writing
+them to `.env`. One-off command prefixes do not persist. For example:
+
+```bash
+export COMPOSE_PROJECT_NAME=ffp_validation
+export POSTGRES_HOST_PORT=55432
+export BACKEND_HOST_PORT=3300
+export ADMIN_HOST_PORT=5573
+export DEMO_HOST_PORT=5574
+export VITE_API_BASE_URL=http://localhost:3300/v1
+export ADMIN_ORIGIN=http://localhost:5573
+export DEMO_ORIGIN=http://localhost:5574
+docker compose up --build
+```
+
+Use the same exported values for `docker compose ps`, rerunning `migrate` or
+`demo-seed`, and `docker compose down`. Otherwise Compose may try to recreate a
+service with the default published port, such as `5432`.
+
 The optional Redis cache provider is not part of the stable demo requirement.
 To run the same stack with Redis-backed evaluation snapshot caching, enable the
 `redis` profile and select the provider:
