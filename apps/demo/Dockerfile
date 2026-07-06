@@ -24,8 +24,20 @@ ENV VITE_ENVIRONMENT_KEY=$VITE_ENVIRONMENT_KEY
 RUN npm run build --workspace=@ffp/js-sdk
 RUN npm run build --workspace=@ffp/demo
 
-FROM nginx:1.27-alpine
+FROM node:22.22.2-bookworm-slim
 
-COPY --from=build /workspace/apps/demo/dist /usr/share/nginx/html
+WORKDIR /workspace/apps/demo
+
+ENV NODE_ENV=production
+ENV DEMO_APP_PORT=80
+ENV VITE_ENVIRONMENT_KEY=production
+
+COPY --from=build /workspace/node_modules /workspace/node_modules
+COPY --from=build /workspace/packages/js-sdk /workspace/packages/js-sdk
+COPY --from=build /workspace/apps/demo/package.json ./package.json
+COPY --from=build /workspace/apps/demo/dist ./dist
+COPY --from=build /workspace/apps/demo/server-dist ./server-dist
 
 EXPOSE 80
+
+CMD ["node", "server-dist/server/server.js"]

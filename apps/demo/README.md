@@ -15,6 +15,8 @@ The demo app does:
 - Show products, saved carts, quantity changes, and checkout actions.
 - Call the personalization/evaluation service through `@ffp/js-sdk` to decide
   which customer experience to display.
+- Expose a tiny demo backend under `/api/demo/*` that uses the same SDK to guard
+  server-side feature APIs.
 - Fail safely to standard dashboard and checkout behavior if personalization is
   unavailable.
 
@@ -24,6 +26,8 @@ The demo app does not:
 - Store ecommerce data in PostgreSQL, Prisma, or browser storage.
 - Create or update platform projects, rules, or configuration.
 - Send admin tokens, database URLs, or secrets to the browser.
+- Treat frontend hiding as security; guarded demo backend endpoints still check
+  the feature flag before returning feature data.
 
 ## In-memory demo database
 
@@ -75,7 +79,10 @@ VITE_API_BASE_URL=http://localhost:3000/v1
 VITE_ENVIRONMENT_KEY=production
 ```
 
-Only browser-safe values should be placed in `apps/demo/.env`.
+`VITE_API_BASE_URL` is browser-visible because the storefront evaluates flags
+from the browser. The optional `DEMO_SERVER_API_BASE_URL` is server-only and lets
+the demo backend call the platform backend from Docker, for example
+`http://backend:3000/v1`. Do not put secrets in either value.
 
 ## Run locally
 
@@ -97,14 +104,54 @@ Open:
 http://localhost:5174
 ```
 
+## Guarded demo backend endpoints
+
+The demo backend intentionally keeps the ecommerce API tiny. It exists to prove
+that disabling a feature flag does not only hide frontend UI. The backend also
+fails closed before returning feature-specific data.
+
+Each feature flag has one concrete GET endpoint:
+
+| Endpoint | Guard flag | Enabled behavior | Disabled behavior |
+| --- | --- | --- | --- |
+| `GET /api/demo/features/beta-dashboard?accountId=...` | `beta-dashboard` | Returns priority dashboard data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/new-checkout?accountId=...` | `new-checkout` | Returns one-page checkout data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/express-payment?accountId=...` | `express-payment` | Returns express payment data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/shipping-progress-meter?accountId=...` | `shipping-progress-meter` | Returns shipping progress data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/coupon-engine?accountId=...` | `coupon-engine` | Returns coupon data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/personalized-recommendations?accountId=...` | `personalized-recommendations` | Returns personalized recommendation data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/trending-products?accountId=...` | `trending-products` | Returns trending product data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/holiday-promo-banner?accountId=...` | `holiday-promo-banner` | Returns holiday promo data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/live-support-widget?accountId=...` | `live-support-widget` | Returns live support data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/health` | none | Returns demo backend health. | N/A |
+
+The storefront uses existing feature UI for the live demo:
+
+- **Express Pay** calls `GET /api/demo/features/express-payment`.
+- **Open chat** calls `GET /api/demo/features/live-support-widget`.
+
+For CLI evidence, after selecting or knowing a seeded account you can run:
+
+```bash
+curl -i "http://localhost:5174/api/demo/features/express-payment?accountId=rollout-account-006"
+curl -i "http://localhost:5174/api/demo/features/live-support-widget?accountId=rollout-account-006"
+```
+
+When the relevant flag is off, archived, disabled, killed, or unavailable, the
+response is safe and disabled with the evaluation result included for demo
+traceability.
+
 ## Demo flow
 
 1. Open the storefront in guest mode.
 2. Use the account switcher to select a customer.
 3. Show the customer's dashboard, product catalog, cart, and checkout mode.
-4. Add products to the cart and change quantities.
-5. Switch between beta, regular, admin preview, and rollout customer accounts.
-6. Optionally open **Developer diagnostics** for hidden technical evidence.
+4. Click **Express Pay** or **Open chat** to call guarded backend endpoints from
+   existing flagged UI.
+5. Disable the matching flag in the admin app, then call the endpoint by curl and
+   show `403 FEATURE_DISABLED`.
+6. Switch between beta, regular, admin preview, and rollout customer accounts.
+7. Optionally open **Developer diagnostics** for hidden technical evidence.
 
 ## Validation
 

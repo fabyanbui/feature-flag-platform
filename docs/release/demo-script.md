@@ -205,7 +205,55 @@ Presenter point:
 > experience is stable. A series of accounts makes the rollout behavior visible
 > better than only one included and one excluded user.
 
-### 5. Show Flag Configuration History
+### 5. Show Backend API Guard
+
+The demo app has one guarded GET endpoint per demo feature flag:
+
+```text
+GET /api/demo/features/beta-dashboard?accountId=...
+GET /api/demo/features/new-checkout?accountId=...
+GET /api/demo/features/express-payment?accountId=...
+GET /api/demo/features/shipping-progress-meter?accountId=...
+GET /api/demo/features/coupon-engine?accountId=...
+GET /api/demo/features/personalized-recommendations?accountId=...
+GET /api/demo/features/trending-products?accountId=...
+GET /api/demo/features/holiday-promo-banner?accountId=...
+GET /api/demo/features/live-support-widget?accountId=...
+```
+
+For the live UI demo, use the two existing feature buttons rather than a separate
+proof panel:
+
+1. Select a customer account in the demo app.
+2. If `express-payment` is enabled, click **Express Pay** in the cart. The
+   button calls `GET /api/demo/features/express-payment` before placing the demo
+   order.
+3. If `live-support-widget` is enabled, click **Open chat**. The button calls
+   `GET /api/demo/features/live-support-widget` before opening the demo chat.
+
+Optional CLI proof:
+
+```bash
+curl -i "http://localhost:5174/api/demo/features/express-payment?accountId=rollout-account-006"
+curl -i "http://localhost:5174/api/demo/features/live-support-widget?accountId=rollout-account-006"
+```
+
+Now disable the matching flag in Admin, or activate the relevant group kill
+switch for checkout features, then call the endpoint again. Expected result:
+
+```text
+HTTP status: 403
+code: FEATURE_DISABLED
+Feature decision: Off with FLAG_DISABLED, GROUP_KILL_SWITCH, or another safe-off reason
+```
+
+Presenter point:
+
+> The SDK does not only help the browser hide UI. The demo backend also uses
+> the SDK before serving feature-specific API data, so users cannot bypass a
+> disabled feature by calling the API directly.
+
+### 6. Show Flag Configuration History
 
 Return to the admin dashboard and open the rule editor for `new-checkout`.
 
@@ -227,7 +275,7 @@ Presenter point:
 > for accountability. We avoid duplicating configuration versions in a second
 > table, which keeps one source of truth and reduces consistency risk.
 
-### 6. Show Audit Logs
+### 7. Show Audit Logs
 
 Return to the admin dashboard audit log screen.
 
@@ -246,7 +294,7 @@ Presenter point:
 > project-wide audit screen supports broader operational investigation. Both
 > views use the same immutable audit records.
 
-### 7. Show Evaluation Statistics
+### 8. Show Evaluation Statistics
 
 Before opening the statistics page, evaluate several `new-checkout` customer
 accounts in the demo app.
@@ -289,7 +337,7 @@ Privacy point:
 > metrics table does not contain targeting keys, user IDs, roles, attributes, or
 > raw evaluation requests.
 
-### 8. Show JavaScript SDK Integration
+### 9. Show JavaScript SDK Integration
 
 Return to the demo app, scroll to the footer, expand **Show technical
 diagnostics**, and point out the **SDK client** and **Decision source** fields.
@@ -317,7 +365,7 @@ Presenter point:
 > Transport failures fail closed locally and remain distinguishable from a
 > backend evaluation decision.
 
-### 9. Show Server-Resolved Demo RBAC
+### 10. Show Server-Resolved Demo RBAC
 
 1. Open the admin dashboard and select **Viewer**.
 2. Show that projects, flags, groups, history, statistics, and audit logs remain
