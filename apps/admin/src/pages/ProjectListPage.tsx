@@ -353,7 +353,7 @@ export function ProjectListPage({ onOpenProject }: ProjectListPageProps) {
                                             updatingProjectKey === project.key
                                         }
                                     >
-                                        Open flags
+                                        Open project
                                     </button>
 
                                     <button

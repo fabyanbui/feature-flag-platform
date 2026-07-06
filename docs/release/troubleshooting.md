@@ -61,10 +61,37 @@ database internal port unchanged and publish it on a different host port:
 POSTGRES_HOST_PORT=55432 docker compose up -d postgres
 ```
 
+If you use alternate ports for more than one Compose command, export the values
+or place them in `.env` so every command sees the same project name, ports, API
+URL, and CORS origins:
+
+```bash
+export COMPOSE_PROJECT_NAME=ffp_validation
+export POSTGRES_HOST_PORT=55432
+export BACKEND_HOST_PORT=3300
+export ADMIN_HOST_PORT=5573
+export DEMO_HOST_PORT=5574
+export VITE_API_BASE_URL=http://localhost:3300/v1
+export ADMIN_ORIGIN=http://localhost:5573
+export DEMO_ORIGIN=http://localhost:5574
+docker compose up --build
+```
+
+Do not start an alternate-port stack with one-off environment prefixes and then
+rerun `docker compose run migrate`, `docker compose run demo-seed`, or
+`docker compose up` without the same values. Compose can detect the changed
+configuration and try to recreate PostgreSQL on the default `5432` port.
+
 The npm-local backend uses a `DATABASE_URL` host such as `localhost`. The
 containerized backend uses `COMPOSE_DATABASE_URL` with the Compose service host
 `postgres`. Using `localhost` inside the backend container points back to that
 container rather than PostgreSQL.
+
+For the standalone npm-local PostgreSQL container, `docker start ffp-postgres`
+only works if that existing container was originally created with
+`-p 5432:5432`. Confirm with `docker port ffp-postgres`; if it prints nothing,
+create a new container with the documented port publishing before running the
+npm-local backend.
 
 ## Tables or Prisma client are missing
 
@@ -235,6 +262,16 @@ one-shot service is stuck with stale state during local testing, recreate it:
 
 ```bash
 docker compose up --build --force-recreate migrate demo-seed backend admin demo
+```
+
+If the stack uses alternate published ports, run the command from the shell that
+has those variables exported, or repeat the same environment values on the
+command. For rerunning only the one-shot jobs against an already healthy stack,
+this avoids unnecessary service recreation:
+
+```bash
+docker compose run --rm --no-deps migrate
+docker compose run --rm --no-deps demo-seed
 ```
 
 ## Demo scenario returns `NOT_FOUND`
