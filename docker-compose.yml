@@ -33,7 +33,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-ffp} -d ${POSTGRES_DB:-ffp_dev}",
+          "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-ffp} -d ${POSTGRES_DB:-ffp_dev}",
         ]
       interval: 5s
       timeout: 5s
@@ -49,12 +49,21 @@ services:
       postgres:
         condition: service_healthy
     command:
-      [
-        "npm",
-        "run",
-        "prisma:migrate:deploy",
-        "--workspace=@ffp/backend",
-      ]
+      - sh
+      - -c
+      - |
+        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+          if node -e "const net = require('node:net'); const socket = net.createConnection({ host: 'postgres', port: 5432 }, () => { socket.end(); process.exit(0); }); socket.setTimeout(2000, () => { socket.destroy(); process.exit(1); }); socket.on('error', () => process.exit(1));"; then
+            npm run prisma:migrate:deploy --workspace=@ffp/backend && exit 0
+            status=$$?
+            echo "Prisma migrate deploy failed on attempt $${attempt}/12 with exit $${status}; retrying if attempts remain..."
+          else
+            echo "Waiting for PostgreSQL TCP readiness before migration ($${attempt}/12)..."
+          fi
+          sleep 5
+        done
+        echo "Prisma migrate deploy did not complete successfully after 12 attempts."
+        exit 1
     restart: "no"
 
   demo-seed:
