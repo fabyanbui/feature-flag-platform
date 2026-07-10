@@ -39,18 +39,22 @@ export function evaluateFlag(
   input: EvaluationInput,
   snapshot: EvaluationSnapshot,
 ): EvaluationResult {
-  const { flag, config, rules } = snapshot;
+  const { flag, group, config, rules } = snapshot;
 
   if (flag.lifecycleStatus === 'ARCHIVED') {
     return buildResult(input, false, EvaluationReason.FLAG_ARCHIVED);
   }
 
-  if (config.killSwitch) {
-    return buildResult(input, false, EvaluationReason.KILL_SWITCH);
-  }
-
   if (config.status === 'DISABLED') {
     return buildResult(input, false, EvaluationReason.FLAG_DISABLED);
+  }
+
+  if (group?.killSwitch) {
+    return buildResult(input, false, EvaluationReason.GROUP_KILL_SWITCH);
+  }
+
+  if (config.killSwitch) {
+    return buildResult(input, false, EvaluationReason.KILL_SWITCH);
   }
 
   if (config.servingMode === 'GLOBAL_ON') {

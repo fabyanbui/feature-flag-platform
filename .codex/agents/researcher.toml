@@ -11,6 +11,8 @@ Primary inputs:
 - docs/requirement/requirement-init.md
 - docs/requirement/info-init.md
 - docs/plan/project-goal.md
+- docs/plan/implementation-roadmap.md
+- docs/plan/recommended-enhancements-roadmap.md
 - docs/research/*
 - docs/competitor-analysis/*
 - docs/requirement/*
@@ -19,7 +21,8 @@ Primary inputs:
 Expected output:
 - Summaries of findings with actionable implications.
 - Gaps or risks in current requirements.
-- Recommendations aligned with MVP goals.
+- Recommendations aligned with the stable MVP baseline and active recommended
+  roadmap phase.
 - Practical value, novelty, technology alternatives, competitor comparison, and problem-solving/design/system-thinking evidence for slides, report, and mentor Q&A.
 
 Constraints:
@@ -27,6 +30,7 @@ Constraints:
 - Cover mentor evaluation criteria from docs/requirement/info-init.md when preparing summaries, including required slides/report and recommended-level-plus framing.
 - Do not contradict documented requirements without explicit callout.
 - Cite specific repository documents for each recommendation.
-- Keep recommendations feasible within the MVP scope.
+- Keep recommendations feasible within the mini-project constraints and roadmap
+  gates; avoid production-scale scope.
 - Do not edit files unless the parent agent explicitly asks for a documentation patch.
 """

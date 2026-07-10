@@ -183,11 +183,15 @@ evaluations stable for the same context.
 
 The default MVP rule order is:
 
-1. archived flag or global disable / kill switch,
-2. user allowlist,
-3. role targeting,
-4. percentage rollout,
-5. default off.
+1. archived flag,
+2. disabled flag configuration,
+3. group kill switch,
+4. flag kill switch,
+5. global on,
+6. user allowlist,
+7. role targeting,
+8. percentage rollout,
+9. default off.
 
 Safe defaults matter. If no rule matches, the feature remains off:
 
@@ -227,6 +231,8 @@ Core tables:
 - `projects`,
 - `environments`,
 - `feature_flags`,
+- `flag_groups`,
+- `flag_group_configs`,
 - `flag_environment_configs`,
 - `flag_rules`,
 - `sample_user_contexts`,
@@ -256,6 +262,8 @@ This project writes audit entries for:
 
 - project creation/update,
 - feature flag creation/update/archive/restore,
+- group creation/update and environment-specific kill-switch changes,
+- flag group assignment and unassignment,
 - rule replacement,
 - sample user changes.
 
@@ -270,17 +278,46 @@ evidence for this behavior.
 
 ### 10.1 Caching
 
-The MVP prioritizes correctness and explainability. In-memory caching is listed
-as a recommended enhancement after MVP stability. A production system would use
-cache invalidation or polling/streaming to reduce evaluation latency.
+The implementation caches reusable evaluation configuration snapshots rather
+than final user-specific decisions. A snapshot contains flag lifecycle state,
+environment configuration, optional group kill-switch state, and ordered rules.
+It does not contain user IDs, targeting keys, roles, attributes, or final
+`enabled` decisions.
+
+This design improves repeated evaluation performance while preserving
+deterministic targeting for each request context. Cache misses load the
+snapshot from PostgreSQL, while cache hits still run the evaluation engine with
+the current request context.
 
 ### 10.2 Consistency
 
-Feature flag systems often choose fast local evaluation with eventually
-consistent config propagation. This project uses direct backend evaluation for
-simplicity, which is easier to demonstrate and test.
+Configuration mutations explicitly invalidate affected snapshots only after
+their database and append-only audit transaction commits. A configurable
+30-second TTL provides a secondary stale-data bound. Cache failures fall back
+to PostgreSQL and do not change fail-closed evaluation behavior.
 
-### 10.3 Defaults
+The process-local provider is intentionally appropriate for this
+single-instance mini project. A horizontally scaled deployment would require a
+shared provider such as Redis with equivalent TTL and invalidation semantics.
+
+### 10.3 Aggregate Evaluation Statistics
+
+Operational teams need to understand whether features are being evaluated On
+or Off and why. The implementation records aggregate counts by flag,
+environment, UTC-hour bucket, reason, and enabled result.
+
+The system intentionally avoids storing one raw event per evaluation. It also
+excludes targeting keys, user IDs, roles, attributes, and matched rule IDs.
+This provides release visibility without turning feature evaluation into a
+user-tracking system.
+
+Every valid evaluation request produces one best-effort increment, including
+requests served from the snapshot cache. Metric persistence failure does not
+alter the evaluation response. This demonstrates a system-design tradeoff:
+runtime release decisions prioritize availability, while statistics accept
+eventual consistency and possible telemetry loss.
+
+### 10.4 Defaults
 
 Defaults should be safe:
 
@@ -298,7 +335,8 @@ Important security practices:
 - avoid PII in targeting keys,
 - fail closed on errors,
 - restrict CORS to expected admin and demo origins,
-- require actor identity for audited mutations,
+- resolve control-plane identity and role on the server,
+- authorize routes through a centralized least-privilege permission matrix,
 - keep control-plane and data-plane responsibilities separate.
 
 The demo app only calls:
@@ -307,7 +345,7 @@ The demo app only calls:
 POST /v1/evaluate
 ```
 
-It does not send admin actor headers or secrets.
+It does not send admin bearer credentials, actor headers, or secrets.
 
 ## 12. Comparison with Existing Solutions
 
@@ -348,22 +386,33 @@ The novelty for this mini project is the combination of:
 - visible reason codes,
 - append-only audit logs,
 - control-plane/data-plane separation,
+- privacy-preserving aggregate evaluation statistics,
 - presentation scenarios that show different runtime outcomes.
 
 ## 15. Limitations and Future Work
 
-Recommended enhancements after MVP stability:
+Completed recommended enhancements:
 
-- Redis or in-memory evaluation cache,
-- simple JavaScript SDK,
-- role-based access control,
-- evaluation statistics dashboard,
+- audit-backed configuration history,
 - group kill switch,
-- Docker Compose one-command setup,
+- in-memory evaluation-snapshot cache,
+- privacy-preserving evaluation statistics dashboard,
+- simple JavaScript SDK with typed fail-closed client fallback,
+- server-resolved demo RBAC with admin, developer, and viewer roles,
+- optional Redis cache provider with repository fallback,
+- Docker Compose one-command local demo workflow.
+
+Remaining future work:
+
+- production identity-provider integration,
+- durable metric delivery and retention,
+- advanced experimentation analytics,
+- multi-instance deployment hardening and observability,
+- production rate limiting, TLS termination, and secret management,
 - flag lifecycle cleanup workflow.
 
-These are intentionally deferred so the required MVP remains stable for
-submission.
+Remaining future work is sequenced behind the stable MVP and completed
+recommended phases so it cannot weaken submission readiness.
 
 ## 16. Conclusion
 

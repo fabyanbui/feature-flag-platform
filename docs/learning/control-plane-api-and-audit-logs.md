@@ -1,5 +1,9 @@
 # Control-Plane API and Audit Logs — Phase 5 Learning Guide
 
+> **Phase 16 update:** The `X-Actor` examples below document the Phase 5 MVP.
+> Current control-plane APIs use server-resolved demo bearer identities, and
+> client actor or role headers are not trusted.
+
 This document explains the Phase 5 control-plane APIs and audit-log system from
 scratch. It focuses on how management endpoints create and change feature flag
 configuration, how those changes are validated, and how append-only audit logs

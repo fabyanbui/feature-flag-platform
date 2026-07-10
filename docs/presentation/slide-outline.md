@@ -66,6 +66,7 @@ Control plane:
 Data plane:
 
 - demo app,
+- `@ffp/js-sdk`,
 - `POST /v1/evaluate`,
 - deterministic evaluation.
 
@@ -73,11 +74,15 @@ Data plane:
 
 Rule order:
 
-1. archived/disabled/kill switch,
-2. user allowlist,
-3. role targeting,
-4. percentage rollout,
-5. default off.
+1. archived flag,
+2. disabled flag configuration,
+3. group kill switch,
+4. flag kill switch,
+5. global on,
+6. user allowlist,
+7. role targeting,
+8. percentage rollout,
+9. default off.
 
 Emphasize:
 
@@ -197,19 +202,121 @@ System thinking:
 - safe defaults,
 - test coverage across layers.
 
-## Slide 14 — Future Work
+## Slide 14 — Recommended Enhancement: Safe Evaluation Caching
+
+Implementation proof:
+
+- caches reusable flag configuration, not user-specific decisions,
+- reuses one snapshot for different request contexts,
+- uses explicit post-commit invalidation to prevent stale configuration,
+- falls back to PostgreSQL when cache access fails,
+- keeps the mini-project simple with in-memory storage,
+- preserves Redis as an optional multi-instance provider.
+
+Engineering tradeoff:
+
+- in-memory caching is simple and fast for one backend instance,
+- horizontal scaling requires a shared cache with equivalent TTL and
+  invalidation semantics.
+
+## Slide 15 — Recommended Enhancement: Privacy-Preserving Statistics
+
+Implementation proof:
+
+- every cached or uncached evaluation produces one aggregate increment attempt,
+- UTC-hour aggregation avoids storing raw evaluation events,
+- dashboard shows total, On, Off, percentage, and top reasons,
+- user context and targeting data are not stored,
+- metric failure cannot change evaluation behavior.
+
+Engineering tradeoff:
+
+- direct best-effort writes are simple and appropriate for demo scale,
+- a production platform would add batching, retention, rate limiting, and a
+  durable telemetry pipeline.
+
+Presentation message:
+
+> Observability should explain release behavior without becoming a user-tracking
+> system or a dependency of the evaluation response.
+
+## Slide 16 — Recommended Enhancement: JavaScript SDK
+
+Implementation proof:
+
+- `evaluate`, `isEnabled`, and `getVariant` use only `POST /v1/evaluate`,
+- the SDK preserves backend reason codes and matched-rule semantics,
+- timeout, network, HTTP, JSON, and shape failures return typed Off fallback,
+- `errorSource=CLIENT` distinguishes SDK failure from backend `reason=ERROR`,
+- the demo app uses the SDK without control-plane credentials or permissions.
+
+Engineering tradeoff:
+
+- polling per request keeps the contract transparent and demo-friendly,
+- production SDKs may add streaming updates, local snapshots, and stronger
+  authentication, but those would increase consistency and security scope.
+
+## Slide 17 — Recommended Enhancement: Server-Resolved Demo RBAC
+
+Implementation proof:
+
+- bearer tokens resolve to fixed actors and `ADMIN`, `DEVELOPER`, or `VIEWER`
+  roles on the backend,
+- one centralized permission matrix protects control-plane reads and mutations,
+- spoofed actor or role headers cannot elevate permission or alter audit actors,
+- the admin selector demonstrates read-only, developer, and administrator
+  experiences with accessible disabled-state explanations,
+- health and evaluation remain public, preserving data-plane behavior.
+
+Engineering tradeoff:
+
+- static environment-backed identities keep the mini-project small and
+  presentation-friendly,
+- production use would require an external identity provider, rotation,
+  sessions, revocation, and stronger deployment controls.
+
+## Slide 18 — Recommended Enhancement: Docker and Optional Redis
+
+Implementation proof:
+
+- `docker compose up --build` starts PostgreSQL, migrations, seed data,
+  backend, admin, and demo in dependency order,
+- the seed process is idempotent and does not reset edited flag state, rules,
+  group kill switches, or sample users,
+- Redis is available through an optional Compose profile and provider setting,
+- Redis failures fall back to repository/no-cache behavior and do not change
+  deterministic evaluation results,
+- the stable presentation path does not require Redis.
+
+Engineering tradeoff:
+
+- the one-command Docker workflow improves repeatability for reviewers,
+- Redis demonstrates production-style cache direction without becoming a demo
+  dependency.
+
+## Slide 19 — Future Work
 
 Only after MVP stability:
 
-- in-memory or Redis cache,
-- JavaScript SDK,
-- RBAC,
-- evaluation analytics,
-- group kill switch,
-- Docker Compose,
+- production identity-provider integration,
+- advanced experimentation analytics and long-term metric retention,
+- durable metric delivery,
+- production rate limiting, TLS termination, and secret management,
+- multi-instance deployment hardening,
 - flag cleanup workflow.
 
-## Slide 15 — Conclusion
+Completed recommended enhancements:
+
+- audit-backed configuration history,
+- group kill switch,
+- in-memory evaluation-snapshot cache,
+- privacy-preserving evaluation statistics and dashboard,
+- JavaScript SDK and demo migration,
+- server-resolved demo RBAC,
+- optional Redis cache provider,
+- Docker Compose one-command local demo workflow.
+
+## Slide 20 — Conclusion
 
 Final message:
 

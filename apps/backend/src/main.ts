@@ -57,16 +57,18 @@ async function bootstrap() {
     .addTag('Feature Flags')
     .addTag('Rules')
     .addTag('Evaluation')
+    .addTag('Statistics')
     .addTag('Sample Users')
     .addTag('Audit Logs')
-    .addApiKey(
+    .addBearerAuth(
       {
-        type: 'apiKey',
-        name: 'X-Actor',
-        in: 'header',
-        description: 'MVP actor identity for audited mutation requests.',
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'Demo token',
+        description:
+          'Presentation-only demo identity token for control-plane access.',
       },
-      'actor',
+      'demoBearer',
     )
     .addApiKey(
       {
@@ -89,6 +91,7 @@ async function bootstrap() {
   const allowedOrigins = [
     process.env.ADMIN_ORIGIN,
     process.env.DEMO_ORIGIN,
+    process.env.DEMO_STAGING_ORIGIN,
   ].filter(Boolean) as string[];
 
   app.enableCors({

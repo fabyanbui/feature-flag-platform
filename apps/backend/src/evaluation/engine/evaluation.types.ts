@@ -9,6 +9,7 @@ export enum EvaluationReason {
   GLOBAL_ON = 'GLOBAL_ON',
   FLAG_DISABLED = 'FLAG_DISABLED',
   FLAG_ARCHIVED = 'FLAG_ARCHIVED',
+  GROUP_KILL_SWITCH = 'GROUP_KILL_SWITCH',
   KILL_SWITCH = 'KILL_SWITCH',
   USER_ALLOWLIST = 'USER_ALLOWLIST',
   ROLE_MATCH = 'ROLE_MATCH',
@@ -42,10 +43,21 @@ export interface EvaluationRule {
   parameters: unknown;
 }
 
+export interface EvaluationSnapshotResolution {
+  projectId: string;
+  environmentId: string;
+  flagId: string;
+  environmentKey: string;
+}
+
 export interface EvaluationSnapshot {
+  resolution?: EvaluationSnapshotResolution;
   flag: {
     lifecycleStatus: FeatureFlagLifecycleStatus;
   };
+  group: {
+    killSwitch: boolean;
+  } | null;
   config: {
     status: FlagConfigStatus;
     servingMode: ServingMode;

@@ -760,10 +760,10 @@ and development.
 
 ### 11.6 Seeded audit entries
 
-The seed script creates system audit entries with:
+The seed script creates demo-admin audit entries with:
 
 ```text
-actor: system
+actor: demo-admin
 metadata.source: seed
 requestId: seed_init
 ```

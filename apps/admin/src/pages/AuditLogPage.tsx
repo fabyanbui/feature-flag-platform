@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { EmptyState, ErrorState, LoadingState } from '../components/DataState';
+import { TimeRangeShortcuts } from '../components/TimeRangeShortcuts';
 import { adminApi } from '../lib/api';
 import { formatStatusForDisplay } from '../lib/status';
 import type { AuditLog } from '../lib/types';
-
-type AuditLogPageProps = {
-    projectKey: string;
-    onBackToFlags: () => void;
-};
 
 type AuditFilters = {
     targetType: string;
@@ -19,7 +15,7 @@ type AuditFilters = {
     to: string;
 };
 
-const initialFilters: AuditFilters = {
+const defaultFilters: AuditFilters = {
     targetType: '',
     targetKey: '',
     actor: '',
@@ -28,10 +24,28 @@ const initialFilters: AuditFilters = {
     to: '',
 };
 
+export type AuditLogInitialFilters = Partial<AuditFilters>;
+
+type AuditLogPageProps = {
+    projectKey: string;
+    onBackToFlags: () => void;
+    initialFilters?: AuditLogInitialFilters;
+};
+
+function createInitialFilters(
+    initialFilters?: AuditLogInitialFilters,
+): AuditFilters {
+    return {
+        ...defaultFilters,
+        ...initialFilters,
+    };
+}
+
 const targetTypeOptions = [
     'PROJECT',
     'ENVIRONMENT',
     'FEATURE_FLAG',
+    'FLAG_GROUP',
     'FLAG_CONFIG',
     'FLAG_RULE',
     'SAMPLE_USER',
@@ -40,10 +54,27 @@ const targetTypeOptions = [
 const actionOptions = [
     'PROJECT_CREATED',
     'PROJECT_UPDATED',
+    'PROJECT_DELETED',
+    'ENVIRONMENT_CREATED',
+    'ENVIRONMENT_UPDATED',
+    'ENVIRONMENT_DELETED',
     'FEATURE_FLAG_CREATED',
     'FEATURE_FLAG_UPDATED',
     'FEATURE_FLAG_ARCHIVED',
     'FEATURE_FLAG_RESTORED',
+    'FEATURE_FLAG_DELETED',
+    'FEATURE_FLAG_GROUP_ASSIGNED',
+    'FEATURE_FLAG_GROUP_UNASSIGNED',
+    'FLAG_GROUP_CREATED',
+    'FLAG_GROUP_UPDATED',
+    'FLAG_GROUP_DELETED',
+    'FLAG_GROUP_KILL_SWITCH_UPDATED',
+    'FLAG_CONFIG_CREATED',
+    'FLAG_CONFIG_UPDATED',
+    'FLAG_CONFIG_DELETED',
+    'FLAG_RULE_CREATED',
+    'FLAG_RULE_UPDATED',
+    'FLAG_RULE_DELETED',
     'FLAG_RULES_REPLACED',
     'SAMPLE_USER_CREATED',
     'SAMPLE_USER_DELETED',
@@ -52,15 +83,21 @@ const actionOptions = [
 export function AuditLogPage({
     projectKey,
     onBackToFlags,
+    initialFilters,
 }: AuditLogPageProps) {
     const [logs, setLogs] = useState<AuditLog[]>([]);
-    const [filters, setFilters] = useState<AuditFilters>(initialFilters);
-    const [submittedFilters, setSubmittedFilters] =
-        useState<AuditFilters>(initialFilters);
+    const [filters, setFilters] = useState<AuditFilters>(() =>
+        createInitialFilters(initialFilters),
+    );
+    const [submittedFilters, setSubmittedFilters] = useState<AuditFilters>(() =>
+        createInitialFilters(initialFilters),
+    );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const loadAuditLogs = useCallback(async () => {
+        setError(null);
+
         try {
             const response = await adminApi.listAuditLogs(projectKey, {
                 targetType: submittedFilters.targetType || undefined,
@@ -98,14 +135,15 @@ export function AuditLogPage({
         event.preventDefault();
         setLoading(true);
         setError(null);
-        setSubmittedFilters(filters);
+        setSubmittedFilters({ ...filters });
     }
 
     function resetFilters() {
         setLoading(true);
         setError(null);
-        setFilters(initialFilters);
-        setSubmittedFilters(initialFilters);
+        const nextFilters = createInitialFilters();
+        setFilters(nextFilters);
+        setSubmittedFilters({ ...nextFilters });
     }
 
     return (
@@ -185,7 +223,7 @@ export function AuditLogPage({
                                     actor: event.target.value,
                                 }))
                             }
-                            placeholder="admin@example.local"
+                            placeholder="demo-admin or demo-developer"
                         />
                     </label>
 
@@ -213,7 +251,9 @@ export function AuditLogPage({
                         From
                         <input
                             type="datetime-local"
+                            step="60"
                             value={filters.from}
+                            title="Use the date and time picker or a quick range below."
                             onChange={(event) =>
                                 setFilters((current) => ({
                                     ...current,
@@ -227,7 +267,9 @@ export function AuditLogPage({
                         To
                         <input
                             type="datetime-local"
+                            step="60"
                             value={filters.to}
+                            title="Use the date and time picker or a quick range below."
                             onChange={(event) =>
                                 setFilters((current) => ({
                                     ...current,
@@ -236,6 +278,15 @@ export function AuditLogPage({
                             }
                         />
                     </label>
+
+                    <TimeRangeShortcuts
+                        onChange={(range) =>
+                            setFilters((current) => ({
+                                ...current,
+                                ...range,
+                            }))
+                        }
+                    />
 
                     <div className="filter-actions">
                         <button type="submit" className="button button-primary">
@@ -254,23 +305,25 @@ export function AuditLogPage({
             </section>
 
             <section className="panel">
-                <div className="section-header">
+                <div className="section-toolbar">
                     <div>
                         <h2>Entries</h2>
                         <p>Newest audit entries appear first.</p>
                     </div>
 
-                    <button
-                        type="button"
-                        className="button button-secondary"
-                        onClick={() => {
-              setLoading(true);
-              setError(null);
-              void loadAuditLogs();
-            }}
-                    >
-                        Refresh
-                    </button>
+                    <div className="section-toolbar-actions">
+                        <button
+                            type="button"
+                            className="button button-secondary"
+                            onClick={() => {
+                                setLoading(true);
+                                setError(null);
+                                void loadAuditLogs();
+                            }}
+                        >
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? <LoadingState title="Loading audit logs..." /> : null}
@@ -300,14 +353,8 @@ export function AuditLogPage({
                                     <div>
                                         <h3>{formatStatusForDisplay(entry.action)}</h3>
                                         <p>
-                                            <strong>{entry.actor}</strong> changed{' '}
-                                            {formatStatusForDisplay(entry.targetType)}
-                                            {entry.targetKey ? (
-                                                <>
-                                                    {' '}
-                                                    <code>{entry.targetKey}</code>
-                                                </>
-                                            ) : null}
+                                            <span className="audit-actor-pill">{entry.actor}</span>{' '}
+                                            changed {formatStatusForDisplay(entry.targetType)}
                                         </p>
                                     </div>
 
@@ -318,19 +365,29 @@ export function AuditLogPage({
 
                                 <dl className="meta-list">
                                     <div>
+                                        <dt>Actor</dt>
+                                        <dd>{entry.actor}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Target type</dt>
+                                        <dd>{formatStatusForDisplay(entry.targetType)}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Action</dt>
+                                        <dd>{formatStatusForDisplay(entry.action)}</dd>
+                                    </div>
+                                    <div>
                                         <dt>Environment</dt>
                                         <dd>{entry.environmentKey ?? 'None'}</dd>
                                     </div>
                                     <div>
-                                        <dt>Request ID</dt>
+                                        <dt>Target key</dt>
                                         <dd>
-                                            <code>{entry.requestId}</code>
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt>Target ID</dt>
-                                        <dd>
-                                            <code>{entry.targetId}</code>
+                                            {entry.targetKey ? (
+                                                <code>{entry.targetKey}</code>
+                                            ) : (
+                                                'None'
+                                            )}
                                         </dd>
                                     </div>
                                 </dl>

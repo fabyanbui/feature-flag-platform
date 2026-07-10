@@ -17,6 +17,7 @@ import {
 import { RequestContextService } from '../common/request-context/request-context.service';
 import { cleanAuditSnapshot } from '../common/utils/audit-snapshot.util';
 import { TransactionService } from '../database/transaction.service';
+import { EvaluationCacheInvalidator } from '../evaluation/cache/evaluation-cache-invalidator';
 import { EnvironmentsRepository } from '../repositories/environments.repository';
 import { FeatureFlagsRepository } from '../repositories/feature-flags.repository';
 import { FlagConfigsRepository } from '../repositories/flag-configs.repository';
@@ -44,6 +45,7 @@ export class FeatureFlagsService {
     private readonly transactionService: TransactionService,
     private readonly auditLogService: AuditLogService,
     private readonly requestContext: RequestContextService,
+    private readonly cacheInvalidator: EvaluationCacheInvalidator,
   ) {}
 
   async list(projectKey: string, query: FeatureFlagQueryDto) {
@@ -55,6 +57,59 @@ export class FeatureFlagsService {
 
     const where: Prisma.FeatureFlagWhereInput = {
       projectId: project.id,
+      deletedAt: null,
+      lifecycleStatus: query.lifecycleStatus,
+      ...(query.search
+        ? {
+            OR: [
+              { key: { contains: query.search, mode: 'insensitive' } },
+              { name: { contains: query.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(query.status
+        ? {
+            environmentConfigs: {
+              some: {
+                status: query.status,
+              },
+            },
+          }
+        : {}),
+    };
+
+    const orderBy = this.buildOrderBy(query);
+
+    const [items, total] = await Promise.all([
+      this.featureFlagsRepository.findMany(
+        where,
+        orderBy,
+        query.limit,
+        query.offset,
+      ),
+      this.featureFlagsRepository.count(where),
+    ]);
+
+    return createPageResponse(
+      items.map((flag) => this.toResponse(project.key, flag)),
+      query.limit,
+      query.offset,
+      total,
+    );
+  }
+
+  async listDeleted(projectKey: string, query: FeatureFlagQueryDto) {
+    const project = await this.projectsRepository.findByKey(projectKey);
+
+    if (!project) {
+      throw notFoundError(`Project "${projectKey}" was not found.`);
+    }
+
+    const where: Prisma.FeatureFlagWhereInput = {
+      projectId: project.id,
+      deletedAt: {
+        not: null,
+      },
       lifecycleStatus: query.lifecycleStatus,
       ...(query.search
         ? {
@@ -117,7 +172,7 @@ export class FeatureFlagsService {
       throw notFoundError(`Project "${projectKey}" was not found.`);
     }
 
-    const existing = await this.featureFlagsRepository.findByProjectIdAndKey(
+    const existing = await this.featureFlagsRepository.findAnyByProjectIdAndKey(
       project.id,
       body.key,
     );
@@ -213,6 +268,10 @@ export class FeatureFlagsService {
   ): Promise<FeatureFlagResponseDto> {
     const actor = this.getRequiredActor();
     const requestId = this.requestContext.getRequestId();
+    const affectsEvaluation =
+      body.status !== undefined ||
+      body.servingMode !== undefined ||
+      body.killSwitch !== undefined;
 
     const updated = await this.transactionService.run(async (tx) => {
       const project = await this.projectsRepository.findByKey(projectKey, tx);
@@ -286,8 +345,15 @@ export class FeatureFlagsService {
         requestId,
       });
 
-      return { project, flag: afterFlag };
+      return { project, flag: afterFlag, affectsEvaluation };
     });
+
+    if (updated.affectsEvaluation) {
+      await this.cacheInvalidator.invalidateFlag(
+        updated.project.key,
+        updated.flag.key,
+      );
+    }
 
     return this.toResponse(updated.project.key, updated.flag);
   }
@@ -314,6 +380,165 @@ export class FeatureFlagsService {
       FeatureFlagLifecycleStatus.ACTIVE,
       AuditAction.FEATURE_FLAG_RESTORED,
     );
+  }
+
+  async delete(projectKey: string, flagKey: string): Promise<void> {
+    const actor = this.getRequiredActor();
+    const requestId = this.requestContext.getRequestId();
+
+    const result = await this.transactionService.run(async (tx) => {
+      const project = await this.projectsRepository.findByKey(projectKey, tx);
+
+      if (!project) {
+        throw notFoundError(`Project "${projectKey}" was not found.`);
+      }
+
+      const existingFlag =
+        await this.featureFlagsRepository.findByProjectIdAndKeyWithConfigs(
+          project.id,
+          flagKey,
+          tx,
+        );
+
+      if (!existingFlag) {
+        throw notFoundError(
+          `Feature flag "${flagKey}" was not found in project "${projectKey}".`,
+        );
+      }
+
+      const deletedFlag =
+        await this.featureFlagsRepository.updateByProjectIdAndKey(
+          project.id,
+          flagKey,
+          {
+            deletedAt: new Date(),
+            deletedBy: actor,
+          },
+          tx,
+        );
+
+      const afterFlag =
+        await this.featureFlagsRepository.findDeletedByProjectIdAndKeyWithConfigs(
+          project.id,
+          deletedFlag.key,
+          tx,
+        );
+
+      if (!afterFlag) {
+        throw notFoundError(`Feature flag "${deletedFlag.key}" was not found.`);
+      }
+
+      const config = this.getDefaultConfig(afterFlag);
+
+      await this.auditLogService.record(tx, {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: config.environmentId,
+        environmentKey: config.environment.key,
+        targetType: AuditTargetType.FEATURE_FLAG,
+        targetId: deletedFlag.id,
+        targetKey: deletedFlag.key,
+        action: AuditAction.FEATURE_FLAG_DELETED,
+        actor,
+        before: this.toSnapshot(project.key, existingFlag),
+        after: this.toSnapshot(project.key, afterFlag),
+        metadata: {
+          source: 'api',
+          deletionMode: 'soft-delete',
+        },
+        requestId,
+      });
+
+      return { project, flag: afterFlag };
+    });
+
+    await this.cacheInvalidator.invalidateFlag(
+      result.project.key,
+      result.flag.key,
+    );
+  }
+
+  async restoreDeleted(
+    projectKey: string,
+    flagKey: string,
+  ): Promise<FeatureFlagResponseDto> {
+    const actor = this.getRequiredActor();
+    const requestId = this.requestContext.getRequestId();
+
+    const result = await this.transactionService.run(async (tx) => {
+      const project = await this.projectsRepository.findByKey(projectKey, tx);
+
+      if (!project) {
+        throw notFoundError(`Project "${projectKey}" was not found.`);
+      }
+
+      const existingFlag =
+        await this.featureFlagsRepository.findDeletedByProjectIdAndKeyWithConfigs(
+          project.id,
+          flagKey,
+          tx,
+        );
+
+      if (!existingFlag) {
+        throw notFoundError(
+          `Deleted feature flag "${flagKey}" was not found in project "${projectKey}".`,
+        );
+      }
+
+      const restoredFlag =
+        await this.featureFlagsRepository.updateByProjectIdAndKey(
+          project.id,
+          flagKey,
+          {
+            deletedAt: null,
+            deletedBy: null,
+          },
+          tx,
+        );
+
+      const afterFlag =
+        await this.featureFlagsRepository.findByProjectIdAndKeyWithConfigs(
+          project.id,
+          restoredFlag.key,
+          tx,
+        );
+
+      if (!afterFlag) {
+        throw notFoundError(
+          `Feature flag "${restoredFlag.key}" was not found.`,
+        );
+      }
+
+      const config = this.getDefaultConfig(afterFlag);
+
+      await this.auditLogService.record(tx, {
+        projectId: project.id,
+        projectKey: project.key,
+        environmentId: config.environmentId,
+        environmentKey: config.environment.key,
+        targetType: AuditTargetType.FEATURE_FLAG,
+        targetId: restoredFlag.id,
+        targetKey: restoredFlag.key,
+        action: AuditAction.FEATURE_FLAG_RESTORED,
+        actor,
+        before: this.toSnapshot(project.key, existingFlag),
+        after: this.toSnapshot(project.key, afterFlag),
+        metadata: {
+          source: 'api',
+          restoredFrom: 'soft-delete',
+        },
+        requestId,
+      });
+
+      return { project, flag: afterFlag };
+    });
+
+    await this.cacheInvalidator.invalidateFlag(
+      result.project.key,
+      result.flag.key,
+    );
+
+    return this.toResponse(result.project.key, result.flag);
   }
 
   private async updateLifecycle(
@@ -393,6 +618,11 @@ export class FeatureFlagsService {
       return { project, flag: afterFlag };
     });
 
+    await this.cacheInvalidator.invalidateFlag(
+      result.project.key,
+      result.flag.key,
+    );
+
     return this.toResponse(result.project.key, result.flag);
   }
 
@@ -469,12 +699,12 @@ export class FeatureFlagsService {
 
     if (!actor) {
       throw validationError(
-        'X-Actor header is required for mutation requests.',
+        'Authenticated actor identity is required for mutation requests.',
         [
           {
-            field: 'X-Actor',
+            field: 'Authorization',
             message:
-              'Provide X-Actor header so configuration changes can be audited.',
+              'Provide valid demo credentials so configuration changes can be audited.',
           },
         ],
       );
@@ -492,6 +722,8 @@ export class FeatureFlagsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
       environmentConfigs: Array<{
         id: string;
         environmentId: string;
@@ -516,6 +748,8 @@ export class FeatureFlagsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
     },
     config: {
       status: FlagConfigStatus;
@@ -536,6 +770,8 @@ export class FeatureFlagsService {
       killSwitch: config.killSwitch,
       environmentKey,
       archivedAt: flag.archivedAt,
+      deletedAt: flag.deletedAt ?? null,
+      deletedBy: flag.deletedBy ?? null,
     });
   }
 
@@ -548,6 +784,8 @@ export class FeatureFlagsService {
       description: string | null;
       lifecycleStatus: FeatureFlagLifecycleStatus;
       archivedAt: Date | null;
+      deletedAt?: Date | null;
+      deletedBy?: string | null;
       createdAt: Date;
       updatedAt: Date;
       environmentConfigs: Array<{
@@ -556,6 +794,14 @@ export class FeatureFlagsService {
         killSwitch: boolean;
         environment?: { key: string; isDefault: boolean };
       }>;
+      group?: {
+        key: string;
+        name: string;
+        configs: Array<{
+          killSwitch: boolean;
+          environment: { key: string };
+        }>;
+      } | null;
     },
   ): FeatureFlagResponseDto {
     const config =
@@ -573,7 +819,21 @@ export class FeatureFlagsService {
       servingMode: config?.servingMode ?? ServingMode.TARGETED,
       killSwitch: config?.killSwitch ?? false,
       environmentKey: config?.environment?.key ?? 'production',
+      group: flag.group
+        ? {
+            key: flag.group.key,
+            name: flag.group.name,
+            killSwitch:
+              flag.group.configs.find(
+                (groupConfig) =>
+                  groupConfig.environment.key ===
+                  (config?.environment?.key ?? 'production'),
+              )?.killSwitch ?? false,
+          }
+        : null,
       archivedAt: flag.archivedAt,
+      deletedAt: flag.deletedAt ?? null,
+      deletedBy: flag.deletedBy ?? null,
       createdAt: flag.createdAt,
       updatedAt: flag.updatedAt,
     };

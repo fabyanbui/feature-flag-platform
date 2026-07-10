@@ -1,0 +1,241 @@
+x-backend-build: &backend-build
+  context: .
+  dockerfile: apps/backend/Dockerfile
+
+x-backend-environment: &backend-environment
+  DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql://ffp:ffp_dev_password@postgres:5432/ffp_dev?schema=public}
+  API_PORT: 3000
+  ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:5173}
+  DEMO_ORIGIN: ${DEMO_ORIGIN:-http://localhost:5174}
+  DEMO_STAGING_ORIGIN: ${DEMO_STAGING_ORIGIN:-http://localhost:5175}
+  EVALUATION_CACHE_PROVIDER: ${EVALUATION_CACHE_PROVIDER:-memory}
+  EVALUATION_CACHE_TTL_MS: ${EVALUATION_CACHE_TTL_MS:-30000}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
+  DEMO_ADMIN_ACTOR: ${DEMO_ADMIN_ACTOR:-demo-admin}
+  DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
+  DEMO_DEVELOPER_ACTOR: ${DEMO_DEVELOPER_ACTOR:-demo-developer}
+  DEMO_VIEWER_TOKEN: ${DEMO_VIEWER_TOKEN:-replace-with-local-viewer-demo-token}
+  DEMO_VIEWER_ACTOR: ${DEMO_VIEWER_ACTOR:-demo-viewer}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ffp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ffp_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ffp_dev}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-ffp} -d ${POSTGRES_DB:-ffp_dev}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  migrate:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    environment: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+          if node -e "const net = require('node:net'); const socket = net.createConnection({ host: 'postgres', port: 5432 }, () => { socket.end(); process.exit(0); }); socket.setTimeout(2000, () => { socket.destroy(); process.exit(1); }); socket.on('error', () => process.exit(1));"; then
+            npm run prisma:migrate:deploy --workspace=@ffp/backend && exit 0
+            status=$$?
+            echo "Prisma migrate deploy failed on attempt $${attempt}/12 with exit $${status}; retrying if attempts remain..."
+          else
+            echo "Waiting for PostgreSQL TCP readiness before migration ($${attempt}/12)..."
+          fi
+          sleep 5
+        done
+        echo "Prisma migrate deploy did not complete successfully after 12 attempts."
+        exit 1
+    restart: "no"
+
+  demo-seed:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    environment: *backend-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["npm", "run", "db:seed", "--workspace=@ffp/backend"]
+    restart: "no"
+
+  prisma-studio:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    profiles:
+      - tools
+    working_dir: /workspace/apps/backend
+    environment: *backend-environment
+    ports:
+      - "${PRISMA_STUDIO_HOST_PORT:-5555}:5555"
+    depends_on:
+      demo-seed:
+        condition: service_completed_successfully
+    command:
+      [
+        "npx",
+        "prisma",
+        "studio",
+        "--config",
+        "prisma.config.ts",
+        "--port",
+        "5555",
+        "--browser",
+        "none",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:5555').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    build: *backend-build
+    image: feature-flag-platform-backend:local
+    environment: *backend-environment
+    ports:
+      - "${BACKEND_HOST_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      demo-seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/v1/health').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_DEFAULT_PROJECT_KEY: ${VITE_DEFAULT_PROJECT_KEY:-demo-project}
+        VITE_DEFAULT_FLAG_KEY: ${VITE_DEFAULT_FLAG_KEY:-new-checkout}
+        VITE_DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-replace-with-local-admin-demo-token}
+        VITE_DEMO_DEVELOPER_TOKEN: ${DEMO_DEVELOPER_TOKEN:-replace-with-local-developer-demo-token}
+        VITE_DEMO_VIEWER_TOKEN: ${DEMO_VIEWER_TOKEN:-replace-with-local-viewer-demo-token}
+    ports:
+      - "${ADMIN_HOST_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  demo:
+    build:
+      context: .
+      dockerfile: apps/demo/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_ENVIRONMENT_KEY: ${VITE_ENVIRONMENT_KEY:-production}
+    environment:
+      DEMO_APP_PORT: 80
+      DEMO_SERVER_API_BASE_URL: http://backend:3000/v1
+      VITE_ENVIRONMENT_KEY: ${VITE_ENVIRONMENT_KEY:-production}
+    ports:
+      - "${DEMO_HOST_PORT:-5174}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost/api/demo/health').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  demo-staging:
+    build:
+      context: .
+      dockerfile: apps/demo/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_ENVIRONMENT_KEY: staging
+    environment:
+      DEMO_APP_PORT: 80
+      DEMO_SERVER_API_BASE_URL: http://backend:3000/v1
+      VITE_ENVIRONMENT_KEY: staging
+    ports:
+      - "${DEMO_STAGING_HOST_PORT:-5175}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost/api/demo/health').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    profiles:
+      - redis
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

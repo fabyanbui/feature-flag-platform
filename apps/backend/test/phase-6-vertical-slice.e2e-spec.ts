@@ -6,7 +6,7 @@ import { createE2eApp } from './create-e2e-app';
 describe('Phase 6 vertical slice (e2e)', () => {
   let app: INestApplication<App>;
 
-  const actor = 'phase6-demo-admin';
+  const actor = 'demo-admin';
   const projectKey = `phase6-demo-${Date.now()}`;
   const flagKey = 'new-checkout';
 

@@ -5,6 +5,23 @@ import {
   ServingMode,
 } from '@prisma/client';
 
+export class FeatureFlagGroupSummaryDto {
+  @ApiProperty({
+    example: 'checkout',
+  })
+  key!: string;
+
+  @ApiProperty({
+    example: 'Checkout flags',
+  })
+  name!: string;
+
+  @ApiProperty({
+    example: false,
+  })
+  killSwitch!: boolean;
+}
+
 export class FeatureFlagResponseDto {
   @ApiProperty()
   id!: string;
@@ -55,9 +72,27 @@ export class FeatureFlagResponseDto {
   environmentKey!: string;
 
   @ApiPropertyOptional({
+    type: FeatureFlagGroupSummaryDto,
+    nullable: true,
+  })
+  group!: FeatureFlagGroupSummaryDto | null;
+
+  @ApiPropertyOptional({
     nullable: true,
   })
   archivedAt!: Date | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Soft-delete timestamp. Deleted flags are hidden from the normal flag list.',
+  })
+  deletedAt!: Date | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+  })
+  deletedBy!: string | null;
 
   @ApiProperty()
   createdAt!: Date;

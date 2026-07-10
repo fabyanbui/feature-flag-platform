@@ -18,6 +18,8 @@ Use this skill to turn visual references, design notes, or UX feedback into poli
 
 2. **Discover the existing frontend system**
    - Read the repo guidance first: `AGENTS.md`, package scripts, app README files, and relevant frontend source.
+   - If recommended-level work is affected, read the active phase and stop gate
+     in `docs/plan/recommended-enhancements-roadmap.md`.
    - Identify the framework, routing, data-fetch, state, styling approach, design tokens, shared components, icon library, and test setup.
    - Reuse canonical primitives for buttons, inputs, cards, navigation, typography, color, spacing, dialogs, tables, forms, and feedback states.
 
@@ -49,6 +51,8 @@ Use this skill to turn visual references, design notes, or UX feedback into poli
 - **Responsive behavior:** works on common mobile, tablet, and desktop widths; avoids clipped text and horizontal scroll unless intentional.
 - **Accessibility:** semantic controls, labels, alt text where needed, visible focus, keyboard support, sufficient contrast, no color-only status communication.
 - **State coverage:** loading, disabled, hover, active, selected, empty, error, and success states are represented when relevant.
+- **Authorization and runtime causes:** explain role-disabled controls and
+  runtime-off reasons accessibly without confusing them with lifecycle status.
 - **Design-system fit:** uses existing tokens/components and does not fork styling conventions.
 - **Performance:** avoids unnecessary client work, layout thrash, oversized images, and animation that harms usability.
 - **Maintainability:** keeps components cohesive, removes dead code, and avoids unrelated cleanup.

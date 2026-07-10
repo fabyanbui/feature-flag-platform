@@ -89,7 +89,8 @@ Purpose: reusable context distilled from one Codex session. Use this as a refere
 
 Preserve the project guardrails while summarizing:
 
-- Required MVP deliverables take priority over enhancements.
+- Treat the completed MVP as the protected release baseline and identify the
+  active recommended phase from `docs/plan/recommended-enhancements-roadmap.md`.
 - Keep deterministic evaluation, stable non-PII rollout keys, and safe defaults.
 - Keep append-only audit logging and transaction boundaries visible for mutation work.
 - Keep control-plane management concerns separate from data-plane evaluation concerns.

@@ -12,19 +12,25 @@ validation, error handling, seed data, short design documentation, and a
 presentation-ready explanation of practical value, technology choices,
 comparison with existing solutions, and visible problem-solving, design
 thinking, and system thinking. Slides and the research report are required final
-artifacts; recommended-level requirements are a plus after the required MVP is
-stable.
+artifacts. The required MVP is now the protected release baseline; continue
+recommended-level work through `docs/plan/recommended-enhancements-roadmap.md`
+without regressing that baseline.
 
 ## Project Structure & Module Organization
 
 This repository uses an npm workspace with implementation under `apps/` and
-project knowledge under `docs/`:
+`packages/`, and project knowledge under `docs/`:
 
-- `apps/backend/` contains the NestJS backend API and future Prisma-backed
-  persistence/evaluation modules.
+- `apps/backend/` contains the NestJS backend API, Prisma-backed persistence,
+  evaluation engine, snapshot cache, and management modules.
 - `apps/admin/` contains the admin dashboard.
 - `apps/demo/` contains the demo application that calls the evaluation API.
+- `packages/js-sdk/` contains the data-plane JavaScript SDK used by the demo
+  application.
 - `docs/plan/` contains vision and project planning.
+- `docs/plan/implementation-roadmap.md` records the completed MVP path;
+  `docs/plan/recommended-enhancements-roadmap.md` is the active enhancement
+  path and stop-gate source.
 - `docs/requirement/` contains backend, frontend, demo, and use-case requirements.
 - `docs/research/` and `docs/competitor-analysis/` contain supporting analysis.
 - `docs/design/software-architecture-document.md` is the architecture baseline.
@@ -45,6 +51,7 @@ Use the root npm workspace commands documented in `README.md`:
 - `npm run build` to build all workspaces that define a build script.
 - `npm run test` to run workspace tests.
 - `npm run lint` to run workspace lint checks.
+- `npm run lint:fix` to apply workspace ESLint fixes locally.
 - `npm run diff:check` or `git diff --check` to catch whitespace errors.
 
 For documentation-only changes, also run `markdownlint docs/**/*.md README.md
@@ -55,11 +62,15 @@ scripts or local workflow commands change.
 
 Use concise Markdown with descriptive headings and relative links for documentation. Name docs in lowercase kebab-case, for example `feature-flag-key-considerations.md`.
 
-For future TypeScript code, follow standard NestJS conventions: `*.module.ts`, `*.controller.ts`, `*.service.ts`, DTOs under a clear API boundary, and tests named `*.spec.ts`. Keep rule-evaluation logic deterministic and separated from controllers.
+For TypeScript code, follow standard NestJS conventions: `*.module.ts`,
+`*.controller.ts`, `*.service.ts`, DTOs under a clear API boundary, and tests
+named `*.spec.ts`. Keep rule-evaluation logic deterministic and separated from
+controllers.
 
 ## Testing Guidelines
 
-Current changes are documentation-only and should be reviewed for accuracy against `docs/design/software-architecture-document.md` and this file.
+For documentation and Codex-configuration changes, review accuracy against the
+active roadmap, `docs/design/software-architecture-document.md`, and this file.
 
 When code is added, use Jest for unit and integration tests. Prioritize tests for rule ordering, deterministic percentage rollout, kill-switch behavior, `NOT_FOUND` evaluation responses, and audit-log writes in the same transaction as mutations.
 
@@ -74,15 +85,22 @@ Pull requests should include a brief summary, affected paths, validation perform
 Treat this file as the source of project guardrails. Preserve safe defaults, deterministic evaluation, append-only audit logging, and clear separation between control-plane and data-plane concerns.
 
 Project guardrails:
+
 - `docs/requirement/requirement-init.md` is the product source for required and
   recommended deliverables.
 - `docs/requirement/info-init.md` is the source for submission dates, required
   slides/report, and mentor evaluation criteria.
 - `docs/codex/mcp-tool-selection.md` defines when Codex should use the Prisma
   MCP versus the PostgreSQL readonly MCP.
+- Preserve the completed required MVP while implementing recommended phases in
+  roadmap order. Respect Gate A, Gate B, and Gate C; do not start a gated phase
+  without repository evidence that its prerequisites pass.
 - Single backend service hosts management and evaluation endpoints.
-- MVP stack is NestJS, Prisma, PostgreSQL, REST/Swagger, Jest, and in-memory cache.
-- Default rule order is global disable -> user allowlist -> role targeting -> percentage rollout -> default off.
+- Current stack is NestJS, Prisma, PostgreSQL, REST/Swagger, Jest, and an
+  in-memory evaluation-snapshot cache.
+- Authoritative evaluation precedence is archived flag -> disabled config ->
+  group kill switch -> flag kill switch -> global on -> ordered enabled rules
+  (user allowlist, role targeting, percentage rollout) -> default off.
 - Percentage rollout must be deterministic using stable hashing.
 - Evaluation responses must include `enabled`, `reason`, `projectKey`, and `flagKey`.
 - Missing project or flag returns `enabled=false` with `reason=NOT_FOUND`.
@@ -93,8 +111,13 @@ Project guardrails:
   design briefs, Figma notes, visual references, or UX feedback. Pair it with
   `ui-status-semantics`, `demo-scenarios`, or project-specific requirement docs
   when feature-flag domain behavior is part of the UI change.
+- Use `evaluation-runtime-reliability` for snapshot cache and aggregate
+  statistics work, `javascript-sdk-delivery` for `@ffp/js-sdk`, `demo-rbac` for
+  server-resolved admin/developer/viewer access, and `docker-compose-delivery`
+  for containerized startup and optional Redis.
 
 MCP usage guardrails:
+
 - Prefer repository files and deterministic tests before live database MCP calls.
 - Use the Prisma MCP for Prisma Postgres control-plane operations, such as
   database discovery, database creation, connection strings, backups/recovery,

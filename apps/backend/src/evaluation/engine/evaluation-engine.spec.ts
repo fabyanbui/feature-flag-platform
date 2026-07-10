@@ -42,6 +42,7 @@ function createSnapshot(
     flag: {
       lifecycleStatus: FeatureFlagLifecycleStatus.ACTIVE,
     },
+    group: null,
     config: {
       status: FlagConfigStatus.ENABLED,
       servingMode: ServingMode.TARGETED,
@@ -50,6 +51,32 @@ function createSnapshot(
     rules: [],
     ...override,
   };
+}
+
+function evaluatePercentageRule(
+  percentage: number,
+  targetingKey: string,
+): ReturnType<typeof evaluateFlag> {
+  return evaluateFlag(
+    {
+      ...baseInput,
+      context: {
+        ...baseInput.context,
+        targetingKey,
+      },
+    },
+    createSnapshot({
+      rules: [
+        createRule({
+          id: 'percentage-rule',
+          type: RuleType.PERCENTAGE_ROLLOUT,
+          parameters: {
+            percentage,
+          },
+        }),
+      ],
+    }),
+  );
 }
 
 describe('evaluation engine result helpers', () => {
@@ -77,6 +104,100 @@ describe('evaluation engine result helpers', () => {
 });
 
 describe('evaluateFlag', () => {
+  describe('terminal-condition precedence', () => {
+    it('returns FLAG_ARCHIVED before FLAG_DISABLED', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          flag: {
+            lifecycleStatus: FeatureFlagLifecycleStatus.ARCHIVED,
+          },
+          group: {
+            killSwitch: true,
+          },
+          config: {
+            status: FlagConfigStatus.DISABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.FLAG_ARCHIVED,
+        matchedRuleId: null,
+      });
+    });
+
+    it('returns FLAG_DISABLED before GROUP_KILL_SWITCH', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          group: {
+            killSwitch: true,
+          },
+          config: {
+            status: FlagConfigStatus.DISABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.FLAG_DISABLED,
+        matchedRuleId: null,
+      });
+    });
+
+    it('returns GROUP_KILL_SWITCH before KILL_SWITCH', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          group: {
+            killSwitch: true,
+          },
+          config: {
+            status: FlagConfigStatus.ENABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.GROUP_KILL_SWITCH,
+        matchedRuleId: null,
+      });
+    });
+
+    it('returns KILL_SWITCH before GLOBAL_ON', () => {
+      const result = evaluateFlag(
+        baseInput,
+        createSnapshot({
+          config: {
+            status: FlagConfigStatus.ENABLED,
+            servingMode: ServingMode.GLOBAL_ON,
+            killSwitch: true,
+          },
+        }),
+      );
+
+      expect(result).toMatchObject({
+        enabled: false,
+        variant: 'off',
+        reason: EvaluationReason.KILL_SWITCH,
+        matchedRuleId: null,
+      });
+    });
+  });
+
   it('returns FLAG_ARCHIVED when flag is archived', () => {
     const result = evaluateFlag(
       baseInput,
@@ -106,6 +227,55 @@ describe('evaluateFlag', () => {
 
     expect(result.enabled).toBe(false);
     expect(result.reason).toBe(EvaluationReason.KILL_SWITCH);
+  });
+
+  it('returns GROUP_KILL_SWITCH before evaluating matching targeting rules', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        group: {
+          killSwitch: true,
+        },
+        rules: [
+          createRule({
+            id: 'allowlist-rule',
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.GROUP_KILL_SWITCH,
+      matchedRuleId: null,
+    });
+  });
+
+  it('continues normal evaluation when the group switch is inactive', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        group: {
+          killSwitch: false,
+        },
+        config: {
+          status: FlagConfigStatus.ENABLED,
+          servingMode: ServingMode.GLOBAL_ON,
+          killSwitch: false,
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      variant: 'on',
+      reason: EvaluationReason.GLOBAL_ON,
+      matchedRuleId: null,
+    });
   });
 
   it('returns KILL_SWITCH before evaluating matching targeting rules', () => {
@@ -277,34 +447,21 @@ describe('evaluateFlag', () => {
     expect(result.matchedRuleId).toBeNull();
   });
 
-  it('returns DEFAULT_OFF when percentage is 0', () => {
+  it('ignores a disabled percentage rule when targetingKey is missing', () => {
     const result = evaluateFlag(
-      baseInput,
+      {
+        ...baseInput,
+        context: {
+          userId: 'demo-user-regular',
+          roles: ['user'],
+        },
+      },
       createSnapshot({
         rules: [
           createRule({
-            id: 'percentage-rule',
+            id: 'disabled-percentage-rule',
             type: RuleType.PERCENTAGE_ROLLOUT,
-            parameters: {
-              percentage: 0,
-            },
-          }),
-        ],
-      }),
-    );
-
-    expect(result.enabled).toBe(false);
-    expect(result.reason).toBe(EvaluationReason.DEFAULT_OFF);
-  });
-
-  it('returns PERCENTAGE_ROLLOUT when percentage is 100', () => {
-    const result = evaluateFlag(
-      baseInput,
-      createSnapshot({
-        rules: [
-          createRule({
-            id: 'percentage-rule',
-            type: RuleType.PERCENTAGE_ROLLOUT,
+            enabled: false,
             parameters: {
               percentage: 100,
             },
@@ -313,29 +470,184 @@ describe('evaluateFlag', () => {
       }),
     );
 
-    expect(result.enabled).toBe(true);
-    expect(result.reason).toBe(EvaluationReason.PERCENTAGE_ROLLOUT);
-    expect(result.matchedRuleId).toBe('percentage-rule');
-  });
-
-  it('returns deterministic percentage rollout result for same input', () => {
-    const snapshot = createSnapshot({
-      rules: [
-        createRule({
-          id: 'percentage-rule',
-          type: RuleType.PERCENTAGE_ROLLOUT,
-          parameters: {
-            percentage: 50,
-          },
-        }),
-      ],
+    expect(result).toMatchObject({
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.DEFAULT_OFF,
+      matchedRuleId: null,
     });
-
-    const first = evaluateFlag(baseInput, snapshot);
-    const second = evaluateFlag(baseInput, snapshot);
-
-    expect(second).toEqual(first);
   });
+
+  it('does not require targetingKey when a user allowlist rule matches first', () => {
+    const result = evaluateFlag(
+      {
+        ...baseInput,
+        context: {
+          userId: 'demo-user-regular',
+          roles: ['user'],
+        },
+      },
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'percentage-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            priority: 1,
+            parameters: {
+              percentage: 100,
+            },
+          }),
+          createRule({
+            id: 'allowlist-rule',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 99,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      variant: 'on',
+      reason: EvaluationReason.USER_ALLOWLIST,
+      matchedRuleId: 'allowlist-rule',
+    });
+  });
+
+  it('returns INVALID_CONTEXT for a whitespace-only targetingKey', () => {
+    const result = evaluateFlag(
+      {
+        ...baseInput,
+        context: {
+          ...baseInput.context,
+          targetingKey: '   ',
+        },
+      },
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'percentage-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            parameters: {
+              percentage: 50,
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: false,
+      variant: 'off',
+      reason: EvaluationReason.INVALID_CONTEXT,
+      matchedRuleId: null,
+    });
+  });
+
+  it.each([
+    {
+      percentage: 0,
+      targetingKey: 'phase-10-user-141',
+      expectedEnabled: false,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+    {
+      percentage: 1,
+      targetingKey: 'phase-10-user-141',
+      expectedEnabled: true,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+    {
+      percentage: 1,
+      targetingKey: 'phase-10-user-230',
+      expectedEnabled: false,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+    {
+      percentage: 50,
+      targetingKey: 'phase-10-user-232',
+      expectedEnabled: true,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+    {
+      percentage: 50,
+      targetingKey: 'phase-10-user-402',
+      expectedEnabled: false,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+    {
+      percentage: 100,
+      targetingKey: 'phase-10-user-798',
+      expectedEnabled: true,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+  ])(
+    'evaluates $targetingKey correctly at $percentage percent',
+    ({
+      percentage,
+      targetingKey,
+      expectedEnabled,
+      expectedReason,
+      expectedRuleId,
+    }) => {
+      const result = evaluatePercentageRule(percentage, targetingKey);
+
+      expect(result).toMatchObject({
+        enabled: expectedEnabled,
+        variant: expectedEnabled ? 'on' : 'off',
+        reason: expectedReason,
+        matchedRuleId: expectedRuleId,
+      });
+    },
+  );
+
+  it.each([
+    {
+      targetingKey: 'phase-10-user-232',
+      expectedEnabled: true,
+      expectedVariant: 'on' as const,
+      expectedReason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      expectedRuleId: 'percentage-rule',
+    },
+    {
+      targetingKey: 'phase-10-user-402',
+      expectedEnabled: false,
+      expectedVariant: 'off' as const,
+      expectedReason: EvaluationReason.DEFAULT_OFF,
+      expectedRuleId: null,
+    },
+  ])(
+    'returns the same complete result for repeated evaluations of $targetingKey',
+    ({
+      targetingKey,
+      expectedEnabled,
+      expectedVariant,
+      expectedReason,
+      expectedRuleId,
+    }) => {
+      const firstResult = evaluatePercentageRule(50, targetingKey);
+
+      expect(firstResult).toMatchObject({
+        enabled: expectedEnabled,
+        variant: expectedVariant,
+        reason: expectedReason,
+        matchedRuleId: expectedRuleId,
+      });
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        expect(evaluatePercentageRule(50, targetingKey)).toEqual(firstResult);
+      }
+    },
+  );
 
   it('skips disabled rules', () => {
     const result = evaluateFlag(
@@ -356,6 +668,104 @@ describe('evaluateFlag', () => {
 
     expect(result.enabled).toBe(false);
     expect(result.reason).toBe(EvaluationReason.DEFAULT_OFF);
+  });
+
+  it('continues to the next user allowlist rule when an earlier rule does not match', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'non-matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 10,
+            parameters: {
+              userIds: ['another-user'],
+            },
+          }),
+          createRule({
+            id: 'matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 20,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      reason: EvaluationReason.USER_ALLOWLIST,
+      matchedRuleId: 'matching-allowlist',
+    });
+  });
+
+  it('ignores a disabled matching rule and uses the next enabled rule', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'disabled-matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 10,
+            enabled: false,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+          createRule({
+            id: 'enabled-matching-allowlist',
+            type: RuleType.USER_ALLOWLIST,
+            priority: 20,
+            enabled: true,
+            parameters: {
+              userIds: ['demo-user-regular'],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      reason: EvaluationReason.USER_ALLOWLIST,
+      matchedRuleId: 'enabled-matching-allowlist',
+    });
+  });
+
+  it('continues to a later percentage rule when an earlier rule does not match', () => {
+    const result = evaluateFlag(
+      baseInput,
+      createSnapshot({
+        rules: [
+          createRule({
+            id: 'zero-percent-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            priority: 10,
+            parameters: {
+              percentage: 0,
+            },
+          }),
+          createRule({
+            id: 'full-rollout-rule',
+            type: RuleType.PERCENTAGE_ROLLOUT,
+            priority: 20,
+            parameters: {
+              percentage: 100,
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      enabled: true,
+      reason: EvaluationReason.PERCENTAGE_ROLLOUT,
+      matchedRuleId: 'full-rollout-rule',
+    });
   });
 
   it('uses type precedence before priority across different rule types', () => {

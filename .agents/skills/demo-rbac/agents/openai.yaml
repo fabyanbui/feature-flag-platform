@@ -1,0 +1,4 @@
+interface:
+  display_name: "Demo RBAC"
+  short_description: "Implement server-resolved demo access roles"
+  default_prompt: "Use $demo-rbac to implement or review the admin, developer, and viewer demo authorization model."

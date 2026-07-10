@@ -6,6 +6,7 @@ describe('ProjectsController', () => {
     create: jest.fn(),
     get: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   };
 
   let controller: ProjectsController;
@@ -61,5 +62,15 @@ describe('ProjectsController', () => {
     ).resolves.toBe(response);
 
     expect(projectsService.update).toHaveBeenCalledWith('demo-project', body);
+  });
+
+  it('delegates delete to service with projectKey', async () => {
+    projectsService.delete.mockResolvedValue(undefined);
+
+    await expect(
+      controller.delete({ projectKey: 'demo-project' }),
+    ).resolves.toBeUndefined();
+
+    expect(projectsService.delete).toHaveBeenCalledWith('demo-project');
   });
 });

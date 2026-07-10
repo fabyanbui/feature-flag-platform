@@ -9,7 +9,9 @@ export class AuditLogsRepository {
 
   findMany(
     where: Prisma.AuditLogEntryWhereInput,
-    orderBy: Prisma.AuditLogEntryOrderByWithRelationInput,
+    orderBy:
+      | Prisma.AuditLogEntryOrderByWithRelationInput
+      | Prisma.AuditLogEntryOrderByWithRelationInput[],
     take: number,
     skip: number,
     db: RepositoryClient = this.prisma,

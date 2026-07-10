@@ -1,32 +1,68 @@
-# Feature Flag Demo App
+# ShopEase Demo App
 
-This app demonstrates runtime feature flag evaluation by calling the backend
-Evaluation API. It behaves like a real client application: it only evaluates
-flags and shows or hides UI based on the response.
-
-The demo app is part of Phase 8 of the implementation roadmap.
+This app is a simple ecommerce storefront used to demonstrate customer-specific
+shopping experiences. It is intentionally independent from the platform backend
+for its ecommerce data: accounts, products, carts, and seeded state live in an
+in-memory demo database inside this app.
 
 ## Responsibility
 
-The demo app is a data-plane consumer.
+The demo app does:
 
-It does:
+- Keep a local in-memory ecommerce database under `src/data/` and `src/services/`.
+- Provide customer account switching without login or registration.
+- Show guest browsing when no account is selected.
+- Show products, saved carts, quantity changes, and checkout actions.
+- Call the personalization/evaluation service through `@ffp/js-sdk` to decide
+  which customer experience to display.
+- Expose a tiny demo backend under `/api/demo/*` that uses the same SDK to guard
+  server-side feature APIs.
+- Fail safely to standard dashboard and checkout behavior if personalization is
+  unavailable.
 
-- Call `POST /v1/evaluate`.
-- Display `projectKey`, `flagKey`, `enabled`, and `reason`.
-- Show loading, error, and retry states.
-- Show or hide a demo feature based on `enabled`.
+The demo app does not:
 
-It does not:
+- Implement real authentication, login, registration, or sessions.
+- Store ecommerce data in PostgreSQL, Prisma, or browser storage.
+- Create or update platform projects, rules, or configuration.
+- Send admin tokens, database URLs, or secrets to the browser.
+- Treat frontend hiding as security; guarded demo backend endpoints still check
+  the feature flag before returning feature data.
 
-- Create projects.
-- Create or update feature flags.
-- Create or update rules.
-- Write audit logs.
-- Send admin actor headers or secrets.
+## In-memory demo database
 
-Use the admin dashboard for control-plane changes, then use this app to evaluate
-the runtime result.
+The local demo data is split into:
+
+```text
+src/data/demoAccounts.ts        # ecommerce data types
+src/data/seed.ts                # seeded accounts, products, and carts
+src/services/commerceDb.ts      # in-memory database operations
+src/services/demoAccountService.ts
+```
+
+Seeded accounts contain the targeting fields needed by the personalization SDK:
+
+- `userId`
+- `targetingId`
+- `organizationId`
+- one `role`
+
+The service maps those fields to the SDK context:
+
+```ts
+{
+  userId: account.userId,
+  targetingKey: account.targetingId,
+  roles: [account.role],
+  attributes: {
+    organizationId: account.organizationId,
+  },
+}
+```
+
+Because this is an in-memory database, edits during runtime reset when the app
+reloads. That is acceptable for the demo because the ecommerce data is fixed
+presentation data.
 
 ## Local configuration
 
@@ -40,15 +76,17 @@ Default local value:
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000/v1
+VITE_ENVIRONMENT_KEY=production
 ```
 
-Only browser-safe values should be placed in `apps/demo/.env`. Do not put
-database URLs, API secrets, admin tokens, or backend-only credentials in this
-file.
+`VITE_API_BASE_URL` is browser-visible because the storefront evaluates flags
+from the browser. The optional `DEMO_SERVER_API_BASE_URL` is server-only and lets
+the demo backend call the platform backend from Docker, for example
+`http://backend:3000/v1`. Do not put secrets in either value.
 
 ## Run locally
 
-From the repository root, start the backend:
+From the repository root, start the backend service used for personalization:
 
 ```bash
 npm run dev:backend
@@ -66,32 +104,54 @@ Open:
 http://localhost:5174
 ```
 
-## Demo scenarios
+## Guarded demo backend endpoints
 
-The app includes these Phase 8 scenarios:
+The demo backend intentionally keeps the ecommerce API tiny. It exists to prove
+that disabling a feature flag does not only hide frontend UI. The backend also
+fails closed before returning feature-specific data.
 
-| Scenario | Purpose | Expected result with seed data |
-| --- | --- | --- |
-| Global Toggle | Shows global serving behavior for `beta-dashboard` | `GLOBAL_ON` when globally enabled |
-| Role Targeting — Beta Tester | Shows role-based targeting for `new-checkout` | `ROLE_MATCH` |
-| Percentage Rollout — Included User | Shows deterministic percentage rollout | `PERCENTAGE_ROLLOUT` |
-| Percentage Rollout — Excluded User | Shows deterministic rollout fallback | `DEFAULT_OFF` |
-| Missing Project / Flag | Shows safe fallback for missing config | `enabled=false`, `reason=NOT_FOUND` |
+Each feature flag has one concrete GET endpoint:
 
-## Presentation flow
+| Endpoint | Guard flag | Enabled behavior | Disabled behavior |
+| --- | --- | --- | --- |
+| `GET /api/demo/features/beta-dashboard?accountId=...` | `beta-dashboard` | Returns priority dashboard data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/new-checkout?accountId=...` | `new-checkout` | Returns one-page checkout data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/express-payment?accountId=...` | `express-payment` | Returns express payment data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/shipping-progress-meter?accountId=...` | `shipping-progress-meter` | Returns shipping progress data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/coupon-engine?accountId=...` | `coupon-engine` | Returns coupon data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/personalized-recommendations?accountId=...` | `personalized-recommendations` | Returns personalized recommendation data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/trending-products?accountId=...` | `trending-products` | Returns trending product data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/holiday-promo-banner?accountId=...` | `holiday-promo-banner` | Returns holiday promo data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/features/live-support-widget?accountId=...` | `live-support-widget` | Returns live support data. | Returns `403 FEATURE_DISABLED`. |
+| `GET /api/demo/health` | none | Returns demo backend health. | N/A |
 
-1. Start the backend and demo app.
-2. Open the demo app.
-3. Evaluate the Global Toggle scenario.
-4. Use the admin dashboard to change the flag configuration.
-5. Return to the demo app and click **Evaluate flag**.
-6. Switch to Role Targeting and Percentage Rollout scenarios.
-7. End with the Missing Project / Flag scenario to show safe defaults.
+The storefront uses existing feature UI for the live demo:
 
-This demonstrates the separation between:
+- **Express Pay** calls `GET /api/demo/features/express-payment`.
+- **Open chat** calls `GET /api/demo/features/live-support-widget`.
 
-- Control plane: admin dashboard configuration.
-- Data plane: runtime evaluation used by client applications.
+For CLI evidence, after selecting or knowing a seeded account you can run:
+
+```bash
+curl -i "http://localhost:5174/api/demo/features/express-payment?accountId=rollout-account-006"
+curl -i "http://localhost:5174/api/demo/features/live-support-widget?accountId=rollout-account-006"
+```
+
+When the relevant flag is off, archived, disabled, killed, or unavailable, the
+response is safe and disabled with the evaluation result included for demo
+traceability.
+
+## Demo flow
+
+1. Open the storefront in guest mode.
+2. Use the account switcher to select a customer.
+3. Show the customer's dashboard, product catalog, cart, and checkout mode.
+4. Click **Express Pay** or **Open chat** to call guarded backend endpoints from
+   existing flagged UI.
+5. Disable the matching flag in the admin app, then call the endpoint by curl and
+   show `403 FEATURE_DISABLED`.
+6. Switch between beta, regular, admin preview, and rollout customer accounts.
+7. Optionally open **Developer diagnostics** for hidden technical evidence.
 
 ## Validation
 
@@ -100,12 +160,4 @@ Run:
 ```bash
 npm run build --workspace=@ffp/demo
 npm run lint --workspace=@ffp/demo
-```
-
-For full project validation:
-
-```bash
-npm run build
-npm run test
-npm run diff:check
 ```

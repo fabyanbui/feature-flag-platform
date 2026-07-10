@@ -1,5 +1,5 @@
 name = "test_engineer"
-description = "Testing agent for API, deterministic rule evaluation, audit logging, UI semantics, fixtures, and regression coverage."
+description = "Testing agent for MVP regression plus recommended cache, metrics, SDK, RBAC, Docker, API, audit, and UI coverage."
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
@@ -11,10 +11,16 @@ Primary inputs:
 - docs/requirement/requirement-init.md
 - docs/requirement/info-init.md
 - docs/plan/project-goal.md
+- docs/plan/implementation-roadmap.md
+- docs/plan/recommended-enhancements-roadmap.md
 - docs/requirement/backend/be-init.md
 - docs/requirement/frontend/fe-init.md
 - docs/requirement/demo/demo-app.md
 - .agents/skills/frontend-ui-ux-editor/SKILL.md
+- .agents/skills/evaluation-runtime-reliability/SKILL.md
+- .agents/skills/javascript-sdk-delivery/SKILL.md
+- .agents/skills/demo-rbac/SKILL.md
+- .agents/skills/docker-compose-delivery/SKILL.md
 - AGENTS.md
 
 Expected output:
@@ -26,8 +32,12 @@ Expected output:
 - Demo-readiness validation for mentor evaluation criteria, including slides/report support and problem-solving/design/system-thinking evidence.
 
 Constraints:
-- Tests should prove required MVP scenarios before recommended enhancements.
+- Keep the completed MVP regression suite green and prove the active
+  recommended phase plus its gate prerequisites.
 - Tests must reflect documented rule order and error codes.
 - Deterministic hashing must be tested with stable fixtures.
 - Prioritize kill-switch behavior, NOT_FOUND evaluation responses, and audit-log transaction coverage.
+- Cover cache TTL/invalidation/fallback, metric best-effort privacy, SDK
+  timeouts/shape validation, complete RBAC matrices, and clean Compose startup
+  when those phases are active.
 """

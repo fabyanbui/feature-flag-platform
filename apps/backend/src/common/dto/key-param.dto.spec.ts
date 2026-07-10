@@ -1,7 +1,11 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ProjectFlagKeyParamDto, ProjectKeyParamDto } from './key-param.dto';
+import {
+  ProjectFlagKeyParamDto,
+  ProjectGroupKeyParamDto,
+  ProjectKeyParamDto,
+} from './key-param.dto';
 
 describe('key param DTOs', () => {
   describe('ProjectKeyParamDto', () => {
@@ -82,6 +86,31 @@ describe('key param DTOs', () => {
 
       expect(errors).toHaveLength(1);
       expect(errors[0].property).toBe('flagKey');
+    });
+  });
+
+  describe('ProjectGroupKeyParamDto', () => {
+    it('accepts valid projectKey and groupKey', async () => {
+      const dto = plainToInstance(ProjectGroupKeyParamDto, {
+        projectKey: 'demo-project',
+        groupKey: 'checkout',
+      });
+
+      const errors = await validate(dto);
+
+      expect(errors).toHaveLength(0);
+    });
+
+    it('rejects invalid groupKey', async () => {
+      const dto = plainToInstance(ProjectGroupKeyParamDto, {
+        projectKey: 'demo-project',
+        groupKey: 'Checkout_Group',
+      });
+
+      const errors = await validate(dto);
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('groupKey');
     });
   });
 });

@@ -276,6 +276,17 @@ a later need appears.
 - Audit logs remain the source of accountability.
 - Any optional revision field does not replace audit history.
 
+### Completion evidence
+
+- Added the paginated audit-backed flag history endpoint.
+- History resolves immutable feature-flag and configuration IDs.
+- Unit and E2E coverage verifies filtering, ordering, pagination, validation,
+  flag creation, configuration updates, and rule replacement.
+- Added a responsive flag history panel near the rule editor.
+- Successful rule replacement refreshes history without affecting mutation
+  success if the secondary history read fails.
+- No separate configuration-version table or revision field was introduced.
+
 ### Likely changed files
 
 - `apps/backend/src/audit-logs/*`
@@ -380,6 +391,26 @@ FlagEnvironmentConfig
 - Cache invalidation requirements for group mutations are documented before Gate
   A is passed.
 
+### Completion evidence
+
+Phase 12 is complete:
+
+- project-wide, optional one-group-per-flag membership is persisted separately
+  from environment-specific `FlagGroupConfig.killSwitch` state,
+- group creation initializes an inactive configuration for every existing
+  project environment, preventing project-wide assignment from introducing
+  missing runtime state,
+- management APIs and the admin dashboard support group creation, update,
+  assignment, unassignment, and confirmed switch activation,
+- evaluation returns `GROUP_KILL_SWITCH` using the documented precedence,
+- all group and membership mutations write append-only audit records in the
+  mutation transaction,
+- the seeded `customer-experience` group provides a repeatable presentation
+  scenario with both demo flags assigned and every group switch initially
+  inactive,
+- cache invalidation requirements for group changes are documented in the
+  architecture and API contract documents.
+
 ### Likely changed files
 
 - `apps/backend/prisma/schema.prisma`
@@ -402,12 +433,17 @@ Pass this gate before Phase 13 begins.
 
 Required evidence:
 
-- group kill-switch schema is stable,
-- evaluation precedence is documented,
-- group evaluation tests pass,
-- group mutations are audited,
-- group feature works through API and admin UI,
-- no pending reason-code or evaluation-contract changes are known.
+- [x] Group kill-switch schema is stable.
+- [x] Evaluation precedence is documented.
+- [x] Group evaluation tests pass.
+- [x] Group mutations are audited.
+- [x] Group feature works through API and admin UI.
+- [x] No pending reason-code or evaluation-contract changes are known.
+
+Gate A passed on June 24, 2026. Evidence includes the Phase 12 evaluation-engine
+unit tests, service/repository tests, `phase-12-group-kill-switch.e2e-spec.ts`,
+admin build and lint checks, idempotent seed verification, and the documented
+API, evaluation, audit, and cache-invalidation contracts.
 
 ## Phase 13 — In-Memory Evaluation-Snapshot Cache
 
@@ -432,8 +468,11 @@ request
 Recommended cache key:
 
 ```text
-evaluation-snapshot:{projectKey}:{environmentKey}:{flagKey}
+evaluation-snapshot:{projectKey}:{environmentScope}:{flagKey}
 ```
+
+An explicit environment uses its environment key. A request that omits
+`environmentKey` uses the private `__default__` scope.
 
 Cached value contains only configuration required by the engine:
 
@@ -442,7 +481,7 @@ Cached value contains only configuration required by the engine:
 - `FlagEnvironmentConfig.servingMode`,
 - `FlagEnvironmentConfig.killSwitch`,
 - optional `FlagGroupConfig.killSwitch` state,
-- ordered enabled `FlagRule` rows and parameters,
+- ordered `FlagRule` rows, including enabled state and parameters,
 - revision/version metadata if available.
 
 Do not include raw `userId`, `targetingKey`, roles, attributes, or final
@@ -482,6 +521,27 @@ Do not include raw `userId`, `targetingKey`, roles, attributes, or final
 - Mutations invalidate affected snapshots.
 - Cache failures do not change safe evaluation behavior.
 - Gate A evidence remains valid after cache integration.
+
+### Completion evidence
+
+Phase 13 is complete:
+
+- evaluation caches reusable configuration snapshots rather than
+  context-specific final decisions,
+- the process-local in-memory provider supports configurable TTL expiry,
+- cache hits continue to evaluate each current request context independently,
+- cache misses load PostgreSQL snapshots and store successful results,
+- `NOT_FOUND`, validation failures, and evaluation errors are not cached,
+- cache read and write failures preserve safe repository fallback behavior,
+- lifecycle, configuration, rule, group membership, and group-switch mutations
+  invalidate affected snapshots only after transaction commit,
+- group switch changes invalidate every assigned flag in the affected
+  environment,
+- unit tests cover keys, TTL, isolation, invalidation, provider wiring,
+  context-specific evaluation, and cache failure,
+- Phase 12 and Phase 13 E2E tests prove warmed snapshots refresh immediately
+  after relevant mutations,
+- no Prisma migration or public evaluation response change was introduced.
 
 ### Likely changed files
 
@@ -570,6 +630,52 @@ Do not store:
 - Dashboard shows evaluation counts per flag.
 - Evaluation behavior is unchanged if metric persistence fails.
 - Metrics remain aggregate and privacy-preserving.
+
+### Completion evidence
+
+Phase 14 is complete:
+
+- evaluation requests produce one best-effort aggregate metric increment after
+  the deterministic decision,
+- cache hits and cache misses are both counted without caching final decisions,
+- `FlagEvaluationMetric` stores UTC-hour aggregates by project, environment,
+  flag, reason, and enabled result,
+- metric rows exclude user IDs, targeting keys, roles, attributes, raw
+  evaluation context, and matched rule IDs,
+- metric persistence failures are isolated from evaluation responses,
+- project-level and flag-level statistics APIs support environment and
+  normalized time-range filters,
+- the admin dashboard shows total evaluations, On outcomes, Off outcomes, On
+  percentage, and top reasons,
+- UI labels describe aggregate evaluation requests rather than unique users,
+- unit and E2E tests cover atomic increments, hourly aggregation, cache-hit
+  counting, privacy, pagination, and failure isolation.
+
+### Final validation evidence
+
+Final Phase 14 validation completed on June 25, 2026:
+
+- Prisma schema validation and client generation passed,
+- Prisma reported all three repository migrations applied and the database
+  schema up to date,
+- all seven focused Phase 14 unit suites passed with 57 tests,
+- the focused Phase 14 E2E suite passed with 9 tests,
+- the full backend unit suite passed with 47 suites and 357 tests,
+- the full backend integration suite passed with 3 suites and 11 tests,
+- the full backend E2E suite passed with 9 suites and 37 tests,
+- all backend, admin, and demo production builds passed,
+- all workspace lint checks and `git diff --check` passed,
+- live local API checks confirmed aggregate statistics for seeded demo flags,
+- the live Swagger document exposed both required statistics endpoints,
+- the migration/privacy review found no raw evaluation-context fields,
+- responsive dashboard validation from Step 12 was user-confirmed; a final
+  automated headless-browser rerun was attempted but could not be completed in
+  the restricted Codex environment because browser execution approval was not
+  granted.
+
+The PostgreSQL adapter emitted a non-failing `pg` deprecation warning during
+database-backed tests. It does not affect Phase 14 behavior and should be
+reviewed during dependency maintenance.
 
 ### Likely changed files
 
@@ -675,6 +781,63 @@ response failures return fail-closed results with `errorSource: 'CLIENT'`.
 - SDK fallback does not change backend reason-code contracts.
 - No control-plane permissions are introduced into the SDK.
 
+### Completion evidence
+
+Phase 15 is complete:
+
+- `packages/js-sdk` is registered as workspace package `@ffp/js-sdk`,
+- the public client accepts `baseUrl`, `projectKey`, optional
+  `environmentKey`, optional custom `fetch`, and configurable `timeoutMs`,
+- `evaluate`, `isEnabled`, and `getVariant` call only `POST /v1/evaluate`,
+- request construction preserves distinct `targetingKey` and optional `userId`
+  semantics,
+- backend responses are validated for project key, flag key, enabled state,
+  variant, reason code, and nullable matched rule ID,
+- timeout, network, unsuccessful HTTP, invalid JSON, invalid response shape,
+  and unserializable request failures return typed fail-closed results,
+- SDK-local fallback uses `reason=ERROR` with `errorSource=CLIENT` without
+  extending the backend `EvaluationReason` contract,
+- the demo app no longer contains direct evaluation `fetch` logic and preserves
+  all seeded presentation scenarios through the SDK,
+- the demo distinguishes backend decisions from client-local fallback while
+  keeping project, environment, flag, targeting, role, enabled, variant, reason,
+  matched rule, loading, retry, and gated-feature states visible,
+- stale demo requests cannot overwrite a newer scenario result,
+- SDK and demo documentation, architecture, security review, research report,
+  slide outline, and demo script describe the Phase 15 behavior.
+
+### Final validation evidence
+
+Final Phase 15 validation completed on June 25, 2026:
+
+- all 21 SDK unit tests passed, covering stable requests, optional environment,
+  custom fetch injection, helpers, backend `ERROR`, timeout across fetch and
+  response parsing, network failure, unsuccessful HTTP, invalid JSON, invalid
+  response shape, identity mismatch, fail-closed request validation, and static
+  client configuration,
+- the SDK TypeScript declaration/ES module build and ESLint checks passed,
+- `npm pack --dry-run --workspace=@ffp/js-sdk` confirmed the package contains
+  only the expected README, package metadata, JavaScript, source maps, and type
+  declarations,
+- all 47 backend unit suites passed with 357 tests,
+- all three backend integration suites passed with 11 tests,
+- all nine backend E2E suites passed with 37 tests,
+- backend, admin, demo, and SDK production builds passed,
+- all workspace lint checks, Prisma schema validation, and
+  `git diff --check` passed,
+- live local SDK checks against the seeded backend confirmed `GLOBAL_ON`,
+  `ROLE_MATCH`, `PERCENTAGE_ROLLOUT`, `DEFAULT_OFF`, and `NOT_FOUND`,
+- the live backend health endpoint and demo development server both returned
+  successful HTTP responses,
+- no direct `fetch` call remains in `apps/demo/src`,
+- automated browser tooling was unavailable in the execution environment;
+  responsive layout, focus visibility, textual status, loading, client
+  fallback, and retry behavior were validated through implementation review,
+  TypeScript, ESLint, production build, and live-server checks.
+
+The existing non-failing `pg` deprecation warning remained visible during
+database-backed tests and is unchanged from Phase 14.
+
 ### Likely changed files
 
 - `package.json`
@@ -698,6 +861,24 @@ Required evidence:
 - cached evaluations are still counted,
 - SDK and demo app use the stable API contract,
 - no evaluation-contract changes are pending.
+
+### Gate B completion evidence
+
+Gate B passed on June 25, 2026:
+
+- Phase 13 cache hit, miss, TTL, invalidation, isolation, and repository fallback
+  tests remain green,
+- Phase 14 proves cached and uncached evaluations are counted and metric failure
+  cannot alter evaluation responses,
+- Phase 15 SDK tests and live seeded scenarios use the stable
+  `POST /v1/evaluate` request and response contract,
+- the demo application consumes that contract through `@ffp/js-sdk`,
+- Phase 15 introduced no backend evaluation endpoint, reason-code, precedence,
+  cache, or statistics contract changes,
+- the full backend unit, integration, and E2E suites plus all workspace builds
+  and lint checks pass.
+
+Phase 16 may begin, but this gate does not require Phase 16 to start.
 
 ## Phase 16 — RBAC with Server-Resolved Demo Identities
 
@@ -771,14 +952,53 @@ tokens, password reset, MFA, or production session management.
 
 ### Acceptance criteria
 
-- Client cannot become admin by changing a role header.
-- Viewer cannot mutate projects, flags, rules, groups, kill switches, RBAC state,
+- [x] Client cannot become admin by changing a role header.
+- [x] Viewer cannot mutate projects, flags, rules, groups, kill switches, RBAC state,
   or settings.
-- Developer permissions match the documented matrix.
-- Admin can perform all intended control-plane operations.
-- Evaluation API behavior remains unchanged.
-- Documentation clearly states this is a minimal demo identity model, not a
+- [x] Developer permissions match the documented matrix.
+- [x] Admin can perform all intended control-plane operations.
+- [x] Evaluation API behavior remains unchanged.
+- [x] Documentation clearly states this is a minimal demo identity model, not a
   production identity provider.
+
+### Completion evidence
+
+Phase 16 is complete:
+
+- environment-backed bearer credentials resolve on the backend to fixed
+  `demo-admin`, `demo-developer`, and `demo-viewer` actors and roles,
+- one centralized permission matrix grants administrators full access,
+  developers flag/rule/group-assignment access, and viewers read-only access,
+- global authentication protects the control plane while health and
+  `POST /v1/evaluate` remain explicitly public,
+- missing or invalid credentials return `UNAUTHORIZED` and insufficient
+  permissions return `FORBIDDEN`,
+- client-provided actor and role headers cannot elevate access or alter the
+  actor written to append-only audit entries,
+- no identity table or migration was added; the intentionally small demo model
+  remains environment-backed and reversible,
+- the admin dashboard switches among provisioned demo identities, remounts the
+  active view after a switch, and explains disabled actions accessibly,
+- README, API, architecture, security, research, presentation, and demo
+  documentation describe the trust boundary and production limitations.
+
+### Final validation evidence
+
+Final Phase 16 validation completed on June 25, 2026:
+
+- all 50 backend unit suites passed with 374 tests, including identity
+  resolution, strict bearer parsing, the permission matrix, and guard behavior,
+- all three backend integration suites passed with 11 tests,
+- all ten backend E2E suites passed with 44 tests, including seven dedicated
+  Phase 16 RBAC scenarios for admin, developer, viewer, missing/invalid token,
+  spoofed headers, trusted audit actors, and unchanged public evaluation,
+- all 21 JavaScript SDK tests passed without evaluation-contract changes,
+- backend/admin builds and lint checks passed,
+- headless Chromium checks at 1440×1000 and 390×844 confirmed the identity
+  selector, role summaries, viewer-disabled controls, accessible explanation,
+  no horizontal overflow, successful authenticated project reads, and no
+  browser console errors,
+- `git diff --check` passed and no schema migration was required.
 
 ### Likely changed files
 
@@ -828,6 +1048,57 @@ variables, CORS, ports, and service health before final stabilization.
 - Admin and demo apps can reach the backend when configured.
 - README distinguishes baseline compose from final one-command demo startup.
 
+### Completion evidence
+
+Phase 17 is complete:
+
+- added a root Docker Compose baseline for PostgreSQL, backend, admin, and demo
+  services without adding Redis or claiming Phase 19 one-command startup,
+- added service health checks and dependency ordering so PostgreSQL becomes
+  healthy before backend startup and frontend containers wait for backend
+  health,
+- added Dockerfiles for the NestJS backend, admin Vite app, and demo Vite app,
+  including workspace-aware `npm ci`, JavaScript SDK build support, Prisma
+  client generation, and OpenSSL availability for Prisma in slim Node images,
+- corrected the backend production entrypoint to the actual Nest build output
+  path `dist/src/main.js`,
+- documented Compose environment variables, container-internal database
+  addressing, browser-facing API URL rules, manual migration/seed commands, and
+  the distinction between Phase 17 baseline startup and Phase 19 final
+  one-command workflow,
+- kept the normal npm-local PostgreSQL, migration, seed, backend, admin, and
+  demo commands available.
+
+Final Phase 17 validation completed on June 26, 2026:
+
+- `docker compose config --quiet` and `git diff --check` passed,
+- all workspace builds and lint checks passed,
+- all 21 JavaScript SDK tests and all 374 backend unit tests passed,
+- the database-backed integration and E2E suites passed outside the restricted
+  sandbox with 11 integration tests and 44 E2E tests,
+- Compose images for backend, admin, and demo built successfully,
+- an isolated Compose validation stack started PostgreSQL on host port `55432`
+  with a healthy PostgreSQL service while preserving the internal
+  `postgres:5432` contract,
+- `prisma migrate deploy` applied all three committed migrations to a clean
+  Compose database,
+- the demo seed ran successfully twice against the Compose database,
+  demonstrating repeatability,
+- backend, admin, demo, and PostgreSQL containers reached healthy status,
+- `GET /v1/health` returned the expected backend health response,
+- admin and demo HTTP endpoints returned `200`,
+- CORS preflight responses allowed `http://localhost:5173` and
+  `http://localhost:5174`,
+- a seeded evaluation through the containerized backend returned
+  `enabled=true` with `reason=GLOBAL_ON`,
+- compiled admin and demo bundles used the browser-resolvable
+  `http://localhost:3000/v1` API URL and did not use the internal `backend`
+  service hostname,
+- an authenticated control-plane smoke check using the backend container's
+  configured demo admin identity returned seeded project `demo-project`,
+- restarting PostgreSQL, backend, admin, and demo preserved seeded data and
+  returned all services to healthy status.
+
 ### Likely changed files
 
 - `docker-compose.yml`
@@ -867,6 +1138,51 @@ Do not start this phase unless Gate C passes.
 - Redis remains optional and does not become a ninth requirement.
 - Tests cover provider selection and Redis-failure fallback through mocks or an
   integration profile.
+
+### Completion evidence
+
+Phase 18 is complete:
+
+- added `EVALUATION_CACHE_PROVIDER=memory|none|redis` with memory as the
+  default, no-cache mode for disabled-cache validation, and Redis as an
+  optional provider,
+- kept the existing `EvaluationSnapshotCache` abstraction and preserved the
+  evaluation API response contract, deterministic engine behavior, and
+  repository fallback path,
+- added a Redis provider that caches only reusable evaluation snapshots, uses
+  the same TTL key and invalidation semantics as the in-memory provider, and
+  avoids storing request context, targeting keys, roles, user IDs, attributes,
+  or final decisions,
+- configured Redis client outage behavior to fail cache operations quickly so
+  the evaluation service can fall back to repository/no-cache behavior,
+- added an optional Docker Compose `redis` profile with health check while
+  leaving the Phase 17 PostgreSQL/backend/admin/demo baseline independent of
+  Redis,
+- documented cache provider selection, Redis environment variables, optional
+  Compose startup, Redis-failure fallback, and security/privacy constraints.
+
+Final Phase 18 validation completed on June 26, 2026:
+
+- focused cache and evaluation-service tests passed with 71 tests,
+- all 52 backend unit suites passed with 401 tests,
+- all 21 JavaScript SDK tests passed,
+- all workspace builds and lint checks passed,
+- Prisma schema validation, `docker compose config --quiet`, and
+  `git diff --check` passed,
+- database-backed integration and E2E suites passed with 11 integration tests
+  and 44 E2E tests,
+- optional Redis Compose profile started a healthy `redis:7-alpine` service and
+  returned `PONG`,
+- backend image rebuilt successfully with the Redis dependency, using legacy
+  Docker build mode because the local Docker Buildx plugin was unavailable,
+- Redis-provider Compose smoke validation applied all three committed
+  migrations, ran the idempotent demo seed, started PostgreSQL/Redis/backend
+  as healthy services, returned the expected `/v1/health` response, and
+  evaluated seeded flag `new-checkout` as `enabled=true` with
+  `reason=ROLE_MATCH`,
+- stopping Redis while the backend used `EVALUATION_CACHE_PROVIDER=redis` still
+  returned the same successful seeded evaluation through repository fallback,
+  with cache warnings and without exposing Redis URLs or evaluation context.
 
 ### Likely changed files
 
@@ -925,6 +1241,54 @@ restart.
 - Migration and seed behavior are safe to rerun.
 - Normal npm-local workflow still works.
 
+### Completion evidence
+
+Phase 19 is complete:
+
+- added default Compose one-shot `migrate` and `demo-seed` services so
+  `docker compose up --build` starts the complete demo path after PostgreSQL is
+  healthy,
+- changed the demo seed to create missing demo records without resetting
+  existing flag state, rules, group kill switches, lifecycle state, group
+  assignment, or sample users on every restart,
+- kept Redis optional under the existing `redis` profile and did not make Redis
+  part of the stable demo startup path,
+- kept browser-facing frontend build variables on `http://localhost:<port>/v1`
+  and preserved backend CORS configuration through environment variables,
+- updated clean-environment startup, troubleshooting, and presentation demo
+  instructions for the Phase 19 workflow,
+- preserved the normal npm-local PostgreSQL, migration, seed, backend, admin,
+  and demo commands.
+
+Final Phase 19 validation completed on June 26, 2026:
+
+- `docker compose config --quiet`, Prisma schema validation, `npm run lint`,
+  `npm run test`, `npm run build`, and `npm run diff:check` passed,
+- all 52 backend unit suites passed with 401 tests and all 21 JavaScript SDK
+  tests passed,
+- database-backed integration and E2E suites passed with 11 integration tests
+  and 44 E2E tests,
+- an isolated clean Compose stack started on alternate host ports with
+  PostgreSQL healthy, `migrate` exited `0`, `demo-seed` exited `0`, and
+  backend, admin, and demo containers healthy,
+- clean-stack endpoint smoke checks returned backend health, admin `200`, and
+  demo `200`,
+- seeded evaluations through the containerized backend returned
+  `new-checkout` as `enabled=true` with `reason=ROLE_MATCH` and
+  `beta-dashboard` as `enabled=true` with `reason=GLOBAL_ON`,
+- CORS preflight responses allowed the configured admin and demo origins,
+- compiled admin and demo bundles used the browser-resolvable API URL and did
+  not contain the Docker-internal `backend:3000` hostname,
+- rerunning `migrate` reported no pending migrations and rerunning `demo-seed`
+  completed successfully,
+- after a user-style group kill-switch change in the isolated stack, rerunning
+  `demo-seed` preserved the edited switch and evaluation still returned
+  `reason=GROUP_KILL_SWITCH`, proving seed reruns are non-destructive,
+- the optional Redis profile started a healthy Redis service and returned
+  `PONG`,
+- Docker image validation used the legacy Docker builder because the local
+  Docker Buildx plugin was unavailable.
+
 ### Likely changed files
 
 - `docker-compose.yml`
@@ -980,8 +1344,8 @@ or the final documented equivalent.
 - Update research report with implementation tradeoffs.
 - Update slide outline with recommended-level proof points.
 - Update demo script with the safest recommended features to present live.
-- Mark incomplete optional extensions, especially Redis, as future work rather
-  than mixing them into the stable demo path.
+- Mark any incomplete optional extensions as future work, and keep completed
+  optional Redis outside the stable demo dependency path.
 
 ### Final acceptance criteria
 
@@ -993,8 +1357,41 @@ or the final documented equivalent.
 - Control-plane mutations are authorized and audited.
 - Docker Compose works from a clean environment.
 - At least three recommended features are safe to demonstrate live.
-- Incomplete optional extensions such as Redis are clearly marked as future work
-  and are not part of the stable demo path.
+- Incomplete optional extensions are clearly marked as future work, and
+  completed optional Redis is not part of the stable demo dependency path.
+
+### Completion evidence
+
+Phase 20 is complete as of June 26, 2026:
+
+- added a release-level requirement traceability matrix mapping MVP and
+  recommended requirements to code/API evidence, UI behavior, tests, docs, and
+  demo scenarios,
+- added the final recommended release review record with validation evidence,
+  clean Docker Compose startup plan, safe live demo path, known limitations,
+  and final release decision,
+- updated README, architecture/API docs, research report, slide outline, demo
+  script, security review, and troubleshooting notes so Redis is optional,
+  Docker Compose is complete, and future work reflects only post-project
+  hardening,
+- preserved the stable MVP baseline and kept Phase 10 through Phase 19 behavior
+  presentation-ready without adding new product scope,
+- kept at least three recommended features safe for live demonstration: group
+  kill switch, JavaScript SDK/demo app migration, server-resolved RBAC,
+  audit-backed history, and evaluation statistics,
+- completed validation: `npm run lint`, `npm run test`, backend integration
+  tests, backend E2E tests, `npm run build`, `npm run diff:check`, Prisma
+  schema validation, and `docker compose config --quiet`,
+- validated an isolated clean Compose stack on alternate host ports with
+  PostgreSQL healthy, `migrate` exited `0`, `demo-seed` exited `0`, backend,
+  admin, and demo healthy, successful backend/admin/demo smoke checks, CORS
+  preflight checks, and seeded `new-checkout` evaluation returning
+  `reason=ROLE_MATCH`,
+- used Docker legacy build mode for the clean Compose validation because the
+  local Docker Buildx plugin was unavailable, matching the documented
+  troubleshooting path,
+- `markdownlint` was not installed locally, so the optional markdown lint check
+  was not run.
 
 ### Likely changed files
 

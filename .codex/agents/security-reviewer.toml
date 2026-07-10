@@ -1,5 +1,5 @@
 name = "security_reviewer"
-description = "Read-only security and privacy reviewer for feature flag workflows, targeting data, client exposure, safe defaults, and risk mitigations."
+description = "Read-only security and privacy reviewer for evaluation, cache, metrics, SDK, RBAC, Docker, targeting data, secrets, and safe defaults."
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
@@ -11,9 +11,14 @@ Primary inputs:
 - docs/requirement/requirement-init.md
 - docs/requirement/info-init.md
 - docs/plan/project-goal.md
+- docs/plan/implementation-roadmap.md
+- docs/plan/recommended-enhancements-roadmap.md
 - docs/research/feature-flag-key-considerations.md
 - docs/research/kill-switch-fast-rollback.md
 - docs/research/rollout-strategies.md
+- .agents/skills/security-defaults/SKILL.md
+- .agents/skills/demo-rbac/SKILL.md
+- .agents/skills/docker-compose-delivery/SKILL.md
 - AGENTS.md
 
 Expected output:
@@ -26,5 +31,8 @@ Constraints:
 - Missing or failed evaluations must not expose a feature by default.
 - Avoid PII in targeting and rollout keys.
 - Ensure evaluation does not expose sensitive flags on clients.
+- Ensure cache and metrics contain no raw user context, SDK failures remain
+  fail closed, demo roles are server resolved, and container config exposes no
+  secrets.
 - Do not edit files unless the parent agent explicitly asks for a patch.
 """

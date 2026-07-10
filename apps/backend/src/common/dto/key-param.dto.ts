@@ -16,3 +16,11 @@ export class ProjectFlagKeyParamDto extends ProjectKeyParamDto {
   })
   flagKey!: string;
 }
+
+export class ProjectGroupKeyParamDto extends ProjectKeyParamDto {
+  @IsString()
+  @Matches(KEY_REGEX, {
+    message: `groupKey ${KEY_VALIDATION_MESSAGE}`,
+  })
+  groupKey!: string;
+}

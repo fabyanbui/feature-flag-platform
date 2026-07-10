@@ -8,6 +8,15 @@ export class ProjectsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findByKey(projectKey: string, db: RepositoryClient = this.prisma) {
+    return db.project.findFirst({
+      where: {
+        key: projectKey,
+        deletedAt: null,
+      },
+    });
+  }
+
+  findAnyByKey(projectKey: string, db: RepositoryClient = this.prisma) {
     return db.project.findUnique({
       where: { key: projectKey },
     });
@@ -28,6 +37,28 @@ export class ProjectsRepository {
     });
   }
 
+  async countDeletionBlockers(
+    projectId: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    const [flags, groups, sampleUsers] = await Promise.all([
+      db.featureFlag.count({
+        where: {
+          projectId,
+          deletedAt: null,
+        },
+      }),
+      db.flagGroup.count({ where: { projectId } }),
+      db.sampleUserContext.count({ where: { projectId } }),
+    ]);
+
+    return {
+      flags,
+      groups,
+      sampleUsers,
+    };
+  }
+
   findMany(
     where: Prisma.ProjectWhereInput,
     orderBy: Prisma.ProjectOrderByWithRelationInput,
@@ -36,7 +67,10 @@ export class ProjectsRepository {
     db: RepositoryClient = this.prisma,
   ) {
     return db.project.findMany({
-      where,
+      where: {
+        ...where,
+        deletedAt: null,
+      },
       orderBy,
       take,
       skip,
@@ -44,6 +78,11 @@ export class ProjectsRepository {
   }
 
   count(where: Prisma.ProjectWhereInput, db: RepositoryClient = this.prisma) {
-    return db.project.count({ where });
+    return db.project.count({
+      where: {
+        ...where,
+        deletedAt: null,
+      },
+    });
   }
 }

@@ -3,7 +3,6 @@ export const API_PREFIX = 'v1';
 export const SWAGGER_PATH = 'docs';
 
 export const REQUEST_ID_HEADER = 'x-request-id';
-export const ACTOR_HEADER = 'x-actor';
 
 export const RESPONSE_REQUEST_ID_HEADER = 'X-Request-Id';
 

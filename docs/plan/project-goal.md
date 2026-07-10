@@ -32,9 +32,9 @@ fast rollback through kill switches, and auditable configuration changes.
 
 All plans, implementation sequencing, and recommended enhancements must protect
 these dates. Slides and the research report are required delivery artifacts.
-The required MVP must be demo-ready before optional recommended work is
-selected; recommended-level requirements are a plus only after the MVP is
-stable.
+The required MVP is the protected release baseline. Continue recommended work
+through `docs/plan/recommended-enhancements-roadmap.md`, preserving its stop
+gates and keeping every increment reversible and independently testable.
 
 ## Required MVP Deliverables
 
@@ -74,8 +74,8 @@ stable.
 
 ## Recommended Enhancements After MVP
 
-Recommended work must not delay required MVP completion. Select only the
-smallest set that improves demo or evaluation value after the MVP is working.
+Recommended work must not regress required MVP completion. Follow the active
+recommended roadmap and stop at the latest passing gate if delivery risk rises.
 
 1. Redis or in-memory cache for flag evaluation results.
 2. Simple JavaScript SDK for client integration.
@@ -93,12 +93,14 @@ smallest set that improves demo or evaluation value after the MVP is working.
 2. Evaluation responses must include `enabled`, `reason`, `projectKey`, and
    `flagKey`.
 3. Missing project or flag must return `enabled=false` with `reason=NOT_FOUND`.
-4. Default rule order is:
-   1. Global disable / kill switch
-   2. User allowlist
-   3. Role targeting
-   4. Percentage rollout
-   5. Default off
+4. Authoritative evaluation precedence is:
+   1. Archived flag
+   2. Disabled flag environment config
+   3. Group kill switch
+   4. Flag kill switch
+   5. Global on
+   6. Ordered enabled rules: user allowlist, role targeting, percentage rollout
+   7. Default off
 5. Percentage rollout must be deterministic through stable hashing over a
    stable, non-PII rollout key.
 6. Mutations for projects, flags, and rules must write append-only audit log
@@ -151,5 +153,14 @@ The project should be prepared so a presenter can answer:
 6. How does the demo prove safe rollout, targeting, rollback, and auditability?
 7. How do the slides and report show problem-solving, design thinking, and
    system thinking?
-8. Which recommended-level requirement, if any, was selected after MVP, and why
-   was it worth the extra scope?
+8. Which recommended-level requirements were completed after MVP, why were they
+   worth the extra scope, and which roadmap gates controlled delivery risk?
+
+## Active Delivery Routing
+
+- `docs/plan/implementation-roadmap.md` is the completed MVP implementation
+  history and regression baseline.
+- `docs/plan/recommended-enhancements-roadmap.md` is the active source for
+  recommended phases, completion evidence, and Gate A/B/C sequencing.
+- Determine current phase status from checked completion evidence in the active
+  roadmap and repository tests, not from older session history.

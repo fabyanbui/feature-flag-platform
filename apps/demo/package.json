@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:staging": "VITE_ENVIRONMENT_KEY=staging vite",
+    "build:staging": "VITE_ENVIRONMENT_KEY=staging npm run build",
+    "start": "node server-dist/server/server.js"
   },
   "dependencies": {
+    "@ffp/js-sdk": "0.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

@@ -4,6 +4,9 @@ import type {
     EvaluationContext,
     EvaluationResult,
     FeatureFlag,
+    FlagStats,
+    FlagStatsSummary,
+    FlagGroup,
     FlagConfigStatus,
     FlagRule,
     PageResponse,
@@ -16,8 +19,11 @@ const API_BASE_URL = (
     import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1'
 ).replace(/\/+$/, '');
 
-const ADMIN_ACTOR =
-    import.meta.env.VITE_ADMIN_ACTOR ?? 'admin@example.local';
+let activeDemoToken = '';
+
+export function setActiveDemoToken(token: string): void {
+    activeDemoToken = token;
+}
 
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
@@ -25,7 +31,7 @@ type RequestOptions = {
     method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
     query?: QueryParams;
     body?: unknown;
-    actor?: boolean;
+    authenticated?: boolean;
 };
 
 export class AdminApiError extends Error {
@@ -79,7 +85,9 @@ export async function apiRequest<T>(
         headers: {
             Accept: 'application/json',
             ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(options.actor ? { 'X-Actor': ADMIN_ACTOR } : {}),
+            ...(options.authenticated !== false && activeDemoToken
+                ? { Authorization: `Bearer ${activeDemoToken}` }
+                : {}),
         },
         body: options.body ? JSON.stringify(options.body) : undefined,
     });
@@ -113,7 +121,6 @@ function flagPath(projectKey: string, flagKey: string): string {
 }
 
 export type ListProjectsQuery = {
-    search?: string;
     limit?: number;
     offset?: number;
     sort?: string;
@@ -128,7 +135,7 @@ export type CreateProjectInput = {
 
 export type UpdateProjectInput = {
     name?: string;
-    description?: string;
+    description?: string | null;
 };
 
 export type ListFlagsQuery = {
@@ -176,6 +183,37 @@ export type ListAuditLogsQuery = {
     order?: 'asc' | 'desc';
 };
 
+export type ListFlagHistoryQuery = {
+    limit?: number;
+    offset?: number;
+    sort?: 'createdAt';
+    order?: 'asc' | 'desc';
+};
+
+export type ListFlagGroupsQuery = {
+    search?: string;
+    environmentKey?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    order?: 'asc' | 'desc';
+};
+
+export type ListFlagStatsQuery = {
+    environmentKey?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+    sort?: 'totalEvaluations' | 'enabledCount' | 'disabledCount' | 'flagKey';
+    order?: 'asc' | 'desc';
+};
+
+export type CreateFlagGroupInput = {
+    key: string;
+    name: string;
+};
+
 export const adminApi = {
     listProjects(query: ListProjectsQuery = {}) {
         return apiRequest<PageResponse<Project>>('/projects', { query });
@@ -185,7 +223,6 @@ export const adminApi = {
         return apiRequest<Project>('/projects', {
             method: 'POST',
             body,
-            actor: true,
         });
     },
 
@@ -193,13 +230,25 @@ export const adminApi = {
         return apiRequest<Project>(projectPath(projectKey), {
             method: 'PATCH',
             body,
-            actor: true,
+        });
+    },
+
+    deleteProject(projectKey: string) {
+        return apiRequest<void>(projectPath(projectKey), {
+            method: 'DELETE',
         });
     },
 
     listFlags(projectKey: string, query: ListFlagsQuery = {}) {
         return apiRequest<PageResponse<FeatureFlag>>(
             `${projectPath(projectKey)}/flags`,
+            { query },
+        );
+    },
+
+    listDeletedFlags(projectKey: string, query: ListFlagsQuery = {}) {
+        return apiRequest<PageResponse<FeatureFlag>>(
+            `${projectPath(projectKey)}/flags/deleted`,
             { query },
         );
     },
@@ -212,7 +261,6 @@ export const adminApi = {
         return apiRequest<FeatureFlag>(`${projectPath(projectKey)}/flags`, {
             method: 'POST',
             body,
-            actor: true,
         });
     },
 
@@ -220,46 +268,161 @@ export const adminApi = {
         return apiRequest<FeatureFlag>(flagPath(projectKey, flagKey), {
             method: 'PATCH',
             body,
-            actor: true,
         });
     },
 
     archiveFlag(projectKey: string, flagKey: string) {
-        return apiRequest<FeatureFlag>(`${flagPath(projectKey, flagKey)}/archive`, {
-            method: 'POST',
-            actor: true,
-        });
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/archive`,
+            {
+                method: 'POST',
+            },
+        );
     },
 
     restoreFlag(projectKey: string, flagKey: string) {
-        return apiRequest<FeatureFlag>(`${flagPath(projectKey, flagKey)}/restore`, {
-            method: 'POST',
-            actor: true,
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/restore`,
+            {
+                method: 'POST',
+            },
+        );
+    },
+
+    restoreDeletedFlag(projectKey: string, flagKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/restore-deleted`,
+            {
+                method: 'POST',
+            },
+        );
+    },
+
+    deleteFlag(projectKey: string, flagKey: string) {
+        return apiRequest<void>(flagPath(projectKey, flagKey), {
+            method: 'DELETE',
         });
     },
 
-    listRules(
+    listFlagGroups(projectKey: string, query: ListFlagGroupsQuery = {}) {
+        return apiRequest<PageResponse<FlagGroup>>(
+            `${projectPath(projectKey)}/groups`,
+            { query },
+        );
+    },
+
+    createFlagGroup(projectKey: string, body: CreateFlagGroupInput) {
+        return apiRequest<FlagGroup>(`${projectPath(projectKey)}/groups`, {
+            method: 'POST',
+            body,
+        });
+    },
+
+    updateFlagGroup(projectKey: string, groupKey: string, name: string) {
+        return apiRequest<FlagGroup>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}`,
+            {
+                method: 'PATCH',
+                body: { name },
+            },
+        );
+    },
+
+    deleteFlagGroup(projectKey: string, groupKey: string) {
+        return apiRequest<void>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}`,
+            {
+                method: 'DELETE',
+            },
+        );
+    },
+
+    updateFlagGroupConfig(
         projectKey: string,
-        flagKey: string,
-        query: ListRulesQuery = {},
+        groupKey: string,
+        body: { environmentKey: string; killSwitch: boolean },
     ) {
+        return apiRequest<FlagGroup>(
+            `${projectPath(projectKey)}/groups/${encodeURIComponent(groupKey)}/config`,
+            {
+                method: 'PUT',
+                body,
+            },
+        );
+    },
+
+    assignFlagGroup(projectKey: string, flagKey: string, groupKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/group`,
+            {
+                method: 'PUT',
+                body: { groupKey },
+            },
+        );
+    },
+
+    unassignFlagGroup(projectKey: string, flagKey: string) {
+        return apiRequest<FeatureFlag>(
+            `${flagPath(projectKey, flagKey)}/group`,
+            {
+                method: 'DELETE',
+            },
+        );
+    },
+
+    listRules(projectKey: string, flagKey: string, query: ListRulesQuery = {}) {
         return apiRequest<PageResponse<FlagRule>>(
             `${flagPath(projectKey, flagKey)}/rules`,
             { query },
         );
     },
 
+    listFlagHistory(
+        projectKey: string,
+        flagKey: string,
+        query: ListFlagHistoryQuery = {},
+    ) {
+        return apiRequest<PageResponse<AuditLog>>(
+            `${flagPath(projectKey, flagKey)}/history`,
+            { query },
+        );
+    },
+
     replaceRules(projectKey: string, flagKey: string, rules: RuleInput[]) {
-        return apiRequest<FlagRule[]>(`${flagPath(projectKey, flagKey)}/rules`, {
-            method: 'PUT',
-            body: { rules },
-            actor: true,
-        });
+        return apiRequest<FlagRule[]>(
+            `${flagPath(projectKey, flagKey)}/rules`,
+            {
+                method: 'PUT',
+                body: { rules },
+            },
+        );
     },
 
     listAuditLogs(projectKey: string, query: ListAuditLogsQuery = {}) {
         return apiRequest<PageResponse<AuditLog>>(
             `${projectPath(projectKey)}/audit-logs`,
+            { query },
+        );
+    },
+
+    listFlagStats(projectKey: string, query: ListFlagStatsQuery = {}) {
+        return apiRequest<PageResponse<FlagStatsSummary>>(
+            `${projectPath(projectKey)}/stats/flags`,
+            { query },
+        );
+    },
+
+    getFlagStats(
+        projectKey: string,
+        flagKey: string,
+        query: {
+            environmentKey?: string;
+            from?: string;
+            to?: string;
+        } = {},
+    ) {
+        return apiRequest<FlagStats>(
+            `${flagPath(projectKey, flagKey)}/stats`,
             { query },
         );
     },
@@ -273,6 +436,7 @@ export const adminApi = {
         return apiRequest<EvaluationResult>('/evaluate', {
             method: 'POST',
             body,
+            authenticated: false,
         });
     },
 };

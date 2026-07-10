@@ -548,8 +548,8 @@ The engine applies this order:
 
 ```text
 1. Archived flag
-2. Kill switch
-3. Disabled config
+2. Disabled config
+3. Kill switch
 4. Global-on serving mode
 5. User allowlist rules
 6. Role targeting rules
@@ -572,13 +572,19 @@ unexpected exception -> ERROR
 
 ### 10.1 Why Off conditions come first
 
-Archive, kill switch, and disabled config must win before any rule.
+Archive, disabled config, and kill switch must win before any rule. Their
+precedence is intentional: `FLAG_ARCHIVED` wins first, followed by
+`FLAG_DISABLED`, then `KILL_SWITCH`.
 
 Reason:
 
-- archive means the flag should not serve,
-- kill switch is emergency rollback,
-- disabled config means this environment should not serve the feature.
+- archive means the flag should no longer serve,
+- disabled config means this environment should not serve the feature,
+- kill switch is emergency rollback for an otherwise enabled configuration.
+
+Phase 12 may insert `GROUP_KILL_SWITCH` between `FLAG_DISABLED` and
+`KILL_SWITCH`. Do not expose that reason code until group kill-switch behavior
+is implemented.
 
 ### 10.2 Why global-on comes before targeting
 
@@ -753,8 +759,8 @@ Evaluation must fail closed.
 | Missing flag | `enabled=false`, `reason=NOT_FOUND` |
 | Missing flag config | `enabled=false`, `reason=NOT_FOUND` |
 | Archived flag | `enabled=false`, `reason=FLAG_ARCHIVED` |
-| Kill switch on | `enabled=false`, `reason=KILL_SWITCH` |
 | Config disabled | `enabled=false`, `reason=FLAG_DISABLED` |
+| Kill switch on | `enabled=false`, `reason=KILL_SWITCH` |
 | No rules match | `enabled=false`, `reason=DEFAULT_OFF` |
 | Percentage reached without targeting key | `enabled=false`, `reason=INVALID_CONTEXT` |
 | Unexpected service/repository error | `enabled=false`, `reason=ERROR` |
@@ -1080,10 +1086,9 @@ Use this checklist to confirm Phase 4 behavior:
 [ ] DTO validates projectKey, environmentKey, flagKey, and context shape.
 [ ] Invalid keys return 400 VALIDATION_ERROR.
 [ ] Missing project/environment/flag/config returns 200 NOT_FOUND result.
-[ ] Engine returns FLAG_ARCHIVED before rules.
-[ ] Engine returns KILL_SWITCH before rules.
-[ ] Engine returns FLAG_DISABLED before rules.
-[ ] Engine returns GLOBAL_ON before targeted rules.
+[ ] Engine returns FLAG_ARCHIVED before FLAG_DISABLED.
+[ ] Engine returns FLAG_DISABLED before KILL_SWITCH.
+[ ] Engine returns KILL_SWITCH before GLOBAL_ON and targeted rules.
 [ ] User allowlist rules are evaluated before role and percentage rules.
 [ ] Role targeting rules are evaluated before percentage rules.
 [ ] Percentage rollout uses stable SHA-256 hashing.

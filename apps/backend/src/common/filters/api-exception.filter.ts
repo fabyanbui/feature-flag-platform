@@ -83,6 +83,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     switch (status) {
       case HttpStatus.BAD_REQUEST:
         return ApiErrorCode.VALIDATION_ERROR;
+      case HttpStatus.UNAUTHORIZED:
+        return ApiErrorCode.UNAUTHORIZED;
+      case HttpStatus.FORBIDDEN:
+        return ApiErrorCode.FORBIDDEN;
       case HttpStatus.NOT_FOUND:
         return ApiErrorCode.NOT_FOUND;
       case HttpStatus.CONFLICT:
@@ -96,6 +100,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     switch (status) {
       case HttpStatus.BAD_REQUEST:
         return 'Request validation failed.';
+      case HttpStatus.UNAUTHORIZED:
+        return 'Valid demo credentials are required.';
+      case HttpStatus.FORBIDDEN:
+        return 'The selected demo identity does not have permission.';
       case HttpStatus.NOT_FOUND:
         return 'Resource not found.';
       case HttpStatus.CONFLICT:
