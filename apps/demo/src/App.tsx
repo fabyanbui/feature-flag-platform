@@ -28,7 +28,6 @@ type FeatureKey =
 type FeatureResultMap = Partial<Record<FeatureKey, SdkEvaluationResult>>;
 type FeatureGroupKey = "checkout" | "recommendations" | "standalone";
 type RolloutUnit = "user" | "organization";
-
 type DemoFeature = {
   key: FeatureKey;
   group: FeatureGroupKey;
@@ -219,6 +218,15 @@ function getFeatureEvaluationContext(
       organizationName: account.organizationName,
     },
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getStringField(value: Record<string, unknown>, field: string) {
+  const fieldValue = value[field];
+  return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
 type AccountSwitcherProps = {
@@ -547,6 +555,7 @@ type CartPanelProps = {
   selectedAccount: DemoAccount | null;
   onQuantityChange: (productId: string, quantity: number) => void;
   onCheckout: () => void;
+  onExpressPayment: () => void;
 };
 
 function CartPanel({
@@ -558,6 +567,7 @@ function CartPanel({
   selectedAccount,
   onQuantityChange,
   onCheckout,
+  onExpressPayment,
 }: CartPanelProps) {
   const freeShippingTarget = 100;
   const shippingProgress = cart
@@ -676,7 +686,7 @@ function CartPanel({
             {hasExpressPayment ? (
               <button
                 className="express-pay-button"
-                onClick={onCheckout}
+                onClick={onExpressPayment}
                 type="button"
               >
                 Express Pay
@@ -722,9 +732,13 @@ function PromoBanner({ isVisible }: PromoBannerProps) {
 
 type LiveSupportWidgetProps = {
   isVisible: boolean;
+  onOpenChat: () => void;
 };
 
-function LiveSupportWidget({ isVisible }: LiveSupportWidgetProps) {
+function LiveSupportWidget({
+  isVisible,
+  onOpenChat,
+}: LiveSupportWidgetProps) {
   if (!isVisible) {
     return null;
   }
@@ -738,7 +752,7 @@ function LiveSupportWidget({ isVisible }: LiveSupportWidgetProps) {
           Ask about shipping, returns, or payment before placing an order.
         </span>
       </div>
-      <button type="button">Open chat</button>
+      <button onClick={onOpenChat} type="button">Open chat</button>
     </section>
   );
 }
@@ -1200,6 +1214,78 @@ function App() {
     setCart(await updateCartQuantity(selectedAccount.id, productId, quantity));
   };
 
+  const callGuardedFeatureApi = async (
+    featureKey: FeatureKey,
+    featureLabel: string,
+  ) => {
+    if (!selectedAccount) {
+      setMessage("Choose a user account before calling the backend API.");
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/demo/features/${featureKey}?accountId=${encodeURIComponent(
+          selectedAccount.id,
+        )}`,
+      );
+      const body: unknown = await response.json().catch(() => null);
+      const bodyRecord = isRecord(body) ? body : null;
+      const evaluation = bodyRecord?.evaluation;
+      const reason = isRecord(evaluation)
+        ? getStringField(evaluation, "reason")
+        : undefined;
+      const backendMessage = bodyRecord
+        ? getStringField(bodyRecord, "message")
+        : undefined;
+
+      if (response.ok) {
+        return true;
+      }
+
+      setMessage(
+        response.status === 403
+          ? `${featureLabel} API blocked by backend${
+              reason ? ` (${reason})` : ""
+            }.`
+          : (backendMessage ?? `${featureLabel} API request failed.`),
+      );
+      return false;
+    } catch {
+      setMessage(`${featureLabel} API could not be reached.`);
+      return false;
+    }
+  };
+
+  const handleExpressPayment = async () => {
+    if (!selectedAccount) {
+      return;
+    }
+
+    const isAllowed = await callGuardedFeatureApi(
+      "express-payment",
+      "Express payment",
+    );
+
+    if (!isAllowed) {
+      return;
+    }
+
+    setCart(await clearCart(selectedAccount.id));
+    setMessage("Express payment API served by backend; order placed.");
+  };
+
+  const handleOpenLiveSupport = async () => {
+    const isAllowed = await callGuardedFeatureApi(
+      "live-support-widget",
+      "Live support widget",
+    );
+
+    if (isAllowed) {
+      setMessage("Live support API served by backend; chat session opened.");
+    }
+  };
+
   const handleCheckout = async () => {
     if (!selectedAccount) {
       return;
@@ -1312,8 +1398,12 @@ function App() {
               selectedAccount={selectedAccount}
               onQuantityChange={handleQuantityChange}
               onCheckout={handleCheckout}
+              onExpressPayment={handleExpressPayment}
             />
-            <LiveSupportWidget isVisible={hasLiveSupportWidget} />
+            <LiveSupportWidget
+              isVisible={hasLiveSupportWidget}
+              onOpenChat={handleOpenLiveSupport}
+            />
           </div>
         </div>
 

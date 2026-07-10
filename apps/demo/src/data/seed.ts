@@ -3,7 +3,7 @@ import type {
   DemoAccountRecord,
   DemoAccountRole,
   Product,
-} from './demoAccounts';
+} from './demoAccounts.js';
 
 type OrganizationAccountPlan = {
   organizationId: string;
