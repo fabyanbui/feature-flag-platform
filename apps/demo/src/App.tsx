@@ -109,8 +109,8 @@ const featureRolloutUnits: Record<FeatureKey, RolloutUnit> = {
   "coupon-engine": "user",
   "personalized-recommendations": "user",
   "trending-products": "user",
-  "holiday-promo-banner": "user",
-  "live-support-widget": "organization",
+  "holiday-promo-banner": "organization",
+  "live-support-widget": "user",
   "beta-dashboard": "user",
 };
 
@@ -119,24 +119,24 @@ const featureGroups: Array<{
   label: string;
   summary: string;
 }> = [
-  {
-    key: "checkout",
-    label: "Checkout experience",
-    summary:
-      "Four independent checkout features grouped for a group kill-switch demo.",
-  },
-  {
-    key: "recommendations",
-    label: "Recommendations",
-    summary:
-      "Two merchandising features grouped for recommendation experiments.",
-  },
-  {
-    key: "standalone",
-    label: "Standalone features",
-    summary: "Individual features without a shared operational group.",
-  },
-];
+    {
+      key: "checkout",
+      label: "Checkout experience",
+      summary:
+        "Four independent checkout features grouped for a group kill-switch demo.",
+    },
+    {
+      key: "recommendations",
+      label: "Recommendations",
+      summary:
+        "Two merchandising features grouped for recommendation experiments.",
+    },
+    {
+      key: "standalone",
+      label: "Standalone features",
+      summary: "Individual features without a shared operational group.",
+    },
+  ];
 
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/v1";
@@ -774,8 +774,8 @@ function RecommendationPanel({
 }: RecommendationPanelProps) {
   const recommendationProducts = hasPersonalizedRecommendations
     ? products
-        .filter((product) => product.category === "Accessories")
-        .slice(0, 2)
+      .filter((product) => product.category === "Accessories")
+      .slice(0, 2)
     : products.slice(0, 2);
   const trendingProducts = products
     .filter((product) => product.rating >= 4.7)
@@ -1245,9 +1245,8 @@ function App() {
 
       setMessage(
         response.status === 403
-          ? `${featureLabel} API blocked by backend${
-              reason ? ` (${reason})` : ""
-            }.`
+          ? `${featureLabel} API blocked by backend${reason ? ` (${reason})` : ""
+          }.`
           : (backendMessage ?? `${featureLabel} API request failed.`),
       );
       return false;
@@ -1296,8 +1295,8 @@ function App() {
       hasCouponEngine
         ? "Order placed with coupon savings applied."
         : hasOnePageCheckout
-        ? "Order placed with one-page checkout."
-        : "Order is ready for the payment step.",
+          ? "Order placed with one-page checkout."
+          : "Order is ready for the payment step.",
     );
   };
 
