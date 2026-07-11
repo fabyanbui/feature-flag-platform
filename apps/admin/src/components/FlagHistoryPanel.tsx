@@ -84,8 +84,11 @@ export function FlagHistoryPanel({
     }
 
     return (
-        <section className="panel" aria-labelledby="flag-history-heading">
-            <div className="section-header">
+        <section
+            className="panel flag-history-panel"
+            aria-labelledby="flag-history-heading"
+        >
+            <div className="section-header flag-history-header">
                 <div>
                     <h2 id="flag-history-heading">Configuration history</h2>
                     <p>
@@ -94,7 +97,7 @@ export function FlagHistoryPanel({
                     </p>
                 </div>
 
-                <div className="header-actions">
+                <div className="header-actions flag-history-actions">
                     {onOpenAuditLogs ? (
                         <button
                             type="button"

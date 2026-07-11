@@ -1112,6 +1112,21 @@ dd {
   color: var(--admin-muted);
 }
 
+.flag-history-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.flag-history-actions {
+  justify-self: end;
+  align-self: start;
+}
+
+.flag-history-actions .button {
+  min-width: 12rem;
+}
+
 .dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -1215,6 +1230,15 @@ dd {
   }
 
   .group-results-summary {
+    justify-self: start;
+  }
+
+  .flag-history-header {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .flag-history-actions {
     justify-self: start;
   }
 
