@@ -83,6 +83,7 @@ describe('FlagRulesService', () => {
 
   const featureFlagsRepository = {
     findByProjectIdAndKeyWithConfigs: jest.fn(),
+    touchUpdatedAtByProjectIdAndKey: jest.fn(),
   };
 
   const flagRulesRepository = {
@@ -120,6 +121,9 @@ describe('FlagRulesService', () => {
     requestContext.getActor.mockReturnValue('mentor@example.local');
     requestContext.getRequestId.mockReturnValue('req-test');
     cacheInvalidator.invalidateFlag.mockResolvedValue(undefined);
+    featureFlagsRepository.touchUpdatedAtByProjectIdAndKey.mockResolvedValue(
+      createFlagWithDefaultConfig(),
+    );
 
     service = new FlagRulesService(
       projectsRepository as never,
@@ -603,6 +607,9 @@ describe('FlagRulesService', () => {
         'config-1',
         tx,
       );
+      expect(
+        featureFlagsRepository.touchUpdatedAtByProjectIdAndKey,
+      ).toHaveBeenCalledWith('project-1', 'new-checkout', tx);
 
       expect(result).toEqual([]);
       expect(cacheInvalidator.invalidateFlag).toHaveBeenCalledWith(
@@ -668,6 +675,9 @@ describe('FlagRulesService', () => {
         ],
         tx,
       );
+      expect(
+        featureFlagsRepository.touchUpdatedAtByProjectIdAndKey,
+      ).toHaveBeenCalledWith('project-1', 'new-checkout', tx);
 
       expect(result).toEqual([
         {

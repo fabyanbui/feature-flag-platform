@@ -85,6 +85,24 @@ export class FeatureFlagsRepository {
     });
   }
 
+  touchUpdatedAtByProjectIdAndKey(
+    projectId: string,
+    flagKey: string,
+    db: RepositoryClient = this.prisma,
+  ) {
+    return db.featureFlag.update({
+      where: {
+        projectId_key: {
+          projectId,
+          key: flagKey,
+        },
+      },
+      data: {
+        updatedAt: new Date(),
+      },
+    });
+  }
+
   updateGroupByProjectIdAndKey(
     projectId: string,
     flagKey: string,
