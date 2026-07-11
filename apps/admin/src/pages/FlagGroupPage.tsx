@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -22,10 +22,21 @@ type PendingDelete = {
     group: FlagGroup;
 };
 
+type GroupSwitchFilter = 'all' | 'active' | 'inactive';
+
 const initialCreateForm = {
     key: '',
     name: '',
 };
+
+const initialFilters = {
+    search: '',
+    switchState: 'all' as GroupSwitchFilter,
+};
+
+function pluralize(count: number, singular: string, plural = `${singular}s`) {
+    return count === 1 ? singular : plural;
+}
 
 export function FlagGroupPage({
     projectKey,
@@ -37,6 +48,7 @@ export function FlagGroupPage({
     const canManageKillSwitch = can('GROUP_KILL_SWITCH');
     const [groups, setGroups] = useState<FlagGroup[]>([]);
     const [createForm, setCreateForm] = useState(initialCreateForm);
+    const [filters, setFilters] = useState(initialFilters);
     const [renameDrafts, setRenameDrafts] = useState<Record<string, string>>(
         {},
     );
@@ -86,6 +98,44 @@ export function FlagGroupPage({
 
         return () => window.clearTimeout(timeoutId);
     }, [loadGroups]);
+
+    const groupSummary = useMemo(() => {
+        const activeSwitchCount = groups.filter(
+            (group) => group.killSwitch,
+        ).length;
+        const assignedFlagCount = groups.reduce(
+            (total, group) => total + group.assignedFlagCount,
+            0,
+        );
+
+        return {
+            totalGroups: groups.length,
+            activeSwitchCount,
+            assignedFlagCount,
+        };
+    }, [groups]);
+
+    const filteredGroups = useMemo(() => {
+        const searchTerm = filters.search.trim().toLowerCase();
+
+        return groups.filter((group) => {
+            const matchesSearch =
+                searchTerm.length === 0 ||
+                group.name.toLowerCase().includes(searchTerm) ||
+                group.key.toLowerCase().includes(searchTerm);
+            const matchesSwitchState =
+                filters.switchState === 'all' ||
+                (filters.switchState === 'active'
+                    ? group.killSwitch
+                    : !group.killSwitch);
+
+            return matchesSearch && matchesSwitchState;
+        });
+    }, [filters, groups]);
+
+    function resetFilters() {
+        setFilters(initialFilters);
+    }
 
     async function handleCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -211,14 +261,14 @@ export function FlagGroupPage({
 
     return (
         <section className="page-stack">
-            <header className="page-header">
+            <header className="page-header groups-page-header">
                 <div>
                     <p className="eyebrow">Fast rollback</p>
-                    <h1>Flag groups</h1>
+                    <h1>Groups</h1>
                     <p>
-                        Group related flags and force them runtime Off together
-                        in one environment without changing each flag
-                        individually.
+                        Coordinate related flags with a project-wide group and
+                        a shared kill switch. Runtime Off from a group is shown
+                        separately from each flag lifecycle status.
                     </p>
                 </div>
 
@@ -228,7 +278,7 @@ export function FlagGroupPage({
                         className="button button-secondary"
                         onClick={onOpenAuditLogs}
                     >
-                        View group audit logs
+                        View audit logs
                     </button>
 
                     <button
@@ -241,21 +291,53 @@ export function FlagGroupPage({
                 </div>
             </header>
 
-            <section className="panel">
-                <div>
-                    <h2>Create group</h2>
-                    <p>
-                        Membership is project-wide. Kill-switch state is
-                        configured per environment.
-                    </p>
+            <section
+                className="group-overview-grid"
+                aria-label="Group rollback overview"
+            >
+                <article className="group-overview-card">
+                    <span>Total groups</span>
+                    <strong>{groupSummary.totalGroups}</strong>
+                    <p>Rollback collections in this project.</p>
+                </article>
+
+                <article className="group-overview-card group-overview-card-danger">
+                    <span>Active switches</span>
+                    <strong>{groupSummary.activeSwitchCount}</strong>
+                    <p>Groups currently forcing assigned flags Off.</p>
+                </article>
+
+                <article className="group-overview-card">
+                    <span>Assigned flags</span>
+                    <strong>{groupSummary.assignedFlagCount}</strong>
+                    <p>Flags protected by group rollback.</p>
+                </article>
+
+            </section>
+
+            <section className="panel group-create-panel">
+                <div className="section-header">
+                    <div>
+                        <h2>Create rollback group</h2>
+                        <p>
+                            Use stable, non-PII group keys. Membership stays
+                            project-wide while the emergency switch stays
+                            separate from each flag configuration.
+                        </p>
+                    </div>
                 </div>
                 {!canManageGroups ? (
                     <p className="permission-notice" id="group-permission-help">
-                        Only administrators can create or rename groups.
+                        Only administrators can create, rename, or delete
+                        groups. Developers may assign flags from the flag form
+                        when permitted; viewers remain read-only.
                     </p>
                 ) : null}
 
-                <form className="form-grid" onSubmit={handleCreate}>
+                <form
+                    className="form-grid group-create-form"
+                    onSubmit={handleCreate}
+                >
                     <label>
                         Group key
                         <input
@@ -271,9 +353,13 @@ export function FlagGroupPage({
                             aria-describedby={
                                 !canManageGroups
                                     ? 'group-permission-help'
-                                    : undefined
+                                    : 'group-key-help'
                             }
                         />
+                        <span className="field-help" id="group-key-help">
+                            Lowercase letters, numbers, and dashes; for example
+                            <code>checkout</code>.
+                        </span>
                     </label>
 
                     <label>
@@ -316,13 +402,67 @@ export function FlagGroupPage({
                         only to administrators.
                     </p>
                 ) : null}
-                <div className="section-header">
+                <div className="section-toolbar group-controls-toolbar">
                     <div>
                         <h2>Group controls</h2>
                         <p>
                             Activating a switch affects every assigned flag in
-                            the displayed environment.
+                            every assigned flag and returns runtime Off with
+                            reason <code>GROUP_KILL_SWITCH</code>.
                         </p>
+                    </div>
+
+                    <div className="group-results-summary" aria-live="polite">
+                        Showing {filteredGroups.length} of {groups.length}{' '}
+                        {pluralize(groups.length, 'group')}
+                    </div>
+                </div>
+
+                <div
+                    className="group-filter-bar"
+                    role="search"
+                    aria-label="Filter flag groups"
+                >
+                    <label>
+                        Search groups
+                        <input
+                            value={filters.search}
+                            onChange={(event) =>
+                                setFilters((current) => ({
+                                    ...current,
+                                    search: event.target.value,
+                                }))
+                            }
+                            placeholder="Search by group name or key..."
+                        />
+                    </label>
+
+                    <label>
+                        Switch state
+                        <select
+                            value={filters.switchState}
+                            onChange={(event) =>
+                                setFilters((current) => ({
+                                    ...current,
+                                    switchState: event.target
+                                        .value as GroupSwitchFilter,
+                                }))
+                            }
+                        >
+                            <option value="all">All switches</option>
+                            <option value="active">Active only</option>
+                            <option value="inactive">Inactive only</option>
+                        </select>
+                    </label>
+
+                    <div className="filter-actions">
+                        <button
+                            type="button"
+                            className="button button-secondary"
+                            onClick={resetFilters}
+                        >
+                            Reset filters
+                        </button>
                     </div>
                 </div>
 
@@ -345,19 +485,44 @@ export function FlagGroupPage({
                     />
                 ) : null}
 
-                {!loading && groups.length > 0 ? (
-                    <div className="card-grid">
-                        {groups.map((group) => {
+                {!loading &&
+                !error &&
+                groups.length > 0 &&
+                filteredGroups.length === 0 ? (
+                    <EmptyState
+                        title="No groups match these filters"
+                        description="Adjust the search text or switch-state filter to show more groups."
+                        actionLabel="Reset filters"
+                        onAction={resetFilters}
+                    />
+                ) : null}
+
+                {!loading && !error && filteredGroups.length > 0 ? (
+                    <div className="card-grid group-card-grid">
+                        {filteredGroups.map((group) => {
                             const busy = busyGroupKey === group.key;
+                            const draftName =
+                                renameDrafts[group.key] ?? group.name;
+                            const nameChanged =
+                                draftName.trim() !== group.name;
 
                             return (
                                 <article
-                                    className="resource-card group-card"
+                                    className={`resource-card group-card ${
+                                        group.killSwitch
+                                            ? 'group-card-switch-active'
+                                            : ''
+                                    }`}
                                     key={group.id}
                                 >
-                                    <div>
+                                    <div className="group-card-main">
                                         <div className="group-card-heading">
-                                            <h3>{group.name}</h3>
+                                            <div>
+                                                <span className="group-key-pill">
+                                                    {group.key}
+                                                </span>
+                                                <h3>{group.name}</h3>
+                                            </div>
 
                                             <span
                                                 className={`badge ${
@@ -365,37 +530,58 @@ export function FlagGroupPage({
                                                         ? 'group-switch-active'
                                                         : 'group-switch-inactive'
                                                 }`}
+                                                role="status"
+                                                aria-label={`Group kill switch is ${
+                                                    group.killSwitch
+                                                        ? 'active'
+                                                        : 'inactive'
+                                                }`}
                                             >
-                                                Group switch:{' '}
+                                                Switch{' '}
                                                 {group.killSwitch
                                                     ? 'Active'
                                                     : 'Inactive'}
                                             </span>
-
-                                            <span className="group-key-pill">
-                                                {group.key}
-                                            </span>
                                         </div>
+
+                                        <p
+                                            className={
+                                                group.killSwitch
+                                                    ? 'group-runtime-note group-runtime-note-off'
+                                                    : 'group-runtime-note'
+                                            }
+                                        >
+                                            {group.killSwitch
+                                                ? 'Runtime Off override is active for assigned flags.'
+                                                : 'No group override: assigned flags follow their own status, rules, and flag switch.'}
+                                        </p>
                                     </div>
 
                                     <dl className="meta-list group-meta-list">
                                         <div>
-                                            <dt>Environment</dt>
-                                            <dd>{group.environmentKey}</dd>
+                                            <dt>Assigned flags</dt>
+                                            <dd>
+                                                {group.assignedFlagCount}{' '}
+                                                {pluralize(
+                                                    group.assignedFlagCount,
+                                                    'flag',
+                                                )}
+                                            </dd>
                                         </div>
                                         <div>
-                                            <dt>Assigned flags</dt>
-                                            <dd>{group.assignedFlagCount}</dd>
+                                            <dt>Runtime reason</dt>
+                                            <dd>
+                                                {group.killSwitch
+                                                    ? 'GROUP_KILL_SWITCH'
+                                                    : 'Per-flag evaluation'}
+                                            </dd>
                                         </div>
                                     </dl>
 
                                     <label className="group-name-field">
                                         <span>Display name</span>
                                         <input
-                                            value={
-                                                renameDrafts[group.key] ??
-                                                group.name
-                                            }
+                                            value={draftName}
                                             onChange={(event) =>
                                                 setRenameDrafts((current) => ({
                                                     ...current,
@@ -404,6 +590,7 @@ export function FlagGroupPage({
                                                 }))
                                             }
                                             disabled={busy || !canManageGroups}
+                                            aria-label={`Display name for ${group.key}`}
                                         />
                                     </label>
 
@@ -416,7 +603,9 @@ export function FlagGroupPage({
                                                     void handleRename(group)
                                                 }
                                                 disabled={
-                                                    busy || !canManageGroups
+                                                    busy ||
+                                                    !canManageGroups ||
+                                                    !nameChanged
                                                 }
                                                 title={
                                                     !canManageGroups
@@ -424,7 +613,9 @@ export function FlagGroupPage({
                                                         : undefined
                                                 }
                                             >
-                                                Save name
+                                                {busy
+                                                    ? 'Saving...'
+                                                    : 'Save name'}
                                             </button>
 
                                             <button
@@ -451,9 +642,11 @@ export function FlagGroupPage({
                                                         : undefined
                                                 }
                                             >
-                                                {group.killSwitch
-                                                    ? 'Deactivate switch'
-                                                    : 'Activate switch'}
+                                                {busy
+                                                    ? 'Updating...'
+                                                    : group.killSwitch
+                                                      ? 'Deactivate switch'
+                                                      : 'Activate switch'}
                                             </button>
                                         </div>
 
@@ -479,6 +672,16 @@ export function FlagGroupPage({
                                             >
                                                 Delete group
                                             </button>
+                                            {group.assignedFlagCount > 0 ? (
+                                                <small className="group-action-hint">
+                                                    Unassign all flags before
+                                                    deleting.
+                                                </small>
+                                            ) : !canManageGroups ? (
+                                                <small className="group-action-hint">
+                                                    Delete is administrator-only.
+                                                </small>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </article>
@@ -498,8 +701,8 @@ export function FlagGroupPage({
                 description={
                     pendingSwitch
                         ? pendingSwitch.nextValue
-                            ? `All ${pendingSwitch.group.assignedFlagCount} flags assigned to "${pendingSwitch.group.name}" will evaluate Off in ${pendingSwitch.group.environmentKey} until this switch is deactivated.`
-                            : `Flags assigned to "${pendingSwitch.group.name}" will return to their normal per-flag evaluation in ${pendingSwitch.group.environmentKey}.`
+                            ? `All ${pendingSwitch.group.assignedFlagCount} flags assigned to "${pendingSwitch.group.name}" will evaluate Off until this switch is deactivated.`
+                            : `Flags assigned to "${pendingSwitch.group.name}" will return to their normal per-flag evaluation.`
                         : ''
                 }
                 confirmLabel={
@@ -518,7 +721,7 @@ export function FlagGroupPage({
                 title="Delete flag group?"
                 description={
                     pendingDelete
-                        ? `Delete "${pendingDelete.group.name}" and cascade-delete its environment-specific group configs. This is only allowed because no flags are assigned.`
+                        ? `Delete "${pendingDelete.group.name}". This is only allowed because no flags are assigned.`
                         : ''
                 }
                 confirmLabel="Delete group"

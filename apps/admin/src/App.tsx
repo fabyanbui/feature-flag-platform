@@ -76,6 +76,12 @@ function AdminApp() {
     selectIdentity(key);
   }
 
+  function navButtonClass(targetView: AdminView) {
+    return `button button-secondary top-nav-link${
+      view === targetView ? ' top-nav-link-active' : ''
+    }`;
+  }
+
   return (
     <main className="app-shell">
       <nav className="top-nav" aria-label="Admin navigation">
@@ -114,8 +120,9 @@ function AdminApp() {
 
           <button
             type="button"
-            className="button button-secondary"
+            className={navButtonClass('projects')}
             onClick={openProjects}
+            aria-current={view === 'projects' ? 'page' : undefined}
           >
             Projects
           </button>
@@ -124,32 +131,36 @@ function AdminApp() {
             <>
               <button
                 type="button"
-                className="button button-secondary"
+                className={navButtonClass('groups')}
                 onClick={() => setView('groups')}
+                aria-current={view === 'groups' ? 'page' : undefined}
               >
                 Groups
               </button>
 
               <button
                 type="button"
-                className="button button-secondary"
+                className={navButtonClass('flags')}
                 onClick={() => setView('flags')}
+                aria-current={view === 'flags' ? 'page' : undefined}
               >
                 Flags
               </button>
 
               <button
                 type="button"
-                className="button button-secondary"
+                className={navButtonClass('statistics')}
                 onClick={() => setView('statistics')}
+                aria-current={view === 'statistics' ? 'page' : undefined}
               >
                 Statistics
               </button>
 
               <button
                 type="button"
-                className="button button-secondary"
+                className={navButtonClass('audit')}
                 onClick={() => openAuditLogs()}
+                aria-current={view === 'audit' ? 'page' : undefined}
               >
                 Audit logs
               </button>
