@@ -16,6 +16,7 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 const SEED_AUDIT_ACTOR = 'demo-admin';
+const DEMO_APP_SHOP_ADMIN_USER_ID = 'demo-rollout-001';
 
 function seedRequestId(auditId: string): string {
   const bytes = createHash('sha256')
@@ -364,7 +365,7 @@ async function main() {
       type: 'USER_ALLOWLIST',
       enabled: true,
       parameters: {
-        userIds: ['demo-user-admin'],
+        userIds: [DEMO_APP_SHOP_ADMIN_USER_ID],
       },
     },
     create: {
@@ -373,7 +374,7 @@ async function main() {
       priority: 10,
       enabled: true,
       parameters: {
-        userIds: ['demo-user-admin'],
+        userIds: [DEMO_APP_SHOP_ADMIN_USER_ID],
       },
     },
   });
@@ -593,7 +594,7 @@ async function main() {
       {
         type: 'USER_ALLOWLIST',
         priority: 10,
-        parameters: { userIds: ['demo-user-admin'] },
+        parameters: { userIds: [DEMO_APP_SHOP_ADMIN_USER_ID] },
       },
       {
         type: 'ROLE_TARGETING',
