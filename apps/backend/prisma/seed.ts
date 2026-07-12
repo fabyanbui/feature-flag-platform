@@ -17,6 +17,13 @@ const prisma = new PrismaClient({ adapter });
 
 const SEED_AUDIT_ACTOR = 'demo-admin';
 const DEMO_APP_SHOP_ADMIN_USER_ID = 'demo-rollout-001';
+const DEMO_APP_SHOP_ADMIN_ROLE = 'shop-admin';
+const DEMO_APP_BETA_CUSTOMER_ROLE = 'beta-customer';
+const DEMO_APP_REGULAR_CUSTOMER_ROLE = 'regular-customer';
+const DEMO_APP_TARGETED_ROLES = [
+  DEMO_APP_BETA_CUSTOMER_ROLE,
+  DEMO_APP_SHOP_ADMIN_ROLE,
+];
 
 function seedRequestId(auditId: string): string {
   const bytes = createHash('sha256')
@@ -390,7 +397,7 @@ async function main() {
       type: 'ROLE_TARGETING',
       enabled: true,
       parameters: {
-        roles: ['beta-customer', 'shop-admin'],
+        roles: DEMO_APP_TARGETED_ROLES,
       },
     },
     create: {
@@ -399,7 +406,7 @@ async function main() {
       priority: 20,
       enabled: true,
       parameters: {
-        roles: ['beta-customer', 'shop-admin'],
+        roles: DEMO_APP_TARGETED_ROLES,
       },
     },
   });
@@ -599,7 +606,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 20,
-        parameters: { roles: ['beta-customer', 'shop-admin'] },
+        parameters: { roles: DEMO_APP_TARGETED_ROLES },
       },
     ],
   });
@@ -624,7 +631,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 10,
-        parameters: { roles: ['beta-customer', 'shop-admin'] },
+        parameters: { roles: DEMO_APP_TARGETED_ROLES },
       },
       {
         type: 'PERCENTAGE_ROLLOUT',
@@ -646,7 +653,7 @@ async function main() {
       {
         type: 'ROLE_TARGETING',
         priority: 10,
-        parameters: { roles: ['beta-customer', 'shop-admin'] },
+        parameters: { roles: DEMO_APP_TARGETED_ROLES },
       },
       {
         type: 'PERCENTAGE_ROLLOUT',
@@ -699,7 +706,7 @@ async function main() {
     update: {
       displayName: 'Beta Customer',
       userId: 'demo-user-beta',
-      roles: ['beta-customer'],
+      roles: [DEMO_APP_BETA_CUSTOMER_ROLE],
       attributes: { plan: 'pro' },
     },
     create: {
@@ -707,7 +714,7 @@ async function main() {
       displayName: 'Beta Customer',
       targetingKey: 'demo-user-beta',
       userId: 'demo-user-beta',
-      roles: ['beta-customer'],
+      roles: [DEMO_APP_BETA_CUSTOMER_ROLE],
       attributes: { plan: 'pro' },
     },
   });
@@ -722,7 +729,7 @@ async function main() {
     update: {
       displayName: 'Regular Customer',
       userId: 'demo-user-regular',
-      roles: ['regular-customer'],
+      roles: [DEMO_APP_REGULAR_CUSTOMER_ROLE],
       attributes: { plan: 'free' },
     },
     create: {
@@ -730,7 +737,7 @@ async function main() {
       displayName: 'Regular Customer',
       targetingKey: 'demo-user-regular',
       userId: 'demo-user-regular',
-      roles: ['regular-customer'],
+      roles: [DEMO_APP_REGULAR_CUSTOMER_ROLE],
       attributes: { plan: 'free' },
     },
   });
@@ -745,7 +752,7 @@ async function main() {
     update: {
       displayName: 'Shop Admin',
       userId: 'demo-user-admin',
-      roles: ['shop-admin'],
+      roles: [DEMO_APP_SHOP_ADMIN_ROLE],
       attributes: { plan: 'pro' },
     },
     create: {
@@ -753,7 +760,7 @@ async function main() {
       displayName: 'Shop Admin',
       targetingKey: 'demo-user-admin',
       userId: 'demo-user-admin',
-      roles: ['shop-admin'],
+      roles: [DEMO_APP_SHOP_ADMIN_ROLE],
       attributes: { plan: 'pro' },
     },
   });
