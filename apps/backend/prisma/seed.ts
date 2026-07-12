@@ -442,6 +442,9 @@ async function main() {
     groupId: string | null;
     groupKey: string | null;
     productionServingMode: 'GLOBAL_ON' | 'TARGETED';
+    productionStatus?: 'ENABLED' | 'DISABLED';
+    nonProductionServingMode?: 'GLOBAL_ON' | 'TARGETED';
+    nonProductionStatus?: 'ENABLED' | 'DISABLED';
     rules?: SeedRule[];
   }) {
     const flag = await prisma.featureFlag.upsert({
@@ -474,7 +477,7 @@ async function main() {
         projectId: project.id,
         flagId: flag.id,
         environmentId: production.id,
-        status: 'ENABLED',
+        status: input.productionStatus ?? 'ENABLED',
         servingMode: input.productionServingMode,
         killSwitch: false,
       },
@@ -493,8 +496,8 @@ async function main() {
           projectId: project.id,
           flagId: flag.id,
           environmentId: environment.id,
-          status: 'ENABLED',
-          servingMode: 'GLOBAL_ON',
+          status: input.nonProductionStatus ?? 'ENABLED',
+          servingMode: input.nonProductionServingMode ?? 'GLOBAL_ON',
           killSwitch: false,
         },
       });
@@ -668,18 +671,9 @@ async function main() {
     groupId: null,
     groupKey: null,
     productionServingMode: 'TARGETED',
-    rules: [
-      {
-        type: 'USER_ALLOWLIST',
-        priority: 10,
-        parameters: { userIds: ['demo-user-admin'] },
-      },
-      {
-        type: 'PERCENTAGE_ROLLOUT',
-        priority: 20,
-        parameters: { percentage: 75 },
-      },
-    ],
+    productionStatus: 'DISABLED',
+    nonProductionServingMode: 'TARGETED',
+    nonProductionStatus: 'DISABLED',
   });
 
   const liveSupportWidget = await upsertDemoFeatureFlag({
@@ -689,18 +683,9 @@ async function main() {
     groupId: null,
     groupKey: null,
     productionServingMode: 'TARGETED',
-    rules: [
-      {
-        type: 'ROLE_TARGETING',
-        priority: 10,
-        parameters: { roles: ['beta-customer', 'shop-admin'] },
-      },
-      {
-        type: 'PERCENTAGE_ROLLOUT',
-        priority: 20,
-        parameters: { percentage: 25 },
-      },
-    ],
+    productionStatus: 'DISABLED',
+    nonProductionServingMode: 'TARGETED',
+    nonProductionStatus: 'DISABLED',
   });
 
   await prisma.sampleUserContext.upsert({
