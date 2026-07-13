@@ -26,6 +26,7 @@ type FeatureKey =
   | "holiday-promo-banner"
   | "live-support-widget";
 type FeatureResultMap = Partial<Record<FeatureKey, SdkEvaluationResult>>;
+type FeatureBucketMap = Partial<Record<FeatureKey, string>>;
 type FeatureGroupKey = "checkout" | "recommendations" | "standalone";
 type RolloutUnit = "user" | "organization";
 type DemoFeature = {
@@ -109,8 +110,8 @@ const featureRolloutUnits: Record<FeatureKey, RolloutUnit> = {
   "coupon-engine": "user",
   "personalized-recommendations": "user",
   "trending-products": "user",
-  "holiday-promo-banner": "user",
-  "live-support-widget": "organization",
+  "holiday-promo-banner": "organization",
+  "live-support-widget": "user",
   "beta-dashboard": "user",
 };
 
@@ -119,24 +120,24 @@ const featureGroups: Array<{
   label: string;
   summary: string;
 }> = [
-  {
-    key: "checkout",
-    label: "Checkout experience",
-    summary:
-      "Four independent checkout features grouped for a group kill-switch demo.",
-  },
-  {
-    key: "recommendations",
-    label: "Recommendations",
-    summary:
-      "Two merchandising features grouped for recommendation experiments.",
-  },
-  {
-    key: "standalone",
-    label: "Standalone features",
-    summary: "Individual features without a shared operational group.",
-  },
-];
+    {
+      key: "checkout",
+      label: "Checkout experience",
+      summary:
+        "Four independent checkout features grouped for a group kill-switch demo.",
+    },
+    {
+      key: "recommendations",
+      label: "Recommendations",
+      summary:
+        "Two merchandising features grouped for recommendation experiments.",
+    },
+    {
+      key: "standalone",
+      label: "Standalone features",
+      summary: "Individual features without a shared operational group.",
+    },
+  ];
 
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/v1";
@@ -218,6 +219,59 @@ function getFeatureEvaluationContext(
       organizationName: account.organizationName,
     },
   };
+}
+
+async function getStableRolloutBucketLabel(
+  projectKey: string,
+  flagKey: string,
+  targetingKey: string | undefined,
+) {
+  const normalizedTargetingKey = targetingKey?.trim();
+
+  if (!normalizedTargetingKey || !globalThis.crypto?.subtle) {
+    return "Bucket unavailable";
+  }
+
+  try {
+    const hashInput = `${projectKey}:${flagKey}:${normalizedTargetingKey}`;
+    const digest = new Uint8Array(
+      await globalThis.crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(hashInput),
+      ),
+    );
+    let first64Bits = 0n;
+
+    for (const byte of digest.slice(0, 8)) {
+      first64Bits = (first64Bits << 8n) + BigInt(byte);
+    }
+
+    const bucket = Number(first64Bits % 10000n) / 100;
+
+    return `Bucket ${bucket.toFixed(2)}`;
+  } catch {
+    return "Bucket unavailable";
+  }
+}
+
+async function buildFeatureBucketMap(account: DemoAccount) {
+  const entries = await Promise.all(
+    demoFeatures.map(async (feature) => {
+      const context = getFeatureEvaluationContext(feature.key, account);
+      const bucketLabel = await getStableRolloutBucketLabel(
+        account.projectKey,
+        feature.key,
+        context.targetingKey,
+      );
+
+      return [feature.key, bucketLabel] as const;
+    }),
+  );
+
+  return entries.reduce<FeatureBucketMap>((nextBuckets, [key, bucketLabel]) => {
+    nextBuckets[key] = bucketLabel;
+    return nextBuckets;
+  }, {});
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -774,8 +828,8 @@ function RecommendationPanel({
 }: RecommendationPanelProps) {
   const recommendationProducts = hasPersonalizedRecommendations
     ? products
-        .filter((product) => product.category === "Accessories")
-        .slice(0, 2)
+      .filter((product) => product.category === "Accessories")
+      .slice(0, 2)
     : products.slice(0, 2);
   const trendingProducts = products
     .filter((product) => product.rating >= 4.7)
@@ -959,10 +1013,12 @@ function AccountDetails({ account }: { account: DemoAccount | null }) {
 function DeveloperDiagnostics({
   account,
   results,
+  rolloutBuckets,
   isLoading,
 }: {
   account: DemoAccount | null;
   results: FeatureResultMap;
+  rolloutBuckets: FeatureBucketMap;
   isLoading: boolean;
 }) {
   if (!account) {
@@ -995,7 +1051,9 @@ function DeveloperDiagnostics({
               <dt>{experience.label}</dt>
               <dd>
                 {result
-                  ? `${result.enabled ? "On" : "Off"} · ${result.reason}`
+                  ? `${result.enabled ? "On" : "Off"} · ${result.reason} · ${
+                    rolloutBuckets[experience.key] ?? "Bucket pending"
+                  }`
                   : "Not loaded"}
               </dd>
             </div>
@@ -1014,6 +1072,7 @@ function App() {
   );
   const [cart, setCart] = useState<CartView | null>(null);
   const [results, setResults] = useState<FeatureResultMap>({});
+  const [rolloutBuckets, setRolloutBuckets] = useState<FeatureBucketMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const requestSequence = useRef(0);
@@ -1095,6 +1154,7 @@ function App() {
       if (!selectedAccount) {
         if (!isCancelled) {
           setResults({});
+          setRolloutBuckets({});
           setIsLoading(false);
         }
         return;
@@ -1122,12 +1182,21 @@ function App() {
         return;
       }
 
-      setResults(
-        evaluations.reduce<FeatureResultMap>((nextResults, [key, result]) => {
-          nextResults[key] = result;
-          return nextResults;
-        }, {}),
+      const nextResults = evaluations.reduce<FeatureResultMap>(
+        (collectedResults, [key, result]) => {
+          collectedResults[key] = result;
+          return collectedResults;
+        },
+        {},
       );
+      const nextRolloutBuckets = await buildFeatureBucketMap(selectedAccount);
+
+      if (isCancelled || requestSequence.current !== requestId) {
+        return;
+      }
+
+      setResults(nextResults);
+      setRolloutBuckets(nextRolloutBuckets);
 
       if (evaluations.some(([, result]) => isClientEvaluationError(result))) {
         setMessage(
@@ -1193,6 +1262,7 @@ function App() {
     requestSequence.current += 1;
     setSelectedAccountId(accountId);
     setResults({});
+    setRolloutBuckets({});
     setMessage(null);
   };
 
@@ -1245,9 +1315,8 @@ function App() {
 
       setMessage(
         response.status === 403
-          ? `${featureLabel} API blocked by backend${
-              reason ? ` (${reason})` : ""
-            }.`
+          ? `${featureLabel} API blocked by backend${reason ? ` (${reason})` : ""
+          }.`
           : (backendMessage ?? `${featureLabel} API request failed.`),
       );
       return false;
@@ -1296,8 +1365,8 @@ function App() {
       hasCouponEngine
         ? "Order placed with coupon savings applied."
         : hasOnePageCheckout
-        ? "Order placed with one-page checkout."
-        : "Order is ready for the payment step.",
+          ? "Order placed with one-page checkout."
+          : "Order is ready for the payment step.",
     );
   };
 
@@ -1412,6 +1481,7 @@ function App() {
           <DeveloperDiagnostics
             account={selectedAccount}
             results={results}
+            rolloutBuckets={rolloutBuckets}
             isLoading={isLoading}
           />
         </footer>

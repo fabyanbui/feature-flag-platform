@@ -168,5 +168,74 @@ export const productSeed: readonly Product[] = [
 ];
 
 export const cartSeed: Record<string, CartLine[]> = {
-  'rollout-account-006': [{ productId: 'audio-case', quantity: 2 }],
+  // Cart keys use the demo app account id (`rollout-account-###`), while
+  // feature-flag rules use `userId`/`targetingId` values (`demo-rollout-###`).
+  'rollout-account-001': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'charging-dock', quantity: 1 },
+  ],
+  'rollout-account-002': [
+    { productId: 'speaker-mini', quantity: 1 },
+    { productId: 'audio-case', quantity: 1 },
+  ],
+  'rollout-account-003': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'studio-stand', quantity: 1 },
+  ],
+  'rollout-account-004': [
+    { productId: 'speaker-mini', quantity: 2 },
+    { productId: 'charging-dock', quantity: 1 },
+  ],
+  'rollout-account-005': [
+    { productId: 'audio-case', quantity: 1 },
+    { productId: 'studio-stand', quantity: 1 },
+  ],
+  'rollout-account-006': [
+    { productId: 'audio-case', quantity: 2 },
+    { productId: 'charging-dock', quantity: 1 },
+  ],
+  'rollout-account-007': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'audio-case', quantity: 1 },
+  ],
+  'rollout-account-008': [
+    { productId: 'speaker-mini', quantity: 1 },
+    { productId: 'studio-stand', quantity: 1 },
+  ],
+  'rollout-account-009': [
+    { productId: 'charging-dock', quantity: 1 },
+    { productId: 'audio-case', quantity: 2 },
+  ],
+  'rollout-account-010': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'speaker-mini', quantity: 1 },
+  ],
+  'rollout-account-011': [
+    { productId: 'studio-stand', quantity: 1 },
+    { productId: 'audio-case', quantity: 1 },
+  ],
+  'rollout-account-012': [
+    { productId: 'speaker-mini', quantity: 1 },
+    { productId: 'charging-dock', quantity: 1 },
+  ],
+  'rollout-account-031': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'audio-case', quantity: 2 },
+  ],
+  'rollout-account-044': [
+    { productId: 'speaker-mini', quantity: 1 },
+    { productId: 'studio-stand', quantity: 1 },
+  ],
+  'rollout-account-060': [
+    { productId: 'charging-dock', quantity: 2 },
+    { productId: 'audio-case', quantity: 1 },
+  ],
+  'rollout-account-078': [
+    { productId: 'headphones-pro', quantity: 1 },
+    { productId: 'studio-stand', quantity: 1 },
+  ],
+  'rollout-account-095': [
+    { productId: 'speaker-mini', quantity: 2 },
+    { productId: 'audio-case', quantity: 1 },
+  ],
 };

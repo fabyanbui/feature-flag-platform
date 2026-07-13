@@ -127,6 +127,12 @@ export class FlagRulesService {
         tx,
       );
 
+      await this.featureFlagsRepository.touchUpdatedAtByProjectIdAndKey(
+        project.id,
+        flag.key,
+        tx,
+      );
+
       await this.auditLogService.record(tx, {
         projectId: project.id,
         projectKey: project.key,
